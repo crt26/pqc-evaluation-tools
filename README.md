@@ -92,7 +92,7 @@ The test script can be executed using the following command:
 
 #### Detailed usage instructions can be found using the following link:
 
-[Liboqs Performance Automated Testing Instructions](docs/testing-tools-documentation/Liboqs-performance-testing.md)
+[Liboqs Performance Automated Testing Instructions](docs/testing-tools-documentation/liboqs-performance-testing.md)
 
 ### OQS-OpenSSL Performance Testing
 
