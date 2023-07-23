@@ -2,6 +2,7 @@
 
 ## Contents <!-- omit from toc --> 
 - [Overview](#overview)
+- [Supported Hardware](#supported-hardware)
 - [Installation Instructions](#installation-instructions)
 - [Automated Testing Tools](#automated-testing-tools)
   - [Tools Description](#tools-description)
@@ -26,7 +27,13 @@ Post-Quantum Cryptography (PQC) is an expanding field which aims to address the 
 
 This repository provides tools that will simplify the process for the gathering and parsing of PQC computational performance data. It includes scripts that will automate the building process, the testing process, and the result parsing process. The final output from these tools is CSV files, containing performance metrics alongside metric averages that can be further used for graph generation. Jupyter notebook code is also contained in the library, for data visualisation. For more information on the tools, please refer to the [Repository Structure](#repository-structure) section.
 
-> Disclaimer - This is an early version of the project, functionality is limited to x86 Linux devices and Raspberry Pi's. However, future updates will address this issue.
+## Supported Hardware
+The automated testing tool is currently only supported on the following devices:
+
+- x86 Debian Based Linux Machines
+- ARMv8 Raspberry Pis using a 64-bit Operating System
+
+> Notice: As this is a early release version of the testing suites, the supported hardware is currently limited. However, future versions will address this issue and allow for support on a wider range of architectures and operating systems.
 
 ## Installation Instructions
 
