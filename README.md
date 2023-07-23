@@ -1,4 +1,4 @@
-# PQC Evaluation Tools - (Pre-Release Version 0.1.0-Alpha) <!-- omit from toc --> 
+# PQC Evaluation Tools <!-- omit from toc --> 
 
 ## Contents <!-- omit from toc --> 
 - [Overview](#overview)
@@ -19,6 +19,8 @@
 
 
 ## Overview
+
+**(Pre-Release Version 0.1.0-Alpha)**
 
 Post-Quantum Cryptography (PQC) is an expanding field which aims to address the security concerns that quantum computers will bring to current cryptographic technologies. Numerous PQC schemes have been proposed to help combat this concern, with each offering differing solutions. 
 
