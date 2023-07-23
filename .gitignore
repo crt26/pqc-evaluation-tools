@@ -1,0 +1,7 @@
+# Ignore results and build directories
+/builds
+/dependency-libs
+/results/
+/up-results/
+/tmp/
+/.vscode

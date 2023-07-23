@@ -1,0 +1,8 @@
+Older version of liboqs (0.7.2) will contain algorithms that have been deemed insecure and older versions of current algorithms.
+
+The purpose behind including an older version is to allow the benchmarking of algorithms that are no longer being considered by NIST for academic purposes.
+Please keep this in behind when performing analysis of results.
+
+
+This dependency-libs directory will hold the pqax directory to allow for the use of the ARM PMU. Information for this library can be found at:
+https://github.com/mupq/pqax#enable-access-to-performance-counters
