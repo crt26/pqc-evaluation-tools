@@ -137,7 +137,7 @@ For machines running an older version of Python, some features within the parse_
 
 **Liboqs Results Parsing:**
 ```
-python Liboqs_parse.py
+python liboqs_parse.py
 ```
 
 **OQS-OpenSSL Results Parsing**
