@@ -42,39 +42,6 @@ function dependency_install() {
 }
 
 #------------------------------------------------------------------------------
-function get_liboqs_version() {
-    # Function for getting which version of the liboqs should be used
-    # for the liboqs performance testing from the user
-
-    # Getting the required version from the user
-    while true; do
-
-        # Ask user which version of liboqs they want to use
-        echo -e "\nWhich version of liboqs do you want to use?"
-        echo "1 - Version 0.7.2"
-        echo "2 - Version 0.8"
-        read -p "Enter your choice (1-2): " version_number
-
-        # Write choice to flag file
-        case "$version_number" in
-            1)
-                echo "0" > "$root_dir/alg-lists/version-flag.txt"
-                break
-                ;;
-            2)
-                echo "1" > "$root_dir/alg-lists/version-flag.txt"
-                break
-                ;;
-            *)
-                echo "Invalid option, please select a valid option value (1-2)"
-                ;;
-        esac
-    
-    done
-
-}
-
-#------------------------------------------------------------------------------
 function configure_dirs() {
     # Function for creating the required directories for the automated tools
     # alongside setting the root directory path tmp file
@@ -124,7 +91,6 @@ function main() {
 
             1)
                 
-                get_liboqs_version
                 echo "Building Liboqs..."
                 dependency_install
                 $scripts_dir/./suite-build.sh -l

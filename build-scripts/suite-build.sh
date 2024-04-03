@@ -11,6 +11,7 @@
 current_dir=$(pwd)
 root_dir=$current_dir
 scripts_dir="$root_dir/build-scripts"
+build_type_flag=0
 
 #------------------------------------------------------------------------------
 function mod-liboqs() {
@@ -68,6 +69,7 @@ function liboqs-build() {
         sudo rm -r "$root_dir/liboqs"
     fi
 
+    # Setting build dir
     # Calling liboqs mod function
     mod-liboqs
 
@@ -76,24 +78,45 @@ function liboqs-build() {
         echo -e "There is a current build available - skipping build\n"
     else
 
-        # Checking what currenty sys architecture is and calling relevant build
-        if [ "$(uname -m)" = "x86_64" ] && [ "$(uname -s)" = "Linux" ]; then
-            # x86 Linux build
-            echo -e "x86-Linux Detected - creating relevant build\n"
-            $scripts_dir/x86-linux-build.sh
+        # Setting build options based on current system
+        if [ "$(uname -m)" = "x86_64" ] && [ "$(uname -s)" = "Linux" ]; then 
+            # x86 linux build options
+            build_options="no-shared linux-x86_64"
+            build_flags=""
+            threads=6
 
         elif [[ "$(uname -m)" = arm* || "$(uname -m)" == aarch* ]]; then
-            # ARM build
-            echo -e "ARM Linux Detected - creating relevant build\n"
-            echo -e "before"
-            $scripts_dir/arm-linux-build.sh
-            echo -e "after"
+
+            #ARM arrch64 build options for pi
+            build_options="no-shared linux-aarch64"
+            build_flags="-D_OQS_RASPBERRY_PI -DSPEED_USE_ARM_PMU"
+            build_flag1="-D_OQS_RASPBERRY_PI"
+            build_flag2="-DSPEED_USE_ARM_PMU"
+            threads=4
+            
+            # Enabling ARM PMU if needed
+            if lsmod | grep -q 'enable_ccr'; then
+                echo "The enable_ccr module enabled, skipping build."
+            else
+                enable_pmu
+            fi
 
         else
             # Unsupported system error 
             echo -e "Unsupported System Detected - Manual Build Required!\n"
             exit 1
         fi
+
+        # Setting up build directory and building liboqs
+        cd "$script_root_dir/liboqs/" && mkdir "$build_dir" && cd "$build_dir"
+        cmake -GNinja .. -DCMAKE_INSTALL_PREFIX=./ && ninja -j 6 && ninja install
+        mkdir -p mem-results/kem-mem-metrics/ && mkdir -p mem-results/sig-mem-metrics/ && mkdir speed-results
+
+        # Making directory for this build and moving
+        cd .. 
+        mv "$build_dir" "$script_root_dir/builds/"
+        cd "$script_root_dir"/build-scripts
+
     fi
 
     cd "$root_dir/build-scripts"
@@ -138,7 +161,7 @@ function oqs-openssl-build() {
 
         # Cloning needed repos
         mkdir -p "$oqs_build_dir"
-        git clone https://github.com/crt26/openssl.git "$oqs_build_dir/openssl"
+        git clone https://github.com/open-quantum-safe/oqs-provider.git "$oqs_build_dir/openssl"
         git clone --branch main https://github.com/open-quantum-safe/liboqs.git "$oqs_build_dir/liboqs"
 
         # Building Liboqs for OQS-OpenSSL
@@ -151,13 +174,13 @@ function oqs-openssl-build() {
         ./Configure $build_options -lm
         make -j $threads
 
-        # Enabling disabled signature algorithms
-        export LIBOQS_DOCS_DIR="$oqs_build_dir/liboqs/docs"
-        cp "$root_dir/modded-liboqs-files/generate.yml" "$oqs_build_dir/openssl/oqs-template/generate.yml"
-        /usr/bin/python3 $oqs_build_dir/openssl/oqs-template/generate.py
-        cd "$oqs_build_dir/openssl"
-        make generate_crypto_objects
-        make -j $threads
+        # # Enabling disabled signature algorithms
+        # export LIBOQS_DOCS_DIR="$oqs_build_dir/liboqs/docs"
+        # cp "$root_dir/modded-liboqs-files/generate.yml" "$oqs_build_dir/openssl/oqs-template/generate.yml"
+        # /usr/bin/python3 $oqs_build_dir/openssl/oqs-template/generate.py
+        # cd "$oqs_build_dir/openssl"
+        # make generate_crypto_objects
+        # make -j $threads
 
     fi
     
@@ -179,6 +202,7 @@ function main() {
     while getopts 'alo' OPTION; do
         case "$OPTION" in
             a)
+
                 liboqs-build
                 oqs-openssl-build
                 ;;
