@@ -1,13 +1,6 @@
-# PQC Evaluation Tools <!-- omit from toc -->
-
-## Notice:
-This is the **development branch**, it may not be in a fully functioning state and documentation may still need updated. The checkboxes below indicates whether the current development version is in a basic functioning state and if the documentation is accurate for its current functionality. Regardless please keep this in mind and use the main branch if possible, thank you.
-
-- [ ] Functioning State
-- [ ] Up to date documentation
+# PQC Evaluation Tools <!-- omit from toc --> 
 
 ## Contents <!-- omit from toc --> 
-- [Notice:](#notice)
 - [Overview](#overview)
 - [Supported Hardware](#supported-hardware)
 - [Installation Instructions](#installation-instructions)
