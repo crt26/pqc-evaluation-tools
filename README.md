@@ -58,16 +58,16 @@ chmod +x setup.sh
 #### Select which OQS benchmarking libraries should be setup:
 When executing the setup script, you will be presented with three options:
 
-1. Build only the liboqs library (used for only testing PQC performance)
+1. Build only the Liboqs library (used for only testing PQC performance)
 
 2. Build only the OQS-OpenSSL library (user for only testing PQC TLS performance)
 
-3. Build both the liboqs and OQS-OpenSSL library (used for testing both PQC performance and PQC in TLS performance)
+3. Build both the Liboqs and OQS-OpenSSL library (used for testing both PQC performance and PQC in TLS performance)
 
-Based on the option you chose you may be presented with a further option which is to select which version of the liboqs library is used for PQC performance testing, this will not effect the version of liboqs which is used with the OQS-OpenSSL testing tools. This options for versions are as follows:
+Based on the option you chose you may be presented with a further option which is to select which version of the Liboqs library is used for PQC performance testing, this will not effect the version of Liboqs which is used with the OQS-OpenSSL testing tools. This options for versions are as follows:
 
-1. liboqs version 0.7.2
-2. liboqs version 0.8
+1. Liboqs version 0.7.2
+2. Liboqs version 0.8
 
 Once all of the relevant options have been selected, the setup script will download, configure and build each of the libraries. Alongside, optimizing the builds for the current systems by automatically passing the relevant build parameters.
 
@@ -76,29 +76,29 @@ Once all of the relevant options have been selected, the setup script will downl
 ### Tools Description
 There are two sets of automated testing that can be done using these tools:
 
-- PQC performance benchmarking using liboqs
+- PQC performance benchmarking using Liboqs
 - PQC integration into TLS performance benchmarking using OQS-OpenSSL
 
 The testing tools can be found within the `test-scripts` directory and are fully automated. The tools allow multiple machines to be tested, with results being assigned a number set at the beginning of the test. The testing scripts are as follows:
 
 ### Liboqs Performance Testing
 
-This script automates the CPU and memory performance benchmarking of various PQC algorithms included in the liboqs library. It generates and records comprehensive metrics which can help in analysing the performance of these algorithms. 
+This script automates the CPU and memory performance benchmarking of various PQC algorithms included in the Liboqs library. It generates and records comprehensive metrics which can help in analysing the performance of these algorithms. 
 
 The test script can be executed using the following command:
 ```
-./full-liboqs-test.sh
+./full-Liboqs-test.sh
 ```
 
 #### Detailed usage instructions can be found using the following link:
 
-[liboqs Performance Automated Testing Instructions](docs/testing-tools-documentation/liboqs-performance-testing.md)
+[Liboqs Performance Automated Testing Instructions](docs/testing-tools-documentation/liboqs-performance-testing.md)
 
 ### OQS-OpenSSL Performance Testing
 
 This script is focused on benchmarking the performance of PQC algorithms when integrated within the OpenSSL (1.1.1) library via OQS. The script firstly can test the computational efficiency of the PQC algorithms when integrated into the OpenSSL library. Alongside, how PQC algorithms perform when integrated into the TLS protocol by measuring empty TLS handshake performance. Furthermore, metrics for how classic algorithms perform when conducting the TLS handshake to gather data which can be used as a baseline to compare the PQC metrics against.   
 
-The testing tool allows for tests to be conducted on a single machine or using two machine connected via a physical network. It should be noted that when using two physical machines the complexity of setup increases.However, regardless of which scenario, the process requires more additional steps then the liboqs testing.
+The testing tool allows for tests to be conducted on a single machine or using two machine connected via a physical network. It should be noted that when using two physical machines the complexity of setup increases.However, regardless of which scenario, the process requires more additional steps then the Liboqs testing.
 
 #### Detailed usage instructions can be found using the following link:
 
@@ -106,7 +106,7 @@ The testing tool allows for tests to be conducted on a single machine or using t
 
 
 ### Testing Output Files
-After selecting the desired testing script, the performance benchmarks will be performed and the unparsed results will be stored in the newly created ``up-results`` directory within the code's root directory. liboqs unparsed results will be stored in the `up-results/liboqs/machine-x`* directory. The PQC TLS test results will be stored in the `up-results/liboqs/machine-x`* directory.
+After selecting the desired testing script, the performance benchmarks will be performed and the unparsed results will be stored in the newly created ``up-results`` directory within the code's root directory. Liboqs unparsed results will be stored in the `up-results/Liboqs/machine-x`* directory. The PQC TLS test results will be stored in the `up-results/Liboqs/machine-x`* directory.
 
 **The machine number assigned to the test*
 
@@ -118,7 +118,7 @@ After selecting the desired testing script, the performance benchmarks will be p
 
 ### Parsing Overview
 
-The results from the automated tests can be transformed into workable CSV files using the `parse_results.py` script located in the `result-processing/parsing-scripts` directory. Options are provided to parse the liboqs results, the OQS-OpenSSL results, or both.
+The results from the automated tests can be transformed into workable CSV files using the `parse_results.py` script located in the `result-processing/parsing-scripts` directory. Options are provided to parse the Liboqs results, the OQS-OpenSSL results, or both.
 
 The script requires the test parameters used during the benchmarking, including the number of runs and number of machines tested, if multiple machine results have been stored within the `up-results` directory.
 
@@ -184,7 +184,7 @@ pqc-eval-tools/
 
 - build-scripts: Contains scripts used for building and compiling the project.
 
-- modded-liboqs-files: Contains liboqs files that have been modified for the purpose of this project.
+- modded-Liboqs-files: Contains Liboqs files that have been modified for the purpose of this project.
 
 - result-processing: Contains scripts that are used for processing and analysing the results. It has two subdirectories:
   
@@ -195,11 +195,11 @@ pqc-eval-tools/
 - test-scripts: Contains scripts that are used for testing various components of the project.
 
 ## Helpful Documentation Links
-- [liboqs Webpage](https://openquantumsafe.org/liboqs/)
-- [liboqs GitHub Page](https://github.com/open-quantum-safe/liboqs)
+- [Liboqs Webpage](https://openquantumsafe.org/Liboqs/)
+- [Liboqs GitHub Page](https://github.com/open-quantum-safe/Liboqs)
 - [OQS-OpenSSL Webpage](https://openquantumsafe.org/applications/tls.html#oqs-openssl)
 - [OQS-OpenSSL GitHub Page](https://github.com/open-quantum-safe/openssl)
-- [Latest liboqs Release Notes](https://github.com/open-quantum-safe/liboqs/releases/tag/0.8.0)
+- [Latest Liboqs Release Notes](https://github.com/open-quantum-safe/Liboqs/releases/tag/0.8.0)
 - [Latest OQS-OpenSSL Release Notes](https://github.com/open-quantum-safe/openssl/releases/tag/OQS-OpenSSL-1_1_1-stable-snapshot-2023-07)
 - [OpenSSL(1.1.1) Documentation](https://www.openssl.org/docs/man1.1.1/)
 - [TLS 1.3 RFC 8446](https://www.rfc-editor.org/rfc/rfc8446)
@@ -211,6 +211,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE)
 ## Acknowledgements
 This project depends on:
 
-1. [liboqs](https://github.com/open-quantum-safe/liboqs) - This project includes modified versions of files from the `liboqs` project. These modified files are subject to the `liboqs` MIT license, which can be found at the top of each modified file.
+1. [Liboqs](https://github.com/open-quantum-safe/Liboqs) - This project includes modified versions of files from the `Liboqs` project. These modified files are subject to the `Liboqs` MIT license, which can be found at the top of each modified file.
 2. [oqs-openssl](https://github.com/open-quantum-safe/openssl) - This project also relies on a fork of the `oqs-openssl` project which includes OpenSSL. The forked `oqs-openssl` repository can be found here: [forked oqs-openssl](https://github.com/crt26/openssl). The OpenSSL toolkit in `oqs-openssl` is dual-licensed under both the OpenSSL License and the original SSLeay license. Refer to the LICENSE in the [oqs-openssl repository](https://github.com/open-quantum-safe/openssl) for full license details.
 3. [pqax](https://github.com/mupq/pqax/tree/main) - This project uses the pqax library to enable arm PMU on Raspberry Pi devices. The pqax library is licensed under the Creative Commons Zero v1.0 Universal license, which dedicates the work to the public domain.
