@@ -1,4 +1,6 @@
 RSA:2048
+RSA:3072
+RSA:4096
 prime256v1
 secp384r1
 secp521r1

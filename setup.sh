@@ -13,6 +13,7 @@ root_dir=$(pwd)
 dependency_dir="$root_dir/dependency-libs"
 libs_dir="$root_dir/lib"
 tmp_dir="$root_dir/tmp"
+test_data_dir="$root_dir/test-data"
 
 # Declaring global library path files
 open_ssl_path="$libs_dir/openssl_3.2"
@@ -377,7 +378,11 @@ function main() {
                 # Building libraries and cleaning up
                 openssl_build
                 liboqs-build
-                rm -rf $tmp_dir
+                rm -rf $tmp_dir/*
+
+                # Setting root_dir path for scripts
+                echo "$root_dir" > "$test_data_dir/root_path.txt"
+
                 break;;
             
             2)
@@ -396,7 +401,11 @@ function main() {
                 openssl_build
                 liboqs-build
                 oqs-openssl-build
-                rm -rf $tmp_dir
+                rm -rf $tmp_dir/*
+
+                # Setting root_dir path for scripts
+                echo "$root_dir" > "$test_data_dir/root_path.txt"
+
                 break;;
 
             3)
@@ -428,7 +437,10 @@ function main() {
 
                 # Building oqs-provider
                 oqs-openssl-build
-                rm -rf $tmp_dir
+                rm -rf $tmp_dir/*
+
+                # Setting root_dir path for scripts
+                echo "$root_dir" > "$test_data_dir/root_path.txt"
                 break;;
 
             4)

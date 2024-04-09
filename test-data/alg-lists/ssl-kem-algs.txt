@@ -11,8 +11,8 @@ frodo976shake
 frodo1344aes
 frodo1344shake
 hqc128
-hqc192
+hqc192 
 hqc256
-prime256v1
-secp384r1
-secp521r1
+mlkem512
+mlkem768
+mlkem1024
