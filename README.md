@@ -6,8 +6,21 @@ This is the **development branch**, it may not be in a fully functioning state a
 - [ ] Functioning State
 - [ ] Up to date documentation
 
+## Current Development Branch Tasks
+
+- [ ] Update [alg-lists](alg-lists) files to include the latest version of supported algorithms in Liboqs and OQS-OpenSSL-Provider
+- [ ] Update [oqsssl-generate-keys](scripts/test-scripts/oqsssl-generate-keys.sh) to use current supported algorithms and steps for new OQS-OpenSSL-Provider PQC key generation
+- [ ] Update [oqsssl-generate-keys](scripts/test-scripts/oqsssl-generate-keys.sh) storage method for generated keys to better suit new directory structure
+- [ ] Update [full-pqc-tls-test.sh](scripts/test-scripts/full-pqc-tls-test.sh) to account for changes in directory structure and OQS-OpenSSL-Provider tools
+- [ ] Update [oqsssl-generate-keys.sh](scripts/test-scripts/oqsssl-generate-keys.sh) to use current supported algorithms in Liboqs and OQS-OpenSSL-Provider and key generation methods in OpenSSL-3.2.1
+- [ ] Update and refine all automated testing scripts for Liboqs machine only algorithm performance testing to use current supported algorithms and new repository directory structure
+- [ ] Determine possibility of using s_time tls performance testing tool with OQS-Provider and if not possible create new/modify automated testing scripts using s_server and s_client tools to gather tls performance metrics (parsing scripts will need to be modified to handle this)
+- [ ] Update all automated testing scripts to use a more refined and efficient method for storing result data compared to current up-results method
+- [ ] Update documentation to reflect changes to repository functionality and structure
+
 ## Contents <!-- omit from toc --> 
 - [Notice:](#notice)
+- [Current Development Branch Tasks](#current-development-branch-tasks)
 - [Overview](#overview)
 - [Supported Hardware](#supported-hardware)
 - [Installation Instructions](#installation-instructions)
