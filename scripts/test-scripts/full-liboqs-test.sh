@@ -6,10 +6,98 @@
 # Script for controlling the Liboqs benchmark testing, it takes in the test parameters and call the relevant test scripts
 
 #------------------------------------------------------------------------------
-# Declaring directory variables
-current_dir=$(pwd)
-root_dir=$(dirname "$current_dir")
-device_name=$(hostname)
+# Declaring global main dir path variables
+root_dir=$(cd "$PWD"/../.. && pwd)
+libs_dir="$root_dir/lib"
+tmp_dir="$root_dir/tmp"
+test_data_dir="$root_dir/test-data"
+test_scripts_path="$root_dir/scripts/test-scripts"
+
+# Declaring global library path files
+open_ssl_path="$libs_dir/openssl_3.2"
+liboqs_path="$libs_dir/liboqs"
+oqs_openssl_path="$libs_dir/oqs-openssl"
+
+# Declaring global test parameter variables
+machine_num=""
+number_of_runs=0
+
+
+#------------------------------------------------------------------------------
+function set_result_paths() {
+
+    # Setting results path based on assigned machine number for results
+    machine_results_path="$test_data_dir/up-results/liboqs/machine-$machine_num"
+    machine_speed_results="$machine_results_path/speed-results"
+    machine_mem_results="$machine_results_path/mem-results"
+    kem_mem_results="$machine_mem_results/kem-mem-metrics"
+    sig_mem_results="$machine_mem_results/sig-mem-metrics"
+
+}
+
+#------------------------------------------------------------------------------
+function get_machine_num() {
+
+    while true; do
+        read -p "What machine number would you like to assign to these results? - " response
+        case $response in
+
+            # Asking the user to enter a number
+            ''|*[!0-9]*) echo -e "Invalid value, please enter a number\n"; 
+            continue;;
+
+            # If a number is entered by the user it is stored for later use
+            * ) machine_num="$response"; echo -e "\nMachine-ID set to $response \n";
+            break;;
+        esac
+    done
+    
+}
+
+#------------------------------------------------------------------------------
+function handle_machine_id_clash() {
+
+    # Get user choice for handling clash
+    while true; do
+
+        # Outputting options
+        echo -e "There are already results stored for Machine-ID ($machine_num), would you like to:"
+        echo -e "1 - Replace old results and keep same Machine-ID"
+        echo -e "2 - Assign a different machine ID"
+        read -p "Enter Option: " user_response
+
+        case $user_response in
+
+            1)
+                echo -e "\nReplacing old results\n"
+                rm -rf $machine_results_path
+                mkdir -p "$machine_speed_results"
+                mkdir -p "$kem_mem_results" && mkdir -p "$sig_mem_results"
+                break;;
+
+            2)
+
+                # Getting new machine ID to be assigned to results
+                echo -e "Assigning new Machine-ID for test results"
+                get_machine_num
+
+                # Setting results path based on assigned machine number for results
+                set_result_paths
+
+                # Ensuring the new ID does not have results stored
+                if [ ! -d "$machine_results_path" ]; then
+                    echo -e "No previous results present for Machine-ID ($machine_num), continuing test setup"
+                    break
+                else
+                    echo "There are previous results detected for new Machine-ID value, please select different value or replace old results"
+                fi
+                ;;
+        
+        esac
+
+    done
+
+}
 
 #------------------------------------------------------------------------------
 function get_test_options() {
@@ -23,52 +111,33 @@ function get_test_options() {
         read -p "Do you intend to compare the results against other machines [y/n]? - " response_1
         case $response_1 in
 
-            [Yy]* ) answer="yes"; break;;
+            [Yy]* ) 
+                get_machine_num
+                break;;
 
-            [Nn]* ) answer="no"; break;;
+            [Nn]* ) 
+                echo -e "\nUsing default Machine-ID for saving results\n"
+                machine_num="1"
+                break;;
 
-            * ) echo -e "\nPlease answer y/n\n";;
+            * ) 
+                echo -e "\nInvalid value, please answer (y/n)\n";;
+
         esac
+
     done
 
-    echo -e "\n"
-
-    # Getting the machine number from the user to be used when saving results
-    if [ "$answer" == "yes" ]; then
-
-        while true; do
-            read -p "What machine number would you like to assign to these results? - " response_2
-            case $response_2 in
-
-                # Asking the user to enter a number
-                ''|*[!0-9]*) echo -e "\nPlease enter a number\n"; 
-                continue;;
-
-                # If a number is entered by the user it is stored for later use
-                * ) machine_num="$response_2"; echo -e "\nMachine number set to $response_2 \n";
-                break;;
-            esac
-        done
-    
-    else
-        # Using default value
-        echo -e "Using default name for saving results\n"
-    fi
-
     # Getting the number of runs
-    echo -e "\nNumber of Runs for Tests Selection"
     while true; do
 
         # Prompt the user to input an integer
         read -p "Enter the number of test runs required: " user_run_num
 
-        # Check if the input is a valid integer
+        # Check if the input is a valid integer and store value
         if [[ $user_run_num =~ ^[0-9]+$ ]]; then
-
-            # Store the user input
-            echo $user_run_num > "$root_dir/tmp/liboqs_number_of_runs.txt"
+            number_of_runs=$user_run_num
+            echo -e "Number of test runs set to - $number_of_runs\n"
             break
-        
         else
             echo -e "Invalid input. Please enter a valid integer.\n"
         fi
@@ -82,21 +151,180 @@ function setup_test_suite() {
     # Function for setting up the test suite directories and removing old results if needed
 
     # Performing setup of test suite
-    echo -e "Preparing Test Suite\n"
+    echo "#########################"
+    echo "Configure Test Parameters"
+    echo -e "#########################\n"
 
-    # Creating unparsed results directory and clearing old results if present
-    if [ -d "$root_dir/up-results" ]; then
-        sudo rm -r "$root_dir"/up-results/
-        mkdir -p "$root_dir"/up-results/liboqs/speed-results/
-        mkdir -p "$root_dir"/up-results/liboqs/mem-results/
-        mkdir -p "$root_dir"/up-results/liboqs/mem-results/kem-mem-metrics/ && mkdir -p "$root_dir"/up-results/liboqs/mem-results/sig-mem-metrics/
+    # Getting test options from user
+    get_test_options
+
+    # Setting results path based on assigned machine number for results
+    set_result_paths
+
+    # Creating unparsed results directorys for machine ID and handling old results if present
+    if [ -d "$test_data_dir/up-results" ]; then
+    
+        # Check if there is already results present for assigned machine number and offer to replace
+        if [ -d "$machine_results_path" ]; then
+            handle_machine_id_clash
+        else
+            mkdir -p "$machine_speed_results"
+            mkdir -p "$kem_mem_results" && mkdir -p "$sig_mem_results"
+        fi
 
     else
-        mkdir -p "$root_dir"/up-results/liboqs/speed-results/
-        mkdir -p "$root_dir"/up-results/liboqs/mem-results/
-        mkdir -p "$root_dir"/up-results/liboqs/mem-results/kem-mem-metrics/ && mkdir -p "$root_dir"/up-results/liboqs/mem-results/sig-mem-metrics/
-        
+        mkdir -p "$machine_speed_results"
+        mkdir -p "$kem_mem_results" && mkdir -p "$sig_mem_results"
     fi
+
+    # Setting paths to speed test binaries
+    kem_speed_bin="$liboqs_path/build/tests/speed_kem"
+    sig_speed_bin="$liboqs_path/build/tests/speed_sig"
+
+    # Setting paths to mem test binaries
+    kem_mem_bin="$liboqs_path/build/tests/test_kem_mem"
+    sig_mem_bin="$liboqs_path/build/tests/test_sig_mem"
+
+    # Ensure liboqs binaries are present and executable
+    test_bins=("$kem_speed_bin" "$sig_speed_bin" "$kem_mem_bin" "$sig_mem_bin")
+
+    for test_binary in "${test_bins[@]}"; do
+
+        if [ ! -f "$test_binary" ]; then
+            echo -e "\n\n!!! Liboqs test binaries - ($test_binary) not present, please verify build !!!"
+            exit 1
+        elif [ ! -x "$test_binary" ]; then
+            echo -e "\n\n!!! Liboqs test binaries - ($test_binary) not executable, please verify binary permissions !!!"
+            exit 1
+        fi
+
+    done
+
+    # Configuring mem test vars:
+
+    # Setting alg list txt paths
+    kem_alg_file="$test_data_dir/alg-lists/kem-algs.txt"
+    sig_alg_file="$test_data_dir/alg-lists/sig-algs.txt"
+
+    # Creating algorithm list arrays
+    kem_algs=()
+    while IFS= read -r line; do
+        kem_algs+=("$line")
+    done < $kem_alg_file
+
+    sig_algs=()
+    while IFS= read -r line; do
+        sig_algs+=("$line")
+    done < $sig_alg_file
+
+    # Declaring algorithm operations arrays
+    op_kem=("Keygen" "Encaps" "Decaps")
+    op_sig=("Keygen" "Sign" "Verify")
+
+    # Creating tmp mem dirs for storing valgrind operation files
+    mem_tmp_dir="$tmp_dir/mem_test_tmp"
+    rm -rf "$mem_tmp_dir/" && mkdir -p "$mem_tmp_dir"
+
+}
+
+#------------------------------------------------------------------------------
+function mem_tests() {
+  # Main function for performing the memory benchmark testing
+
+  # Outputting test start message
+  echo -e "***********************"
+  echo -e "Performing Memory Tests"
+  echo -e "***********************\n"
+  #run_count=1
+
+  # Performing the memory tests with the specified number of runs
+  for run_count in $(seq 1 $number_of_runs); do
+
+      # Outputting current test run
+      echo -e "Memory Test Run - $run_count\n\n"
+      
+      # Outputting starting kem tests
+      echo -e "KEM Memory Tests\n"
+
+      # KEM memory tests
+      for kem_alg in "${kem_algs[@]}"; do
+
+          # Testing memory metrics for each operation
+          for operation in {0..2}; do
+
+              # Getting operation string and outputting to terminal
+              op_kem_str=${op_kem[operation]}
+              echo -e "$kem_alg - $op_kem_str Test\n"
+
+              # Running valgrind and outputting metrics
+              filename="$kem_mem_results/$kem_alg-$operation-$run_count.txt"
+              valgrind --tool=massif --stacks=yes --massif-out-file="$mem_tmp_dir/massif.out" "$kem_mem_bin" "$kem_alg" "$operation"
+              ms_print "$mem_tmp_dir/massif.out" > $filename
+              rm -f "$mem_tmp_dir/massif.out" && echo -e "\n"
+              
+          done
+
+          # Clearing the tmp directory before next test
+          rm -rf "$test_scripts_path/tmp/*"
+
+      done
+
+        # Outputting starting digital signature tests
+        echo -e "\nDigital Signature Memory Tests\n"
+
+        # Digital signature memory tests
+        for sig_alg in "${sig_algs[@]}"; do
+
+            # Testing memory metrics for each operation
+            for operation in {0..2}; do
+
+                # Getting operation string and outputting to terminal
+                op_sig_str=${op_sig[operation]}
+                echo -e "$sig_alg - $op_sig_str Test\n"
+
+
+                # Running valgrind and outputting metrics
+                filename="$sig_mem_results/$sig_alg-$operation-$run_count.txt"
+                valgrind --tool=massif --stacks=yes --massif-out-file="$mem_tmp_dir/massif.out" "$sig_mem_bin" "$sig_alg" "$operation"
+                ms_print "$mem_tmp_dir/massif.out" > $filename
+                rm -f "$mem_tmp_dir/massif.out" && echo -e "\n"
+
+            done
+
+            # Clearing the tmp directory before the next test
+            rm -rf "$test_scripts_path/tmp/*"
+        
+        done
+
+    done
+
+    # Cleaning up mem tmp dirs
+    rm -rf $mem_tmp_dir
+    rm -rf "$test_scripts_path/tmp"
+
+}
+
+#------------------------------------------------------------------------------
+function speed_tests() {
+
+    # Performing liboqs CPU speed benchmarking tests
+
+    echo "######################"
+    echo "Performing Speed Tests"
+    echo -e "######################\n"
+
+    # Performing both KEM and Digital Signature test
+    for run_num in $(seq 1 $number_of_runs); do 
+
+        # Conducting KEM performance testing
+        echo -e "Conducting KEM Speed Test Run Number - $run_num\n"
+        "$kem_speed_bin" > "$machine_speed_results/test-kem-speed-$run_num.csv"
+
+        # Conducting Sig performance testing
+        echo -e "Conducting Sig Speed Test Run number - $run_num\n"
+        "$sig_speed_bin" > "$machine_speed_results/test-sig-speed-$run_num.csv"
+
+    done
 
 }
 
@@ -104,28 +332,16 @@ function setup_test_suite() {
 function main() {
     # Main function for controlling liboqs testing
 
-    # Getting test options and setting up test suite
-    get_test_options
+    # Performing test suite setup 
     setup_test_suite
 
-    # Performing liboqs Memory tests
-    cd "$root_dir"/test-scripts
-    ./liboqs-mem-test.sh
+    # Performing liboqs speed and memory tests
+    speed_tests
+    mem_tests
 
-    # Performing liboqs CPU speed tests
-    cd "$root_dir"/test-scripts
-    ./liboqs-speed-test.sh
-
-    # Assigning machine number to result directories if requested by the user
-    machine_direc="machine-$machine_num"
-
-    # Changing result directory names for liboqs
-    mkdir -p "$root_dir"/up-results/liboqs/temp-speed-results/"$machine_direc"
-    mkdir -p "$root_dir"/up-results/liboqs/mem-results/"$machine_direc"
-    mv "$root_dir"/up-results/liboqs/mem-results/kem-mem-metrics "$root_dir"/up-results/liboqs/mem-results/"$machine_direc"/
-    mv "$root_dir"/up-results/liboqs/mem-results/sig-mem-metrics "$root_dir"/up-results/liboqs/mem-results/"$machine_direc"/
-    mv "$root_dir"/up-results/liboqs/t-speed-results/* "$root_dir"/up-results/liboqs/temp-speed-results/"$machine_direc"/
-    rm -rf "$root_dir/up-results/liboqs/t-speed-results/"
+    # Outputting complete message with results path for user
+    echo -e "All performance testing complete, the unparsed results for Machine-ID ($machine_num) can be found in:"
+    echo "Results Dir Path - $machine_results_path"
 
 }
 main

@@ -306,7 +306,9 @@ function liboqs-build() {
         cp "$root_dir/modded-lib-files/test_kem_mem.c" "$liboqs_source/tests/test_kem_mem.c"
 
         # Setting up build directory and building liboqs
-        cmake  -DCMAKE_C_FLAGS="$build_flags" -S "$liboqs_source/" -B "$liboqs_path/build" -GNinja -DCMAKE_INSTALL_PREFIX="$liboqs_path"
+        cmake  -DCMAKE_C_FLAGS="$build_flags" -S "$liboqs_source/" -B "$liboqs_path/build" -GNinja \
+            -DCMAKE_INSTALL_PREFIX="$liboqs_path" -DOQS_USE_OPENSSL=ON -DOPENSSL_ROOT_DIR="$open_ssl_path"
+
         cmake --build "$liboqs_path/build" -- -j $threads
         cmake --build "$liboqs_path/build" --target install -- -j $threads
 

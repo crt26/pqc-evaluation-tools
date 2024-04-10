@@ -163,7 +163,5 @@ function main() {
     echo "Generating certs and keys for PQC tests:"
     pqc_keygen
 
-    
-
 }
 main

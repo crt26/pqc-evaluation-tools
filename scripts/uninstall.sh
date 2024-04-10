@@ -1,5 +1,6 @@
 #!/bin/bash
 
-sudo rm -rf lib
-sudo rm -rf dependency-libs
-sudo rm -rf tmp
+rm -rf ../lib
+rm -rf ../dependency-libs
+rm -rf ../tmp
+rm -rf ../test-data/up-results
