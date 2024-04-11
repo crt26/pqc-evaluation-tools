@@ -12,10 +12,9 @@ This is the **development branch**, it may not be in a fully functioning state a
 - [x] Update [oqsssl-generate-keys](scripts/test-scripts/oqsssl-generate-keys.sh) to use current supported algorithms and steps for new OQS-OpenSSL-Provider PQC key generation
 - [x] Update [oqsssl-generate-keys](scripts/test-scripts/oqsssl-generate-keys.sh) storage method for generated keys to better suit new directory structure
 - [x] Update and refine all automated testing scripts for Liboqs machine-only algorithm performance testing into one script ([full-liboqs-test](scripts/test-scripts/full-liboqs-test.sh)) to use current supported algorithms and new repository directory structure
+- [x] Update [oqsssl-generate-keys.sh](scripts/test-scripts/oqsssl-generate-keys.sh) to use current supported algorithms in Liboqs and OQS-OpenSSL-Provider and key generation methods in OpenSSL-3.2.1
+- [x] Determine possibility of using s_time tls performance testing tool with OQS-Provider and if not possible create new/modify automated testing scripts using s_server and s_client tools to gather tls performance metrics (parsing scripts will need to be modified to handle this)
 - [ ] Update [full-pqc-tls-test.sh](scripts/test-scripts/full-pqc-tls-test.sh) to account for changes in directory structure and OQS-OpenSSL-Provider tools
-- [ ] Update [oqsssl-generate-keys.sh](scripts/test-scripts/oqsssl-generate-keys.sh) to use current supported algorithms in Liboqs and OQS-OpenSSL-Provider and key generation methods in OpenSSL-3.2.1
-
-- [ ] Determine possibility of using s_time tls performance testing tool with OQS-Provider and if not possible create new/modify automated testing scripts using s_server and s_client tools to gather tls performance metrics (parsing scripts will need to be modified to handle this)
 - [ ] Update all automated testing scripts to use a more refined and efficient method for storing result data compared to current up-results method
 - [ ] Update documentation to reflect changes to repository functionality and structure
 
@@ -117,7 +116,7 @@ The test script can be executed using the following command:
 
 ### OQS-OpenSSL Performance Testing
 
-This script is focused on benchmarking the performance of PQC algorithms when integrated within the OpenSSL (1.1.1) library via OQS. The script firstly can test the computational efficiency of the PQC algorithms when integrated into the OpenSSL library. Alongside, how PQC algorithms perform when integrated into the TLS protocol by measuring empty TLS handshake performance. Furthermore, metrics for how classic algorithms perform when conducting the TLS handshake to gather data which can be used as a baseline to compare the PQC metrics against.   
+This script is focused on benchmarking the performance of PQC algorithms when integrated within the OpenSSL (3.2.1) library via the OQS-Provider. The script firstly can test the computational efficiency of the PQC algorithms when integrated into the OpenSSL library. Alongside, how PQC algorithms perform when integrated into the TLS protocol by measuring empty TLS handshake performance. Furthermore, metrics for how classic algorithms perform when conducting the TLS handshake to gather data which can be used as a baseline to compare the PQC metrics against.   
 
 The testing tool allows for tests to be conducted on a single machine or using two machine connected via a physical network. It should be noted that when using two physical machines the complexity of setup increases.However, regardless of which scenario, the process requires more additional steps then the liboqs testing.
 

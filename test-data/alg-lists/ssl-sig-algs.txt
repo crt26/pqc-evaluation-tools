@@ -1,9 +1,9 @@
 dilithium2
 dilithium3
 dilithium5
-mldsa44 
+mldsa44
 mldsa65
-mldsa87 
+mldsa87
 falcon512
 falcon1024
 sphincssha2128fsimple
@@ -11,8 +11,8 @@ sphincssha2128ssimple
 sphincssha2192ssimple
 sphincssha2256fsimple
 sphincssha2256ssimple
-sphincsshake128fsimple 
-sphincsshake128ssimple 
+sphincsshake128fsimple
+sphincsshake128ssimple
 sphincsshake192fsimple
 sphincsshake192ssimple
 sphincsshake256fsimple

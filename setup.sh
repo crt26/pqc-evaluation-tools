@@ -150,11 +150,14 @@ function openssl_build() {
     # Setting thread count for build
     threads=$(nproc)
 
+    "Groups = \"\$ENV::DEFAULT_GROUPS\""
+
     # Declaring conf file changes array
     oqsprovider_path="$oqs_openssl_path/lib/oqsprovider.so"
     conf_changes=(
         "[openssl_init]"
         "providers = provider_sect"
+        "ssl_conf = ssl_sect"
         "[provider_sect]"
         "default = default_sect"
         "oqsprovider = oqsprovider_sect"
@@ -162,9 +165,14 @@ function openssl_build() {
         "activate = 1"
         "[oqsprovider_sect]"
         "activate = 1"
-        "module = $oqsprovider_path"
+        "module = /home/wsluser2/work/pqc-evaluation-tools/lib/oqs-openssl/lib/oqsprovider.so"
+        "[ssl_sect]"
+        "system_default = system_default_sect"
+        "[system_default_sect]"
+        "Groups = \$ENV::DEFAULT_GROUPS"
     )
 
+#Groups = "kyber512"
     # Checking for correct verison of OpenSSL and if missing installing
     installed_version=$(openssl version | awk '{print $2}')
     minimum_version="3.2.0"

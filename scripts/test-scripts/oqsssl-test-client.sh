@@ -9,93 +9,100 @@
 
 #------------------------------------------------------------------------------
 # Declaring directory path variables
-current_dir=$(pwd)
-root_dir=$(dirname "$current_dir")
-device_name=$(hostname)
-build_dir="$root_dir/builds/oqs-openssl-build/openssl"
+root_dir=$(cd "$PWD"/../.. && pwd)
+libs_dir="$root_dir/lib"
+tmp_dir="$root_dir/tmp"
+test_data_dir="$root_dir/test-data"
+test_scripts_path="$root_dir/scripts/test-scripts"
 
-# Declaring algorithm lists filepaths
-sig_alg_file="$root_dir/alg-lists/ssl-sig-algs.txt"
-kem_alg_file="$root_dir/alg-lists/ssl-kem-algs.txt"
+# Declaring global library path files
+open_ssl_path="$libs_dir/openssl_3.2"
+liboqs_path="$libs_dir/liboqs"
+oqs_openssl_path="$libs_dir/oqs-openssl"
+provider_path="$libs_dir/oqs-openssl/lib"
+
+# Declaring key storage dir paths
+key_storage_path="$test_data_dir/keys"
+pqc_cert_dir="$key_storage_path/pqc"
+classic_cert_dir="$key_storage_path/classic"
+hybrid_cert_dir="$key_storage_path/hybrid"
+
+# Declaring global flags
+test_type=0 #0=pqc, 1=classic, 2=hybrid
+
+# Exporting openssl lib path
+if [[ -d "$open_ssl_path/lib64" ]]; then
+    openssl_lib_path="$open_ssl_path/lib64"
+else
+    openssl_lib_path="$open_ssl_path/lib"
+fi
+
+export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
 
 # Define the cipher suites
 ciphers=("TLS_AES_256_GCM_SHA384" "TLS_CHACHA20_POLY1305_SHA256" "TLS_AES_128_GCM_SHA256")
 ecc_curves=("prime256v1" "secp384r1" "secp521r1")
+classic_algs=("RSA:2048" "RSA:3072" "RSA:4096" "prime256v1" "secp384r1" "secp521r1")
 
-# Declaring pqc dirs
-pqc_cert_dir="$root_dir/keys/pqc"
-pqc_output_dir="$root_dir/up-results/openssl/pqc-tests"
-classic_cert_dir="$root_dir/keys/classic"
-classic_output_dir="$root_dir/up-results/openssl/classic-tests"
+# Decalring current group var that will be passed to DEFAULT_GROUP env var when changing test type
+current_group=""
+
+
 
 #------------------------------------------------------------------------------
 function get_algs() {
     # Function for reading in the various algorithms into an array for use within the script
 
-    # Creating algorithm list arrays
+    # Declaring algorithm lists filepaths
+    kem_alg_file="$test_data_dir/alg-lists/ssl-kem-algs.txt"
+    sig_alg_file="$test_data_dir/alg-lists/ssl-sig-algs.txt"
+    hybrid_kem_alg_file="$test_data_dir/alg-lists/ssl-hybr-kem-algs.txt"
+    hybrid_kem_alg_file="$test_data_dir/alg-lists/ssl-hybr-sig-algs.txt"
 
-    # Kem algorithms
+    # Kem algorithms array
     kem_algs=()
     while IFS= read -r line; do
         kem_algs+=("$line")
     done < $kem_alg_file
 
-    # Sig algorithms
+    # Sig algorithms array
     sig_algs=()
     while IFS= read -r line; do
         sig_algs+=("$line")
     done < $sig_alg_file
 
+    # classic algorithms array
+    classic_sigs=( "RSA:2048" "RSA:3072" "RSA:4096" "prime256v1" "secp384r1" "secp521r1")
+
 }
 
 #------------------------------------------------------------------------------
-function get_test_options() {
-    # Function for reading in the test parameters which were specified within the OQS-OpenSSL
-    # test control script
+function set_group() {
+    # Function for setting the default group depending on what type of tls test is being performed (pqc,classic,hybrid)
 
-    # Getting the specified number of runs and storing value
-    if [ -f "$root_dir/tmp/tls_number_of_runs.txt" ]; then
+    # Clearing current_group array
+    current_group=""
 
-        # Read the run number value from the tmp file
-        opt1_file_input=$(<"$root_dir/tmp/tls_number_of_runs.txt")
+    if [ "$test_type" -eq 0 ]; then
+        for kem_alg in "${kem_algs[@]}"; do
+            current_group+=":$kem_alg"
+        done
+        current_group="${current_group:1}"
 
-        # Check if the run number value is a valid
-        if [[ $opt1_file_input =~ ^[0-9]+$ ]]; then
-            # Store the value as an integer variable
-            number_of_runs=$opt1_file_input
-        else
-            echo "Invalid run number value, please ensure value is correct when starting test"
-            exit 1
-        fi
+    elif [ "$test_type" -eq 1 ]; then
+        for classic_sig in "${kem_algs[@]}"; do
+            current_group+=":$classic_sig"
+        done
 
-    else
-        echo "Run number file not found, please ensure run number file is present in repo tmp directory"
-        exit 1
-    
     fi
 
-    # Getting the specified length of tls test
-    if [ -f "$root_dir/tmp/tls_test_length.txt" ]; then
+    # Remove beginning : from start of first algorithm (will find better solution for this)
+    current_group="${current_group:1}"
 
-        # Read the run number value from the tmp file
-        opt2_file_input=$(<"$root_dir/tmp/tls_test_length.txt")
-
-        # Check if the run number value is a valid
-        if [[ $opt2_file_input =~ ^[0-9]+$ ]]; then
-            # Store the value as an integer variable
-            test_length=$opt2_file_input
-        else
-            echo "Invalid TLS test length, please ensure value is correct when starting test"
-            exit 1
-        fi
-
-    else
-        echo "TLS test length file not found, please ensure run number file is present in repo tmp directory"
-        exit 1
-    
-    fi
-
+    # Export default group env var for openssl.cnf
+    export DEFAULT_GROUPS=$current_group
 }
+
 
 #------------------------------------------------------------------------------
 function send_signal() {
@@ -106,7 +113,7 @@ function send_signal() {
     if [ $type == "control" ]; then
 
         # Send control signal
-        until nc -z -v -w 1 $server_ip 12345 > /dev/null 2>&1; do
+        until nc -z -v -w 1 $SERVER_IP 12345 > /dev/null 2>&1; do
             if [ $? -ne 0 ]; then
                 :
             else
@@ -117,7 +124,7 @@ function send_signal() {
     elif [ $type == "complete" ]; then
 
         # Send test complete signal
-        until echo "complete" | nc -n -w 1 $server_ip 12345 > /dev/null 2>&1; do
+        until echo "complete" | nc -n -w 1 $SERVER_IP 12345 > /dev/null 2>&1; do
             if [ $? -ne 0 ]; then
                 :
             else
@@ -128,7 +135,7 @@ function send_signal() {
     elif [ $type == "failed" ]; then
 
         # Send test failed signal
-        until echo "failed" | nc -n -w 1 $server_ip 12345 > /dev/null 2>&1; do
+        until echo "failed" | nc -n -w 1 $SERVER_IP 12345 > /dev/null 2>&1; do
             if [ $? -ne 0 ]; then
                 :
             else
@@ -136,34 +143,31 @@ function send_signal() {
             fi
         done
 
-    fi
-}
+   elif [ $type == "iteration_handshake" ]; then
 
-#------------------------------------------------------------------------------
-function control_handshake() {
-    # Function used for conducting the control handshakes with the server machine
+        # Performing handshake with server machine
+        until echo "ready" | nc -n -w 1 $SERVER_IP 12345 > /dev/null 2>&1; do
+            if [ $? -ne 0 ]; then
+                :
+            else
+                break
+            fi
+        
+        done
 
-    # Performing handshake with server machine
-    until echo "ready" | nc -n -w 1 $server_ip 12345 > /dev/null 2>&1; do
-        if [ $? -ne 0 ]; then
-            :
-        else
-            break
-        fi
-    
-    done
+        # Waiting for ready signal from server
+        while true; do
 
-    # Waiting for ready signal from server
-    while true; do
+            # Wait for a connection from the server and capture the request in a variable
+            signal_message=$(nc -l -p 12346)
+            if [[ $signal_message == "ready" ]]; then
+                break
+            fi
+        
+        done
 
-        # Wait for a connection from the server and capture the request in a variable
-        signal_message=$(nc -l -p 12346)
+   fi
 
-        if [[ $signal_message == "ready" ]]; then
-            break
-        fi
-    
-    done
 }
 
 #------------------------------------------------------------------------------
@@ -173,7 +177,7 @@ function classic_tests() {
     # Running tests for ecdsa ciphers
     for cipher in "${ciphers[@]}"; do
 
-        for curve in "${ecc_curves[@]}"; do
+        for classic_alg in "${classic_algs[@]}"; do
 
             # Setting fail flag
             fail_flag=0
@@ -181,12 +185,12 @@ function classic_tests() {
             # Performing current run cipher/curve combination test until passed
             while true; do
 
-                # Outputting current PQC tls test info
-                echo -e "\n************************************************"
-                echo "[OUTPUT] - ECC Cipher Tests, Run - $run_num, Cipher - $cipher, Curve - $curve"
+                # Outputting current tls test info
+                echo -e "\n-------------------------------------------------------------------------"
+                echo "[OUTPUT] - Classic Cipher Tests, Run - $run_num, Cipher - $cipher, Sig Alg - $classic_alg"
 
                 # Performing iteration handshake
-                control_handshake
+                send_signal "iteration_handshake"
                 
                 # Send client ready signal
                 send_signal "control"
@@ -196,10 +200,10 @@ function classic_tests() {
                 echo "[OUTPUT] - Starting test"
 
                 # Setting output filename based on current combination and run
-                output_name="tls-speed-classic-$run_num-$cipher-$curve.txt"
+                output_name="tls-handshake-classic-$run_num-$cipher-$classic_alg.txt"
                 
                 # Setting CA file
-                classic_cert_file="$classic_cert_dir/""$curve-ecdsa-CA.crt"
+                classic_cert_file="$classic_cert_dir/$classic_alg-srv.crt"
 
                 # Resetting fail counter
                 fail_counter=0
@@ -208,7 +212,8 @@ function classic_tests() {
                 while true; do
 
                     # Running test process
-                    "$build_dir/apps/openssl" s_time -connect $server_ip:4433 -CAfile $classic_cert_file -time $test_length  -ciphersuites $cipher > "$classic_output_dir/$output_name"
+                    "$build_dir/apps/openssl" s_time -connect $SERVER_IP:4433 -CAfile $classic_cert_file -time $test_length \
+                        -ciphersuites $cipher > "$CLASSIC_HANDSHAKE/$output_name"
                     exit_code=$?
 
                     # Check if test was successful and retrying if not
@@ -257,8 +262,11 @@ function pqc_tests() {
     # Looping through all PQC sig algs to be used for signing
     for sig in "${sig_algs[@]}"; do
 
+        echo "sig -alg $sig"
+
         # Looping through all PQC KEM algs to be used for key exchange
         for kem in "${kem_algs[@]}"; do
+            echo "kem alg - $kem"
 
             # Setting fail flag to false
             fail_flag=0
@@ -267,11 +275,11 @@ function pqc_tests() {
             while true; do
 
                 # Outputting current tls test info
-                echo -e "\n************************************************"
+                echo -e "\n-------------------------------------------------------------------------"
                 echo "[OUTPUT] - Run Number - $run_num, Signature - $sig, KEM - $kem"
                 
                 # Performing iteration handshake
-                control_handshake
+                send_signal "iteration_handshake"
 
                 # Send client ready signal
                 send_signal "control"
@@ -290,7 +298,7 @@ function pqc_tests() {
                     pqc_cert_file="$pqc_cert_dir/""${sig_name}""-CA.crt"
 
                     # Setting output filename based on current combination and run
-                    output_name="tls-speed-$run_num-$sig_name-$kem.txt"
+                    output_name="tls-handshake-$run_num-$sig_name-$kem.txt"
 
                     # Resetting fail counter
                     fail_counter=0
@@ -299,7 +307,8 @@ function pqc_tests() {
                     while true; do
 
                         # Running test process
-                        "$build_dir/apps/openssl" s_time -connect $server_ip:4433 -CAfile $pqc_cert_file -time $test_length -curves $kem -verify 1 > "$pqc_output_dir/$output_name"
+                        "$open_ssl_path/bin/openssl" s_time -connect $server_ip:4433 -CAfile $pqc_cert_file -time $TIME_NUM  -verify 1 \
+                            -provider default -provider oqsprovider -provider-path $provider_path > $PQC_HANDSHAKE/$output_name
                         exit_code=$?
 
                         # Check if test process was successful and retrying if not
@@ -361,51 +370,45 @@ function main() {
 
     # Import test parameters and clear terminal
     get_algs
-    get_test_options
     clear
 
-    # Creating output dirs and removing old if needed
-    if [ -d $pqc_output_dir ]; then
-        rm -rf $pqc_output_dir
-    fi
-    mkdir -p $pqc_output_dir
-
-    if [ -d $classic_output_dir ]; then
-        rm -rf $classic_output_dir
-    fi
-    mkdir -p $classic_output_dir
-
     # Getting server ip
-    server_ip=$(cat "$root_dir/tmp/server-ip.txt")
 
     # Performing initial handshake with server
     echo -e "Client Script Activated, connecting to server...\n"
-    control_handshake
+    send_signal "iteration_handshake"
 
     # Performing tests
-    for run_num in $(seq 1 $number_of_runs); do
+    for run_num in $(seq 1 $NUM_RUN); do
 
         # Performing output test start message
         echo -e "\n************************************************"
-        echo "[OUTPUT] - Performing TLS Speed Run - $run_num"
-        echo -e "\n************************************************"
+        echo "Performing TLS Handshake Tests Run - $run_num"
+        echo -e "************************************************\n"
         
         # Performing current run PQC test 
-        echo "[OUTPUT] - PQC run $run_num"
-        control_handshake
+        echo "-----------------"
+        echo "PQC run $run_num"
+        echo -e "-----------------\n"
+        send_signal "iteration_handshake"
         
         # Calling PQC Tests
+        test_type=0 #0=pqc, 1=classic, 2=hybrid
+        set_group
         pqc_tests
-        echo "[OUTPUT] - Completed $run_num PQC Tests"
+        echo "Completed $run_num PQC Tests"
 
-        # Performing run handshake
-        echo -e "\n************************************************"
-        echo "[OUTPUT] - Classic Run $run_num"
-        control_handshake
+        # # Performing run handshake
+        # echo "-----------------"
+        # echo "Classic run $run_num"
+        # echo -e "-----------------\n"
+        # send_signal "iteration_handshake"
 
-        # Performing current run classic Tests
-        classic_tests
-        echo "[OUTPUT] - Completed $run_num Classic Elliptic Tests"
+        # # Performing current run classic Tests
+        # test_type=1 #0=pqc, 1=classic, 2=hybrid
+        # set_group
+        # classic_tests
+        # echo "[OUTPUT] - Completed $run_num Classic Elliptic Tests"
 
         # Outputting run complete
         echo "[OUTPUT] - All $run_num Testing Completed"

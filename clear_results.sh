@@ -7,7 +7,7 @@
 
 #------------------------------------------------------------------------------
 # Declaring global main dir path variables
-root_dir=$(cd "$PWD"/../.. && pwd)
+root_dir=$(pwd)
 libs_dir="$root_dir/lib"
 tmp_dir="$root_dir/tmp"
 test_data_dir="$root_dir/test-data"
