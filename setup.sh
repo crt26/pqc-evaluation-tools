@@ -118,7 +118,10 @@ function dependency_install() {
 
     # Check for missing dependency packages
     echo "Checking System Packages Dependencies..."
-    packages=(git astyle cmake gcc ninja-build libssl-dev python3-pytest python3-pytest-xdist unzip xsltproc doxygen graphviz python3-yaml valgrind libtool make net-tools python3-pip netcat-openbsd)
+    packages=(
+        "git" "astyle" "cmake" "gcc" "ninja-build" "libssl-dev" "python3-pytest" "python3-pytest-xdist" 
+        "unzip" "xsltproc" "doxygen" "graphviz" "python3"-yaml "valgrind" "libtool" "make" "net-tools" "python3-pip" "netcat-openbsd"
+    )
     not_installed=()
 
     for package in "${packages[@]}"; do
