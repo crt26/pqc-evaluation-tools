@@ -168,14 +168,26 @@ function openssl_build() {
         "activate = 1"
         "[oqsprovider_sect]"
         "activate = 1"
-        "module = /home/wsluser2/work/pqc-evaluation-tools/lib/oqs-openssl/lib/oqsprovider.so"
+        "module = $oqs_openssl_path/lib/oqsprovider.so"
         "[ssl_sect]"
         "system_default = system_default_sect"
         "[system_default_sect]"
         "Groups = \$ENV::DEFAULT_GROUPS"
     )
 
-#Groups = "kyber512"
+    #     conf_changes=(
+    #     "[openssl_init]"
+    #     "providers = provider_sect"
+    #     "[provider_sect]"
+    #     "default = default_sect"
+    #     "oqsprovider = oqsprovider_sect"
+    #     "[default_sect]"
+    #     "activate = 1"
+    #     "[oqsprovider_sect]"
+    #     "activate = 1"
+    #     "module = $oqsprovider_path"
+    # )
+
     # Checking for correct verison of OpenSSL and if missing installing
     installed_version=$(openssl version | awk '{print $2}')
     minimum_version="3.2.0"

@@ -14,6 +14,7 @@ libs_dir="$root_dir/lib"
 tmp_dir="$root_dir/tmp"
 test_data_dir="$root_dir/test-data"
 test_scripts_path="$root_dir/scripts/test-scripts"
+util_scripts="$root_dir/scripts/utility-scripts"
 
 # Declaring global library path files
 open_ssl_path="$libs_dir/openssl_3.2"
@@ -39,14 +40,8 @@ fi
 
 export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
 
-# Define the cipher suites
-ciphers=("TLS_AES_256_GCM_SHA384" "TLS_CHACHA20_POLY1305_SHA256" "TLS_AES_128_GCM_SHA256")
-ecc_curves=("prime256v1" "secp384r1" "secp521r1")
-classic_algs=("RSA:2048" "RSA:3072" "RSA:4096" "prime256v1" "secp384r1" "secp521r1")
-
 # Decalring current group var that will be passed to DEFAULT_GROUP env var when changing test type
 current_group=""
-
 
 #------------------------------------------------------------------------------
 function get_algs() {
@@ -71,32 +66,49 @@ function get_algs() {
     done < $sig_alg_file
 
     # classic algorithms array
-    classic_sigs=( "RSA:2048" "RSA:3072" "RSA:4096" "prime256v1" "secp384r1" "secp521r1")
+    classic_algs=( "RSA_2048" "RSA_3072" "RSA_4096" "prime256v1" "secp384r1" "secp521r1")
+
+    # Define the cipher suites
+    ciphers=("TLS_AES_256_GCM_SHA384" "TLS_CHACHA20_POLY1305_SHA256" "TLS_AES_128_GCM_SHA256")
 
 }
 
 #------------------------------------------------------------------------------
-function set_group() {
+function set_test_env() {
     # Function for setting the default group depending on what type of tls test is being performed (pqc,classic,hybrid)
+    #0=pqc, 1=classic, 2=hybrid
+
+    local test_type="$1"
+    local configure_mode="$2"
 
     # Clearing current_group array
     current_group=""
 
     if [ "$test_type" -eq 0 ]; then
+
+        # Populate current group array with PQC algs
         for kem_alg in "${kem_algs[@]}"; do
             current_group+=":$kem_alg"
         done
+
+        # Remove beginning : at index 0
         current_group="${current_group:1}"
 
+        # Set configurations in openssl.cnf file for PQC testing
+        "$util_scripts/configure-openssl-cnf.sh" $configure_mode
+
     elif [ "$test_type" -eq 1 ]; then
-        for classic_sig in "${kem_algs[@]}"; do
-            current_group+=":$classic_sig"
-        done
+        # for classic_alg in "${kem_algs[@]}"; do
+        #     current_group+=":$classic_sig"
+        # done
+
+
+        echo $configure_mode
+
+        # Set configurations in openssl.cnf file for PQC testing
+        "$util_scripts/configure-openssl-cnf.sh" $configure_mode
 
     fi
-
-    # Remove beginning : from start of first algorithm (will find better solution for this)
-    current_group="${current_group:1}"
 
     # Export default group env var for openssl.cnf
     export DEFAULT_GROUPS=$current_group
@@ -104,7 +116,7 @@ function set_group() {
 }
 
 #------------------------------------------------------------------------------
-function send_signal() {
+function control_signal() {
     # Function for sending signals to the server that are not part of the control handshake
 
     # Sending signal to client based on type
@@ -147,23 +159,23 @@ function send_signal() {
         # Wait for ready connection from client
         while true; do
 
-        # Wait for a connection from the client and capture the request in a variable
-        signal_message=$(nc -l -p 12345)
-        if [[ $signal_message == "ready" ]]; then
-            break
-        fi
-
-        done
-
-        # Sending ready message to client
-        until echo "ready" | nc -n -w 1 $CLIENT_IP 12346 > /dev/null 2>&1; do
-            if [ $? -ne 0 ]; then
-                :
-            else
+            # Wait for a connection from the client and capture the request in a variable
+            signal_message=$(nc -l -p 12345)
+            if [[ $signal_message == "ready" ]]; then
                 break
             fi
-        
-        done
+
+            done
+
+            # Sending ready message to client
+            until echo "ready" | nc -n -w 1 $CLIENT_IP 12346 > /dev/null 2>&1; do
+                if [ $? -ne 0 ]; then
+                    :
+                else
+                    break
+                fi
+            
+            done
 
     fi
 
@@ -205,8 +217,9 @@ function classic_tests {
                 echo -e "\n-------------------------------------------------------------------------"
                 echo "[OUTPUT] - Classic Cipher Tests, Run - $run_num, Cipher - $cipher, Sig Alg - $classic_alg"
 
+
                 # Performing iteration handshake
-                send_signal "iteration_handshake"
+                control_signal "iteration_handshake"
 
                 # Wait for ready signal
                 nc -l -p 12345 > /dev/null
@@ -219,7 +232,7 @@ function classic_tests {
                     classic_key_file="$classic_cert_dir/$classic_alg-srv.key"
 
                     # Start ECC test server processes
-                    "$open_ssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 -curves $classic_alg -ciphersuites $cipher -accept 4433 &
+                    "$open_ssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 -curves $classic_alg -ciphersuites "$cipher" -accept 4433 &
                     server_pid=$!
 
                 else
@@ -240,7 +253,7 @@ function classic_tests {
                 done
 
                 # Wait for server to start and send ready signal to client
-                send_signal "normal"
+                control_signal "normal"
 
                 # Wait for test status signal from client
                 signal_message=$(nc -l -p 12345)
@@ -295,7 +308,7 @@ function pqc_tests() {
                 echo "[OUTPUT] - Run - $run_num, Signature - $sig, KEM - $kem"
 
                 # Performing iteration handshake
-                send_signal "iteration_handshake"
+                control_signal "iteration_handshake"
 
                 # Wait for ready from client signal
                 nc -l -p 12345 > /dev/null
@@ -304,7 +317,7 @@ function pqc_tests() {
 
                 #     # Sending skip signal to server 
                 #     echo "[OUTPUT] - Skipping as Sig and Kem are both classic!!!"
-                #     send_signal "skip"
+                #     control_signal "skip"
 
                 #     # Wait for done signal from client
                 #     nc -l -p 12345 > /dev/null
@@ -317,17 +330,6 @@ function pqc_tests() {
                 pqc_key_file="$pqc_cert_dir/""${sig/:/_}""-srv.key"
 
                 # Starting server process
-                # "$open_ssl_path/bin/openssl" s_server -cert $pqc_cert_file -key $pqc_key_file -www -tls1_3 -curves $kem &
-                # server_pid=$!
-
-                echo "server openssl s_server params"
-                echo $pqc_cert_file
-                echo $pqc_key_file
-                echo $kem
-                echo $provider_path
-                echo "version:"
-                "$open_ssl_path/bin/openssl" version
-
                 "$open_ssl_path/bin/openssl" s_server -cert $pqc_cert_file -key $pqc_key_file -www -tls1_3 -groups $kem \
                     -provider oqsprovider -provider-path $provider_path -accept 4433 &
                 server_pid=$!
@@ -338,7 +340,7 @@ function pqc_tests() {
                 done
 
                 # Send ready signal to client
-                send_signal "ready"
+                control_signal "ready"
 
                 # Check test status signal from client
                 signal_message=$(nc -l -p 12345)
@@ -376,48 +378,47 @@ function main() {
     get_algs
     clear
 
-    # Outputting test type message
-    echo -e "\n####################################"
-    echo "Performing TLS Handshake Speed Tests"
-    echo -e "####################################\n"
-
     # Performing initial handshake with client
     echo -e "Server Script Activated, waiting for connection from client..."
-    send_signal "iteration_handshake"
+    control_signal "iteration_handshake"
 
     # Performing tests
     for run_num in $(seq 1 $NUM_RUN); do
 
         # Performing output test start message
-        echo -e "\n-----------------------------"
-        echo "Performing TLS Speed Run - $run_num"
-        echo -e "\n-----------------------------"
+        echo -e "\n************************************************"
+        echo "Performing TLS Handshake Tests Run - $run_num"
+        echo -e "************************************************\n"
 
         # Performing run PQC test
-        echo -e "[OUTPUT] - PQC run $run_num"
-        send_signal "iteration_handshake"
+        echo "-----------------"
+        echo "PQC run $run_num"
+        echo -e "-----------------\n"
+        control_signal "iteration_handshake"
 
         # Calling PQC Tests
-        test_type=0 #0=pqc, 1=classic, 2=hybrid
-        set_group
+        #test_type=0 #0=pqc, 1=classic, 2=hybrid
+        set_test_env 0 1
         pqc_tests
         echo -e "[OUTPUT] - Completed $run_num PQC Tests"
 
-        # # # Performing run classic test
-        # echo "-----------------"
-        # echo "Classic run $run_num"
-        # echo -e "-----------------\n"
-        # send_signal "iteration_handshake"
+        # Performing run handshake
+        echo "-----------------"
+        echo "Classic run $run_num"
+        echo -e "-----------------\n"
+        control_signal "iteration_handshake"
 
-        # # Performing current run classic Tests
-        # test_type=1 #0=pqc, 1=classic, 2=hybrid
-        # set_group
-        # classic_tests
-        # echo "[OUTPUT] - Completed $run_num Classic Elliptic Tests"
+        # Performing current run classic Tests
+        test_type=1 #0=pqc, 1=classic, 2=hybrid
+        set_test_env 1 1
+        classic_tests
+        echo "[OUTPUT] - Completed $run_num Classic TLS Handshake Tests"
+
+        #set_test_env 0 0
 
         # Outputting run complete
-        echo -e "All $run_num Testing Completed"
-    
+        echo "[OUTPUT] - All $run_num Testing Completed"
+
     done
 
 }

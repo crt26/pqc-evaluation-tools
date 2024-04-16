@@ -15,6 +15,7 @@ libs_dir="$root_dir/lib"
 tmp_dir="$root_dir/tmp"
 test_data_dir="$root_dir/test-data"
 test_scripts_path="$root_dir/scripts/test-scripts"
+util_scripts="$root_dir/scripts/utility-scripts"
 
 # Declaring global library path files
 open_ssl_path="$libs_dir/openssl_3.2"
@@ -187,7 +188,7 @@ function get_test_comparison_choice() {
     # Getting input from user to determine if machine will be compared
     while true; do
 
-        echo "Please select on of the following test comparison options"
+        echo -e "\nPlease select on of the following test comparison options"
         echo "1-This test will not be used in result-parsing with other machines"
         echo "2-This machine will be used in result-parsing with other machine results"
         read -p "Enter your choice (1-2): " usr_test_option
@@ -196,7 +197,7 @@ function get_test_comparison_choice() {
         case $usr_test_option in
             1)
                 # Setting default machine-ID
-                echo "Test will not be parsed with other machine data"
+                echo -e "Test will not be parsed with other machine data\n"
                 export MACHINE_NUM="1"
                 configure_results_dir
                 break
@@ -204,7 +205,7 @@ function get_test_comparison_choice() {
             2)
 
                 # Setting user specified Machine-ID after checking results storage
-                echo "Test will will be parsed with other machine data"
+                echo -e "Test will will be parsed with other machine data\n"
                 configure_results_dir
                 export MACHINE_NUM="$MACHINE_NUM"
                 break
@@ -243,11 +244,13 @@ function configure_test_options {
             1)
                 echo -e "\nServer machine type selected\n"
                 machine_type="Server"
+                ip_request_string="Client"
                 break
                 ;;    
             2)
                 echo -e "\nClient machine type selected\n"
                 machine_type="Client"
+                ip_request_string="Server"
                 break
                 ;;
             3)
@@ -358,7 +361,7 @@ function check_transferred_keys() {
 #------------------------------------------------------------------------------
 function run_tests() {
     # Function that will call the relevant benchmarking scripts
-    
+   
     # Ask the user for the client ip
     ipv4_regex_check="^([0-9]{1,3}\.){3}[0-9]{1,3}$"
 
@@ -366,7 +369,7 @@ function run_tests() {
 
         # Getting user input
         echo -e "\nConfigure IP Parameters:"
-        read -p "Please enter the $machine_type machine's IP address: " usr_ip_input
+        read -p "Please enter the $ip_request_string machine's IP address: " usr_ip_input
 
         # Formatting user ip input by removing trailing spaces
         ip_address=$(echo $usr_ip_input | tr -d ' ')

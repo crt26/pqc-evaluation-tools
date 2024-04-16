@@ -14,6 +14,7 @@ root_dir=$(cd "$PWD"/../.. && pwd)
 libs_dir="$root_dir/lib"
 tmp_dir="$root_dir/tmp"
 test_data_dir="$root_dir/test-data"
+util_scripts="$root_dir/scripts/utility-scripts"
 
 # Declaring global library path files
 open_ssl_path="$libs_dir/openssl_3.2"
@@ -113,9 +114,9 @@ function hybrid_pqc_keygen() {
 
         echo -e "\n\nSig - $sig"
         # Generate CA cert and key alongside server cert and key for current PQC signature algorithm
-        "$open_ssl_path/bin/openssl" req -x509 -new -newkey $sig -keyout "$pqc_cert_dir/$sig-CA.key" -out "$pqc_cert_dir/$sig-CA.crt" -nodes -subj "/CN=oqstest $sig CA" -days 365 -config "$open_ssl_path/openssl.cnf"
-        "$open_ssl_path/bin/openssl" req -new -newkey $sig -keyout "$pqc_cert_dir/$sig-srv.key" -out "$pqc_cert_dir/$sig-srv.csr" -nodes -subj "/CN=oqstest $sig server" -config "$open_ssl_path/openssl.cnf"
-        "$open_ssl_path/bin/openssl" x509 -req -in "$pqc_cert_dir/$sig-srv.csr" -out "$pqc_cert_dir/$sig-srv.crt" -CA "$pqc_cert_dir/$sig-CA.crt" -CAkey "$pqc_cert_dir/$sig-CA.key" -CAcreateserial -days 365
+        "$open_ssl_path/bin/openssl" req -x509 -new -newkey $sig -keyout "$hybrid_cert_dir/$sig-CA.key" -out "$hybrid_cert_dir/$sig-CA.crt" -nodes -subj "/CN=oqstest $sig CA" -days 365 -config "$open_ssl_path/openssl.cnf"
+        "$open_ssl_path/bin/openssl" req -new -newkey $sig -keyout "$hybrid_cert_dir/$sig-srv.key" -out "$hybrid_cert_dir/$sig-srv.csr" -nodes -subj "/CN=oqstest $sig server" -config "$open_ssl_path/openssl.cnf"
+        "$open_ssl_path/bin/openssl" x509 -req -in "$hybrid_cert_dir/$sig-srv.csr" -out "$hybrid_cert_dir/$sig-srv.crt" -CA "$hybrid_cert_dir/$sig-CA.crt" -CAkey "$hybrid_cert_dir/$sig-CA.key" -CAcreateserial -days 365
 
     done
 }
@@ -143,6 +144,9 @@ function main() {
     # Get alg lists
     get_algs
 
+    # Modifying openssl.cnf file to temporarily remove the default groups configuration
+    "$util_scripts/configure-openssl-cnf.sh" 0
+
     # Removing old keys if present and creating key dirs
     if [ -d "$keys_dir" ]; then
         rm -rf "$keys_dir"
@@ -162,6 +166,9 @@ function main() {
     # Generating certs and keys for PQC tests
     echo "Generating certs and keys for PQC tests:"
     pqc_keygen
+
+    # Restoring conf file to have configuration needed for testing scriptsc
+    "$util_scripts/configure-openssl-cnf.sh" 1
 
 }
 main
