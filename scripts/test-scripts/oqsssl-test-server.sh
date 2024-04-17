@@ -125,7 +125,8 @@ function control_signal() {
 
         # Send control signal
         until nc -z -v -w 1 $CLIENT_IP 12346 > /dev/null 2>&1; do
-            if [ $? -ne 0 ]; then
+            exit_status=$?
+            if [ $exit_status -ne 0 ]; then
                 :
             else
                 break
@@ -136,7 +137,8 @@ function control_signal() {
 
         # Send server ready signal
         until echo "ready" | nc -n -w 1 $CLIENT_IP 12346 > /dev/null 2>&1; do
-            if [ $? -ne 0 ]; then
+            exit_status=$?
+            if [ $exit_status -ne 0 ]; then
                 :
             else
                 break
@@ -147,7 +149,8 @@ function control_signal() {
 
         # Send test skip signal
         until echo "skip" | nc -n -w 1 $CLIENT_IP 12346 > /dev/null 2>&1; do
-            if [ $? -ne 0 ]; then
+            exit_status=$?
+            if [ $exit_status -ne 0 ]; then
                 :
             else
                 break
@@ -169,7 +172,8 @@ function control_signal() {
 
             # Sending ready message to client
             until echo "ready" | nc -n -w 1 $CLIENT_IP 12346 > /dev/null 2>&1; do
-                if [ $? -ne 0 ]; then
+                exit_status=$?
+                if [ $exit_status -ne 0 ]; then
                     :
                 else
                     break

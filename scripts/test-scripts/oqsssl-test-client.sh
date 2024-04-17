@@ -122,7 +122,8 @@ function control_signal() {
 
         # Send control signal
         until nc -z -v -w 1 $SERVER_IP 12345 > /dev/null 2>&1; do
-            if [ $? -ne 0 ]; then
+            exit_status=$?
+            if [ $exit_status -ne 0 ]; then
                 :
             else
                 echo "connection worked"
@@ -134,7 +135,8 @@ function control_signal() {
 
         # Send test complete signal
         until echo "complete" | nc -n -w 1 $SERVER_IP 12345 > /dev/null 2>&1; do
-            if [ $? -ne 0 ]; then
+            exit_status=$?
+            if [ $exit_status -ne 0 ]; then
                 :
             else
                 break
@@ -145,7 +147,8 @@ function control_signal() {
 
         # Send test failed signal
         until echo "failed" | nc -n -w 1 $SERVER_IP 12345 > /dev/null 2>&1; do
-            if [ $? -ne 0 ]; then
+            exit_status=$?
+            if [ $exit_status -ne 0 ]; then
                 :
             else
                 break
@@ -156,7 +159,8 @@ function control_signal() {
 
         # Performing handshake with server machine
         until echo "ready" | nc -n -w 1 $SERVER_IP 12345 > /dev/null 2>&1; do
-            if [ $? -ne 0 ]; then
+            exit_status=$?
+            if [ $exit_status -ne 0 ]; then
                 :
             else
                 break

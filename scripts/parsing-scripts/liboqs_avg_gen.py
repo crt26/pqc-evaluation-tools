@@ -11,55 +11,42 @@ machine's result directory.
 #------------------------------------------------------------------------------
 import pandas as pd
 import os
+import shutil
 
 # Declaring global variables
 kem_algs = []
 sig_algs = []
 kem_operations = ["keygen", "encaps", "decaps"]
 sig_operations = ["keypair", "sign", "verify"]
+dir_paths = {}
 root_dir = ""
 num_runs=0
 
-
 #------------------------------------------------------------------------------
-def get_algs():
-    """ Function for reading in the various algorithms into 
-        an array for use within the script """
-
-    # Checking liboqs version used to determine alg-list file
-    flag_file = os.path.join(root_dir, "alg-lists", "version-flag.txt")
-
-    with open(flag_file, "r") as flag:
-        version_flag = flag.readline().strip()
-
-    # Setting the alg list filename based on version flag
-    if version_flag == "0":
-        kem_algs_file = os.path.join(root_dir, "alg-lists", "kem-algs-v7.txt")
-        sig_algs_file = os.path.join(root_dir, "alg-lists", "sig-algs-v7.txt")
-    else:
-        kem_algs_file = os.path.join(root_dir, "alg-lists", "kem-algs-v8.txt")
-        sig_algs_file = os.path.join(root_dir, "alg-lists", "sig-algs-v8.txt")
-
-    # Getting the kem algs
-    with open(kem_algs_file, "r") as kem_file:
-        for line in kem_file:
-            kem_algs.append(line.strip())
+def use_same_data():
+    """Function for just copying the first run to make the average file 
+       with only one run as there is no need to call average functions"""
     
-    # Getting the digital signature algorithms
-    with open(sig_algs_file, "r") as alg_file:
-        for line in alg_file:
-            sig_algs.append(line.strip())
+    # Process KEM and signature memory and speed data for copying
+    file_types = [("mem", "kem"), ("mem", "sig"), ("speed", "kem"), ("speed", "sig")]
+    
+    for file_type, alg_type in file_types:
+        source_file = os.path.join(dir_paths[f'type_{file_type}_dir'], f"{alg_type}-{file_type}-metrics-1.csv")
+        target_file = os.path.join(dir_paths[f'type_{file_type}_dir'], f"{alg_type}-{file_type}-avg.csv")
+        
+        if os.path.exists(source_file):
+            shutil.copy2(source_file, target_file)
 
 
 #------------------------------------------------------------------------------
-def avg_mem(type_mem_dir):
+def avg_mem():
     """ Function for taking in the provided memory 
         results and generating an average for all the runs for
         that current machine """
 
     # Declaring filepath prefix variables
-    kem_mem_file_prefix = os.path.join(type_mem_dir, "kem-mem-metrics-")
-    sig_mem_file_prefix = os.path.join(type_mem_dir, "sig-mem-metrics-")
+    kem_mem_file_prefix = os.path.join(dir_paths['type_mem_dir'], "kem-mem-metrics-")
+    sig_mem_file_prefix = os.path.join(dir_paths['type_mem_dir'], "sig-mem-metrics-")
 
     # Declaring dataframes and fieldnames
     mem_fieldnames = ["Algorithm", "Operation", "intits", "maxBytes", "maxHeap", "extHeap", "maxStack"]
@@ -135,26 +122,26 @@ def avg_mem(type_mem_dir):
             sig_mem_avg.loc[len(sig_mem_avg)] = row
 
     # Exporting average csv files
-    kem_csv_name = os.path.join(type_mem_dir, "kem-mem-avg.csv")
+    kem_csv_name = os.path.join(dir_paths['type_mem_dir'], "kem-mem-avg.csv")
     kem_mem_avg.to_csv(kem_csv_name, index=False)
-    sig_csv_name = os.path.join(type_mem_dir, "sig-mem-avg.csv")
+    sig_csv_name = os.path.join(dir_paths['type_mem_dir'], "sig-mem-avg.csv")
     sig_mem_avg.to_csv(sig_csv_name, index=False)
 
 
 #------------------------------------------------------------------------------
-def avg_speed(type_speed_dir):
+def avg_speed():
     """ Function for taking in the provided speed 
         results and generating an average for all the runs for
         that current machine """
 
     # Declaring filepath prefix variables and fieldnames list
-    kem_filename_prefix = os.path.join(type_speed_dir, "test-kem-speed-")
-    sig_filename_prefix = os.path.join(type_speed_dir, "test-sig-speed-")
+    kem_filename_prefix = os.path.join(dir_paths['type_speed_dir'], "test-kem-speed-")
+    sig_filename_prefix = os.path.join(dir_paths['type_speed_dir'], "test-sig-speed-")
     speed_fieldnames = []
 
     # Getting fieldnames through first file
     test_filename = "test-kem-speed-1.csv"
-    test_filename = os.path.join(type_speed_dir, test_filename)
+    test_filename = os.path.join(dir_paths['type_speed_dir'], test_filename)
 
     # Loading test file into dataframe and getting headers into list
     check_df = pd.read_csv(test_filename)
@@ -214,6 +201,8 @@ def avg_speed(type_speed_dir):
 
             # Getting the algorithm operations across all files into one
             temp_df = temp_df.loc[temp_df["Algorithm"].str.contains(sig_alg, regex=False)]
+            print(combined_operations)
+
             combined_operations = pd.concat([temp_df, combined_operations], ignore_index=True, sort=False)
         
         # Getting the average for each operation
@@ -233,28 +222,37 @@ def avg_speed(type_speed_dir):
             sig_speed_avg.loc[len(sig_speed_avg)] = row
 
     # Exporting average csv files
-    kem_csv_name = os.path.join(type_speed_dir, "kem-speed-avg.csv")
+    kem_csv_name = os.path.join(dir_paths['type_speed_dir'], "kem-speed-avg.csv")
     kem_speed_avg.to_csv(kem_csv_name, index=False)
-    sig_csv_name = os.path.join(type_speed_dir, "sig-speed-avg.csv")
+    sig_csv_name = os.path.join(dir_paths['type_speed_dir'], "sig-speed-avg.csv")
     sig_speed_avg.to_csv(sig_csv_name, index=False)
 
 
 #------------------------------------------------------------------------------
-def gen_averages(type_speed_dir, type_mem_dir, dir, total_runs):
+def gen_averages(passed_dir_paths, passed_num_runs, passed_algs_list):
     """ Main function for controlling the liboqs average
         calculations """
 
     # Setting root directory and number of runs parameter
-    global root_dir, kem_algs, sig_algs, num_runs
-    root_dir = dir
-    num_runs = total_runs
+    global root_dir, kem_algs, sig_algs, num_runs, dir_paths
+    dir_paths = passed_dir_paths
+    num_runs = passed_num_runs
+    kem_algs = passed_algs_list['kem_algs']
+    sig_algs  = passed_algs_list['sig_algs']
     
     # Setting the required algorithm lists
-    get_algs()
+    # get_algs()
 
-    # Running average generation functions
-    avg_mem(type_mem_dir)
-    avg_speed(type_speed_dir)
+
+    # Calling averaging functions depending on the number of runs
+    if num_runs == 1:
+        # Using same data if only 1 run
+        use_same_data()
+
+    else:
+        # Running average generation functions
+        avg_mem()
+        avg_speed()
     
     # Clearing algorithm lists
     kem_algs.clear()

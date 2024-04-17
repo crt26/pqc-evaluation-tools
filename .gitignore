@@ -8,3 +8,5 @@
 /lib
 /test-data/keys
 /test-data/up-results
+/test-data/results
+/temp-storage/

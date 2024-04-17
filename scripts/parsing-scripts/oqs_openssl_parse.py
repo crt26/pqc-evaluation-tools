@@ -16,14 +16,13 @@ import sys
 from oqs_openssl_avg_gen import generate_averages
 
 # Declaring global variables
+dir_paths = {}
 kem_algs = []
 sig_algs = []
 speed_sig_algs = []
 speed_kem_algs = []
-system_type = ""
 root_dir = ""
 num_runs = 0
-path_sep = ""
 
 # Declaring classic alg lists
 classic_algs = ["RSA:2048", "RSA:3072", "RSA:4096", "prime256v1", "secp384r1", "secp521r1"]
@@ -34,56 +33,152 @@ ecc_curves=["prime256v1", "secp384r1", "secp521r1"]
 pqc_headers = ["Signing Algorithm", "KEM Algorithm", "Reused Session ID", "Connections in User Time", "User Time (s)", "Connections Per User Second", "Connections in Real Time", "Real Time (s)"]
 classic_headers = ["Ciphersuite", "ECC Algorithm", "Reused Session ID", "Connections in User Time", "User Time (s)", "Connections Per User Second", "Connections in Real Time", "Real Time (s)"]
 
-
 #------------------------------------------------------------------------------
-def get_system_type() :
-    """ Function for checking the system type and setting root_dir path """
-    global root_dir, system_type, path_sep
-
-    # Checking and storing system type
-    if sys.platform == "win32":
-
-        system_type = "win"
-        root_dir = r"..\.."
-        path_sep = "\\"
-
-    else:
-        system_type = "linux"
-        current_dir = os.getcwd()
-        root_dir = os.path.dirname(os.path.dirname(current_dir))
-        path_sep = "/"
+def setup_parse_env() :
 
 
-#------------------------------------------------------------------------------
-def get_algs():
-    """ Function for reading in the various algorithms into 
-        an array for use within the script """
+    global root_dir, kem_algs, sig_algs, dir_paths
 
-    # Setting alg filenames
-    ssl_sig_alg_file = os.path.join(root_dir, "alg-lists", "ssl-sig-algs.txt")
-    ssl_kem_alg_file = os.path.join(root_dir, "alg-lists", "ssl-kem-algs.txt")
-    ssl_speed_sig_alg_file = os.path.join(root_dir, "alg-lists", "ssl-speed-sig-algs.txt")
-    ssl_speed_kem_alg_file = os.path.join(root_dir, "alg-lists", "ssl-speed-kem-algs.txt")
+    # Setting main path vars
+    current_dir = os.getcwd()
+    root_dir = os.path.dirname(os.path.dirname(current_dir))
 
-    # Getting signing algs
-    with open(ssl_sig_alg_file, "r") as sig_file:
-        for line in sig_file:
-            sig_algs.append(line.strip())
+    # Creating test results dir paths dict
+    dir_paths['root_dir'] = os.path.dirname(os.path.dirname(current_dir))
+    dir_paths['results_dir'] = os.path.join(root_dir, "test-data", "results", "oqs-openssl")
+    dir_paths['up_results'] = os.path.join(root_dir, "test-data", "up-results", "oqs-openssl")
 
-    # Getting kem algs
-    with open(ssl_kem_alg_file, "r") as kem_file:
+    # Setting the alg list filename based on version flag
+    kem_algs_file = os.path.join(root_dir, "test-data", "alg-lists", "ssl-kem-algs.txt")
+    sig_algs_file = os.path.join(root_dir, "test-data", "alg-lists", "ssl-sig-algs.txt")
+
+    # Inserting the kem algs into list for later use
+    with open(kem_algs_file, "r") as kem_file:
         for line in kem_file:
             kem_algs.append(line.strip())
+    
+    # Inserting the digital signature algs into list for later use
+    with open(sig_algs_file, "r") as alg_file:
+        for line in alg_file:
+            sig_algs.append(line.strip())
 
-    # Getting speed test sig algs
-    with open(ssl_speed_sig_alg_file, "r") as speed_sig_file:
-        for line in speed_sig_file:
-            speed_sig_algs.append(line.strip())
+    algs_dict = {'kem_algs': kem_algs, 'sig_algs': sig_algs}
 
-    # Getting speed test kem algs
-    with open(ssl_speed_kem_alg_file, "r") as speed_kem_file:
-        for line in speed_kem_file:
-            speed_kem_algs.append(line.strip())
+    return algs_dict
+
+
+
+#------------------------------------------------------------------------------
+def handle_results_dir_creation(machine_num):
+    """Function for handling what the user wants to do with old results"""
+
+    # Checking if there are old parsed results for current Machine-ID and handling clashes 
+    if os.path.exists(dir_paths["mach_results_dir"]):
+
+        # Outputting warning message
+        print(f"There are already parsed Liboqs testing results present for Machine-ID ({machine_num})\n")
+
+        # Get decision from user on how to handle old results before parsing continues
+        while True:
+
+            # Outputting potential options and handling user choice
+            print(f"\nFrom the following options, choose how would you like to handle the old results:\n")
+            print("Option 1 - Replace old parsed results with new ones")
+            print("Option 2 - Exit parsing programme to move old results and rerun after (if you choose this option, please move the entire folder not just its contents)")
+            print("Option 3 - Make parsing script programme wait until you have move files before continuing")
+            user_choice = input("Enter option (1/2/3): ")
+
+            if user_choice == "1":
+
+                # Replacing all old results and creating new empty dir to store parsed results
+                print(f"Removing old results directory for Machine-ID ({machine_num}) before continuing...")
+                shutil.rmtree(dir_paths["results_dir"], f"machine-{machine_num}")
+                print("Old results removed")
+
+                os.makedirs(dir_paths["mach_handshake_dir"])
+                os.makedirs(dir_paths["mach_speed_results_dir"])
+
+                break
+
+            elif user_choice == "2":
+
+                # Exiting the script to allow the user to move old results before retrying
+                print("Exiting parsing script...")
+                exit()
+
+            elif user_choice == "3":
+
+                # Halting script until old results have been moved for current Machine-ID
+                while True:
+                    input(f"Halting parsing script so old parsed results for Machine-ID ({machine_num}) can be moved, press enter to continue")
+                    if os.path.exists(dir_paths["mach_results_dir"]):
+                        print(f"Old parsed results for Machine-ID ({machine_num}) still present!!!\n")
+                    else:
+                        print("Old results have been moved, now continuing with parsing script")
+                        os.makedirs(dir_paths["mach_handshake_dir"])
+                        os.makedirs(dir_paths["mach_speed_results_dir"])
+                        break
+                
+                break
+
+            else:
+                print("Incorrect value, please select (1/2/3)")
+
+    else:
+
+        # No old parsed results for current machine-id present so creating new dirs
+        os.makedirs(dir_paths["mach_handshake_dir"])
+        os.makedirs(dir_paths["mach_speed_results_dir"])
+
+# #------------------------------------------------------------------------------
+# def get_system_type() :
+#     """ Function for checking the system type and setting root_dir path """
+#     global root_dir, system_type, path_sep
+
+#     # Checking and storing system type
+#     if sys.platform == "win32":
+
+#         system_type = "win"
+#         root_dir = r"..\.."
+#         path_sep = "\\"
+
+#     else:
+#         system_type = "linux"
+#         current_dir = os.getcwd()
+#         root_dir = os.path.dirname(os.path.dirname(current_dir))
+#         path_sep = "/"
+
+
+# #------------------------------------------------------------------------------
+# def get_algs():
+#     """ Function for reading in the various algorithms into 
+#         an array for use within the script """
+
+#     # Setting alg filenames
+#     ssl_sig_alg_file = os.path.join(root_dir, "alg-lists", "ssl-sig-algs.txt")
+#     ssl_kem_alg_file = os.path.join(root_dir, "alg-lists", "ssl-kem-algs.txt")
+#     ssl_speed_sig_alg_file = os.path.join(root_dir, "alg-lists", "ssl-speed-sig-algs.txt")
+#     ssl_speed_kem_alg_file = os.path.join(root_dir, "alg-lists", "ssl-speed-kem-algs.txt")
+
+#     # Getting signing algs
+#     with open(ssl_sig_alg_file, "r") as sig_file:
+#         for line in sig_file:
+#             sig_algs.append(line.strip())
+
+#     # Getting kem algs
+#     with open(ssl_kem_alg_file, "r") as kem_file:
+#         for line in kem_file:
+#             kem_algs.append(line.strip())
+
+#     # Getting speed test sig algs
+#     with open(ssl_speed_sig_alg_file, "r") as speed_sig_file:
+#         for line in speed_sig_file:
+#             speed_sig_algs.append(line.strip())
+
+#     # Getting speed test kem algs
+#     with open(ssl_speed_kem_alg_file, "r") as speed_kem_file:
+#         for line in speed_kem_file:
+#             speed_kem_algs.append(line.strip())
 
 
 #------------------------------------------------------------------------------
@@ -155,13 +250,14 @@ def get_metrics(current_row, test_filepath, get_reuse_metrics):
 
 
 #------------------------------------------------------------------------------
+#def output_processing(mach_base_results_dir, mach_up_results_dir, mach_results_classic_dir, sig_paths):
 def output_processing(mach_base_results_dir, mach_up_results_dir, mach_results_classic_dir, sig_paths):
     """ Function for processing the outputs of the 
         s_time TLS benchmarking tests """
 
     # Setting PQC and Classic up-results dir
-    pqc_up_results_dir = os.path.join(mach_up_results_dir, "pqc-tests")
-    classic_up_results_dir = os.path.join(mach_up_results_dir, "classic-tests")
+    pqc_up_results_dir = os.path.join(dir_paths['mach_up_results_dir'], "handshake-results", "pqc")
+    classic_up_results_dir = os.path.join(dir_paths['mach_up_results_dir'], "handshake-results", "classic")
 
     # Loop through the runs
     for current_run in range(1, num_runs+1):
@@ -388,6 +484,8 @@ def process_tests(num_machines):
     """ Function for controlling the parsing scripts for
         the OQS-OpenSSL up-result files and calling average 
         calculation scripts """
+    
+    global dir_paths
 
     # Declaring directory variables
     results_dir = os.path.join(root_dir, "results", "openssl")
@@ -408,52 +506,62 @@ def process_tests(num_machines):
         sig_paths = []
 
         # Setting machine's results dirs
-        mach_results_dir = os.path.join(results_dir, f"machine-{str(machine)}")
-        mach_up_results_dir = os.path.join(up_results_dir, f"machine-{str(machine)}")
-        mach_base_results_dir = os.path.join(results_dir, f"machine-{str(machine)}", "base-results")
-        mach_speed_results_dir = os.path.join(results_dir, f"machine-{str(machine)}", "ssl-speed-results")
-        mach_results_classic_dir = os.path.join(results_dir, f"machine-{str(machine)}", "classic-ciphers")
+        dir_paths['mach_results_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine)}")
+        dir_paths['mach_up_results_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine)}")
+        dir_paths['mach_handshake_dir']  = os.path.join(dir_paths['results_dir'], f"machine-{str(machine)}")
+        dir_paths['mach_speed_results_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine)}")
 
-        # Creating needed sig output directories for current machine
-        for sig in sig_algs:
-            try:
-                # Making final results directories 
-                sig_name = sig.replace(":", "_")
-                mach_sig_results_dir = os.path.join(mach_results_dir, sig_name)
-                sig_paths.append(mach_sig_results_dir)
-                os.makedirs(mach_sig_results_dir)
-                
-            except FileExistsError:
-                shutil.rmtree(mach_sig_results_dir)
-                os.makedirs(mach_sig_results_dir)
-
-        # Creating current machines bases results dir
-        try:
-            os.mkdir(mach_base_results_dir)
-        except:
-            shutil.rmtree(mach_base_results_dir)
-            os.mkdir(mach_base_results_dir)
         
-        # Creating current machines ssl-speed results dir
-        try:
-            os.mkdir(mach_speed_results_dir)
-        except:
-            shutil.rmtree(mach_speed_results_dir)
-            os.mkdir(mach_speed_results_dir)
+        # mach_results_dir = os.path.join(results_dir, f"machine-{str(machine)}")
+        # mach_up_results_dir = os.path.join(up_results_dir, f"machine-{str(machine)}")
+        # mach_base_results_dir = os.path.join(results_dir, f"machine-{str(machine)}", "base-results")
+        # mach_speed_results_dir = os.path.join(results_dir, f"machine-{str(machine)}", "ssl-speed-results")
+        # mach_results_classic_dir = os.path.join(results_dir, f"machine-{str(machine)}", "classic-ciphers")
 
-        # Creating current machines classic results dir
-        try:
-            os.mkdir(mach_results_classic_dir)
-        except:
-            shutil(mach_results_classic_dir)
-            os.mkdir(mach_results_classic_dir)
+        """!!!!"""
+        # # Creating needed sig output directories for current machine
+        # for sig in sig_algs:
+        #     try:
+        #         # Making final results directories 
+        #         sig_name = sig.replace(":", "_")
+        #         mach_sig_results_dir = os.path.join(mach_results_dir, sig_name)
+        #         sig_paths.append(mach_sig_results_dir)
+        #         os.makedirs(mach_sig_results_dir)
+                
+        #     except FileExistsError:
+        #         shutil.rmtree(mach_sig_results_dir)
+        #         os.makedirs(mach_sig_results_dir)
+        """!!!!"""
+
+        # # Creating current machines bases results dir
+        # try:
+        #     os.mkdir(mach_base_results_dir)
+        # except:
+        #     shutil.rmtree(mach_base_results_dir)
+        #     os.mkdir(mach_base_results_dir)
+        
+        # # Creating current machines ssl-speed results dir
+        # try:
+        #     os.mkdir(mach_speed_results_dir)
+        # except:
+        #     shutil.rmtree(mach_speed_results_dir)
+        #     os.mkdir(mach_speed_results_dir)
+
+        # # Creating current machines classic results dir
+        # try:
+        #     os.mkdir(mach_results_classic_dir)
+        # except:
+        #     shutil(mach_results_classic_dir)
+        #     os.mkdir(mach_results_classic_dir)
 
         # Calling processing functions
-        output_processing(mach_base_results_dir, mach_up_results_dir, mach_results_classic_dir, sig_paths)
-        ssl_speed_processing(mach_up_results_dir, mach_speed_results_dir)
+        output_processing()
+        #output_processing(mach_base_results_dir, mach_up_results_dir, mach_results_classic_dir, sig_paths)
+        #ssl_speed_processing(mach_up_results_dir, mach_speed_results_dir)
 
         # Calling average calculation function
         generate_averages(mach_results_classic_dir, mach_speed_results_dir, num_runs, sig_paths)
+        #generate_averages(mach_results_classic_dir, mach_speed_results_dir, num_runs, sig_paths)
 
 
 #------------------------------------------------------------------------------
@@ -466,8 +574,7 @@ def parse_openssl(test_opts):
 
     # Setting up script variables
     print(f"\nPreparing to Parse OQS-OpenSSL Results:\n")
-    get_system_type()
-    get_algs()
+    algs_dict = setup_parse_env()
 
     # Processing the OQS-OpenSSL results
     print("Parsing results... ")

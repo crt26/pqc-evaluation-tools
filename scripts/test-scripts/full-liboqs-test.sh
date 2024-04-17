@@ -28,7 +28,7 @@ function set_result_paths() {
 
     # Setting results path based on assigned machine number for results
     machine_results_path="$test_data_dir/up-results/liboqs/machine-$machine_num"
-    machine_speed_results="$machine_results_path/speed-results"
+    machine_speed_results="$machine_results_path/raw-speed-results"
     machine_mem_results="$machine_results_path/mem-results"
     kem_mem_results="$machine_mem_results/kem-mem-metrics"
     sig_mem_results="$machine_mem_results/sig-mem-metrics"
