@@ -148,7 +148,7 @@ def pre_speed_processing():
         kem_pre_filename = kem_prefix + str(run_count) + ".csv"
         kem_filename = os.path.join(dir_paths["raw_speed_dir"], kem_pre_filename)
 
-        #Getting header start index
+        # Getting header start index
         with open(kem_filename, 'r') as pre_file:
             rows = pre_file.readlines()
 
@@ -168,7 +168,7 @@ def pre_speed_processing():
         sig_pre_filename = sig_prefix + str(run_count) + ".csv"
         sig_filename = os.path.join(dir_paths["raw_speed_dir"], sig_pre_filename)
 
-        #Getting header start index
+        # Getting header start index
         with open(sig_filename, 'r') as pre_file:
             rows = pre_file.readlines()
 
@@ -317,12 +317,12 @@ def memory_processing():
         kem_filepath = os.path.join(dir_paths["type_mem_dir"], kem_filename)
         temp_df.to_csv(kem_filepath, index=False)
 
-        #Looping through sig algorithms
+        # Looping through sig algorithms
         for sig_alg in sig_algs:
 
-           # sig_up_filename_pre = os.path.join(sig_dir, sig_file_prefix)
+           #sig_up_filename_pre = os.path.join(sig_dir, sig_file_prefix)
 
-            #Looping the operations and adding to temp dataframe 
+            # Looping the operations and adding to temp dataframe 
             for operation in range(0,3,1):
 
                 # Parsing metrics and adding results to dataframe row
@@ -360,7 +360,7 @@ def process_tests(num_machines, algs_dicts):
     # Processing the results for the machine/s
     for machine_num in range(1, num_machines+1):
         
-        # Setting up directory path
+        # Setting up directory paths
         dir_paths['up_speed_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine_num)}", "speed-results")
         dir_paths['up_mem_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine_num)}", "mem-results")
         dir_paths['type_speed_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine_num)}", "speed-results")

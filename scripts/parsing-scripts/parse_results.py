@@ -15,8 +15,8 @@ from oqs_openssl_parse import parse_openssl
 #------------------------------------------------------------------------------
 def get_test_opts():
     """Function that will get the test parameters used in during
-        the testing, whcih includes the number of runs and number of
-        macines tested"""
+        the testing, which includes the number of runs and number of
+        machines tested"""
 
     # Loop for getting total machines from user
     while True:
