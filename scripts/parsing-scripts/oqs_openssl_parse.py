@@ -12,33 +12,38 @@ for the results.
 import pandas as pd
 import os
 import shutil
-import sys
-from oqs_openssl_avg_gen import generate_averages
+from results_averager import OqsOpensslResultAverager
 
 # Declaring global variables
 dir_paths = {}
-kem_algs = []
-sig_algs = []
+algs_dict = {}
 speed_sig_algs = []
 speed_kem_algs = []
 col_headers = {}
 root_dir = ""
 num_runs = 0
 
-# Declaring classic alg lists
-classic_algs = ["RSA_2048", "RSA_3072", "RSA_4096", "prime256v1", "secp384r1", "secp521r1"]
-ciphers=["TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256", "TLS_AES_128_GCM_SHA256"]
-#ecc_curves=["prime256v1", "secp384r1", "secp521r1"]
-
-# Declaring column headers list    
-pqc_headers = ["Signing Algorithm", "KEM Algorithm", "Reused Session ID", "Connections in User Time", "User Time (s)", "Connections Per User Second", "Connections in Real Time", "Real Time (s)"]
-classic_headers = ["Ciphersuite", "Classic Algorithm", "Reused Session ID", "Connections in User Time", "User Time (s)", "Connections Per User Second", "Connections in Real Time", "Real Time (s)"]
 
 #------------------------------------------------------------------------------
 def setup_parse_env() :
+    """Function for setting up the parsing environment by defining various algorithms, ciphers and column headers"""
 
+    global root_dir, dir_paths, col_headers, algs_dict
 
-    global root_dir, kem_algs, sig_algs, dir_paths, col_headers
+    # Declaring algs dict that will be used by various methods and functions
+    algs_dict = {
+        'kem_algs': [], 
+        'sig_algs': [],
+        'classic_algs': ["RSA_2048", "RSA_3072", "RSA_4096", "prime256v1", "secp384r1", "secp521r1"], 
+        'ciphers': ["TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256", "TLS_AES_128_GCM_SHA256"]
+    }
+
+    # Declaring column headers dict that will be used by various methods and functions
+    col_headers = {
+        'pqc_headers': ["Signing Algorithm", "KEM Algorithm", "Reused Session ID", "Connections in User Time", "User Time (s)", "Connections Per User Second", "Connections in Real Time", "Real Time (s)"],
+        'classic_headers': ["Ciphersuite", "Classic Algorithm", "Reused Session ID", "Connections in User Time", "User Time (s)", "Connections Per User Second", "Connections in Real Time", "Real Time (s)"]
+
+    }
 
     # Setting main path vars
     current_dir = os.getcwd()
@@ -56,18 +61,12 @@ def setup_parse_env() :
     # Inserting the kem algs into list for later use
     with open(kem_algs_file, "r") as kem_file:
         for line in kem_file:
-            kem_algs.append(line.strip())
+            algs_dict['kem_algs'].append(line.strip())
     
     # Inserting the digital signature algs into list for later use
     with open(sig_algs_file, "r") as alg_file:
         for line in alg_file:
-            sig_algs.append(line.strip())
-
-    algs_dict = {'kem_algs': kem_algs, 'sig_algs': sig_algs, 'classic_algs': classic_algs, 'ciphers': ciphers}
-    col_headers = {'pqc_headers': pqc_headers, 'classic_headers': classic_headers}
-
-    return algs_dict
-
+            algs_dict['sig_algs'].append(line.strip())
 
 
 #------------------------------------------------------------------------------
@@ -202,7 +201,6 @@ def get_metrics(current_row, test_filepath, get_reuse_metrics):
 
 
 #------------------------------------------------------------------------------
-#def output_processing(mach_base_results_dir, mach_up_results_dir, mach_results_classic_dir, sig_paths):
 def output_processing():
     """ Function for processing the outputs of the 
         s_time TLS benchmarking tests """
@@ -229,19 +227,18 @@ def output_processing():
     for current_run in range(1, num_runs+1):
 
         # Declaring dataframes
-        sig_metrics_df = pd.DataFrame(columns=pqc_headers)
-        cipher_metrics_df = pd.DataFrame(columns=classic_headers)
+        sig_metrics_df = pd.DataFrame(columns=col_headers['pqc_headers'])
+        cipher_metrics_df = pd.DataFrame(columns=col_headers['classic_headers'])
 
         """ PQC Test Results Pre-Processing """
 
         # Loop through the sig list to create csv
-        for sig in sig_algs:
+        for sig in algs_dict['sig_algs']:
 
             # Loop through KEM files signed with current sig
-            for kem in kem_algs:
+            for kem in algs_dict['kem_algs']:
 
                 # Set filename and path
-                #sig_name = sig.replace(':', '_')
                 filename = f"tls-handshake-{current_run}-{sig}-{kem}.txt"
                 test_filepath = os.path.join(pqc_up_results_dir, filename)
                 
@@ -252,7 +249,7 @@ def output_processing():
                 current_row.insert(0, sig)
 
                 # Adding session id first use row to dataframe
-                new_row_df = pd.DataFrame([current_row], columns =pqc_headers)
+                new_row_df = pd.DataFrame([current_row], columns=col_headers['pqc_headers'])
                 sig_metrics_df = pd.concat([sig_metrics_df, new_row_df], ignore_index=True)
                 current_row.clear()
 
@@ -263,7 +260,7 @@ def output_processing():
                 current_row.insert(0, sig)
 
                 # Adding session id reused use row to dataframe
-                new_row_df = pd.DataFrame([current_row], columns=pqc_headers)
+                new_row_df = pd.DataFrame([current_row], columns=col_headers['pqc_headers'])
                 sig_metrics_df = pd.concat([sig_metrics_df, new_row_df], ignore_index=True)
                 current_row.clear()
 
@@ -280,7 +277,7 @@ def output_processing():
 
 
         # Making storage dir and files for separated sig/kem combo results
-        for sig in sig_algs:
+        for sig in algs_dict['sig_algs']:
 
             # Set path for sig/kem combo dir
             sig_path = os.path.join(dir_paths['pqc_handshake_results'], sig)
@@ -302,10 +299,10 @@ def output_processing():
         """Classic Test Result Processing"""
 
         # Looping through each ciphersuite
-        for cipher in ciphers:
+        for cipher in algs_dict['ciphers']:
 
             # Looping through each ecc alg
-            for alg in classic_algs:
+            for alg in algs_dict['classic_algs']:
 
                 # Set filename and path
                 filename = f"tls-handshake-classic-{current_run}-{cipher}-{alg}.txt"
@@ -317,7 +314,7 @@ def output_processing():
                 current_row.insert(0, cipher)
 
                 # Adding session id first use row to dataframe
-                new_row_df = pd.DataFrame([current_row], columns =classic_headers)
+                new_row_df = pd.DataFrame([current_row], columns=col_headers['classic_headers'])
                 cipher_metrics_df = pd.concat([cipher_metrics_df, new_row_df], ignore_index=True)
                 current_row.clear()
                 
@@ -328,7 +325,7 @@ def output_processing():
                 current_row.insert(0, cipher)
 
                 # Adding session id reused use row to dataframe
-                new_row_df = pd.DataFrame([current_row], columns=classic_headers)
+                new_row_df = pd.DataFrame([current_row], columns=col_headers['classic_headers'])
                 cipher_metrics_df = pd.concat([cipher_metrics_df, new_row_df], ignore_index=True)
                 current_row.clear()
 
@@ -452,11 +449,12 @@ def process_tests(num_machines, algs_dict):
     
     global dir_paths
 
+    # Declare average_gen class instance
+    oqs_provider_avg = None
+    oqs_provider_avg = OqsOpensslResultAverager(dir_paths, num_runs, algs_dict, col_headers)
+
     # Looping through the specified number of machines
     for machine in range(1, num_machines+1):
-
-        # Setting results path list
-        sig_paths = []
 
         # Setting machine's results dirs
         dir_paths['mach_results_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine)}")
@@ -472,8 +470,8 @@ def process_tests(num_machines, algs_dict):
         #ssl_speed_processing(mach_up_results_dir, mach_speed_results_dir)
 
         # Calling average calculation function
-        generate_averages(dir_paths, num_runs, algs_dict, col_headers)
-        #generate_averages(mach_results_classic_dir, mach_speed_results_dir, num_runs, sig_paths)
+        oqs_provider_avg.gen_pqc_avgs()
+        oqs_provider_avg.gen_classic_avgs()
 
 
 #------------------------------------------------------------------------------
@@ -486,7 +484,7 @@ def parse_openssl(test_opts):
 
     # Setting up script variables
     print(f"\nPreparing to Parse OQS-OpenSSL Results:\n")
-    algs_dict = setup_parse_env()
+    setup_parse_env()
 
     # Processing the OQS-OpenSSL results
     print("Parsing results... ")

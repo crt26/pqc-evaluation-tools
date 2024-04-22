@@ -10,3 +10,4 @@
 /test-data/up-results
 /test-data/results
 /temp-storage/
+/scripts/parsing-scripts/__pycache__

@@ -197,7 +197,7 @@ function get_test_comparison_choice() {
         case $usr_test_option in
             1)
                 # Setting default machine-ID
-                echo -e "Test will not be parsed with other machine data\n"
+                echo -e "\nTest will not be parsed with other machine data\n"
                 export MACHINE_NUM="1"
                 configure_results_dir
                 break
@@ -205,7 +205,8 @@ function get_test_comparison_choice() {
             2)
 
                 # Setting user specified Machine-ID after checking results storage
-                echo -e "Test will will be parsed with other machine data\n"
+                echo -e "\nTest will will be parsed with other machine data\n"
+                get_machine_num
                 configure_results_dir
                 export MACHINE_NUM="$MACHINE_NUM"
                 break

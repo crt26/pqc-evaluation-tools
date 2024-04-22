@@ -13,13 +13,10 @@ import pandas as pd
 import re
 import os
 import shutil
-import sys
-import subprocess
-from liboqs_avg_gen import gen_averages
+from results_averager import LiboqsResultAverager
 
 # Declaring global variables
-kem_operations = ["keygen", "encaps", "decaps"]
-sig_operations = ["keypair", "sign", "verify"]
+alg_operations = {'kem_operations': ["keygen", "encaps", "decaps"], 'sig_operations': ["keypair", "sign", "verify"]}
 kem_algs = []
 sig_algs = []
 dir_paths = {}
@@ -55,10 +52,6 @@ def setup_parse_env() :
     with open(sig_algs_file, "r") as alg_file:
         for line in alg_file:
             sig_algs.append(line.strip())
-
-    algs_dict = {'kem_algs': kem_algs, 'sig_algs': sig_algs}
-
-    return algs_dict
 
 
 #------------------------------------------------------------------------------
@@ -276,10 +269,8 @@ def memory_processing():
     new_row = []
     peak_metrics = []
 
-    # File placeholders
+    # Defining column names for dataframe
     fieldnames = ["Algorithm", "Operation", "intits", "maxBytes", "maxHeap", "extHeap", "maxStack"]
-    kem_operations = ["keygen", "encaps", "decaps"]
-    sig_operations = ["keypair", "sign", "verify"]
     
     # Looping through the number runs specified
     for run_count in range(1, num_runs+1):
@@ -299,7 +290,7 @@ def memory_processing():
 
                 try:
                     peak_metrics = get_peak(kem_up_filepath, peak_metrics)
-                    new_row.extend([kem_alg, kem_operations[operation]])
+                    new_row.extend([kem_alg, alg_operations['kem_operations'][operation]])
                     new_row.extend(peak_metrics)
                     
                     temp_df.loc[len(temp_df)] = new_row
@@ -320,8 +311,6 @@ def memory_processing():
         # Looping through sig algorithms
         for sig_alg in sig_algs:
 
-           #sig_up_filename_pre = os.path.join(sig_dir, sig_file_prefix)
-
             # Looping the operations and adding to temp dataframe 
             for operation in range(0,3,1):
 
@@ -331,7 +320,7 @@ def memory_processing():
 
                 try:
                     peak_metrics = get_peak(sig_up_filepath, peak_metrics)
-                    new_row.extend((sig_alg, sig_operations[operation]))
+                    new_row.extend((sig_alg, alg_operations['sig_operations'][operation]))
                     new_row.extend(peak_metrics)
                     temp_df.loc[len(temp_df)] = new_row
 
@@ -350,12 +339,15 @@ def memory_processing():
 
 
 #------------------------------------------------------------------------------
-def process_tests(num_machines, algs_dicts):
+def process_tests(num_machines):
     """ Function for parsing the results for multiple machines 
         and stores them as csv files. Once up-results are processed
         averages are calculated for the results """
     
     global dir_paths
+
+    # Creating an instance of the liboq average generator class before processing results
+    liboqs_avg = LiboqsResultAverager(dir_paths, kem_algs, sig_algs, num_runs, alg_operations)
 
     # Processing the results for the machine/s
     for machine_num in range(1, num_machines+1):
@@ -367,17 +359,17 @@ def process_tests(num_machines, algs_dicts):
         dir_paths['type_mem_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine_num)}", "mem-results")
         dir_paths['raw_speed_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine_num)}", "raw-speed-results")
 
+        # Creating required dirs and handling any clashes with previous parsed results
         handle_results_dir_creation(machine_num)
-
-        print(f"machine dir_paths dict - \n{dir_paths}")
 
         # Parsing results
         pre_speed_processing()
         speed_processing()
         memory_processing()
 
-        # Calculating the averages for the parsed data
-        gen_averages(dir_paths, num_runs, algs_dicts)
+        # Calling average generation methods
+        liboqs_avg.avg_mem()
+        liboqs_avg.avg_speed()
 
 
 #------------------------------------------------------------------------------
@@ -392,8 +384,8 @@ def parse_liboqs(test_opts):
 
     # Setting up the script
     print(f"\nPreparing to Parse Liboqs Results:\n")
-    algs_dict = setup_parse_env()
+    setup_parse_env()
 
     # Processing the results
     print("Parsing results... ")
-    process_tests(num_machines, algs_dict)
+    process_tests(num_machines)
