@@ -13,10 +13,12 @@ tmp_dir="$root_dir/tmp"
 test_data_dir="$root_dir/test-data"
 test_scripts_path="$root_dir/scripts/test-scripts"
 
+
 # Declaring global library path files
 open_ssl_path="$libs_dir/openssl_3.2"
 liboqs_path="$libs_dir/liboqs"
 oqs_openssl_path="$libs_dir/oqs-openssl"
+
 
 # Declaring global test parameter variables
 machine_num=""
@@ -163,7 +165,7 @@ function setup_test_suite() {
 
     # Creating unparsed results directorys for machine ID and handling old results if present
     if [ -d "$test_data_dir/up-results" ]; then
-    
+
         # Check if there is already results present for assigned machine number and offer to replace
         if [ -d "$machine_results_path" ]; then
             handle_machine_id_clash
@@ -177,13 +179,17 @@ function setup_test_suite() {
         mkdir -p "$kem_mem_results" && mkdir -p "$sig_mem_results"
     fi
 
+    # Setting liboqs test/bin dir path
+    liboqs_test_path="$liboqs_path/build/tests/"
+
     # Setting paths to speed test binaries
-    kem_speed_bin="$liboqs_path/build/tests/speed_kem"
-    sig_speed_bin="$liboqs_path/build/tests/speed_sig"
+    kem_speed_bin="$liboqs_test_path/speed_kem"
+    sig_speed_bin="$liboqs_test_path/speed_sig"
 
     # Setting paths to mem test binaries
-    kem_mem_bin="$liboqs_path/build/tests/test_kem_mem"
-    sig_mem_bin="$liboqs_path/build/tests/test_sig_mem"
+    kem_mem_bin="$liboqs_test_path/test_kem_mem"
+    sig_mem_bin="$liboqs_test_path/test_sig_mem"
+
 
     # Ensure liboqs binaries are present and executable
     test_bins=("$kem_speed_bin" "$sig_speed_bin" "$kem_mem_bin" "$sig_mem_bin")
@@ -231,43 +237,52 @@ function setup_test_suite() {
 function mem_tests() {
   # Main function for performing the memory benchmark testing
 
-  # Outputting test start message
-  echo -e "***********************"
-  echo -e "Performing Memory Tests"
-  echo -e "***********************\n"
-  #run_count=1
+    # Outputting test start message
+    echo -e "***********************"
+    echo -e "Performing Memory Tests"
+    echo -e "***********************\n"
+    #run_count=1
 
-  # Performing the memory tests with the specified number of runs
-  for run_count in $(seq 1 $number_of_runs); do
+    # Ensuring liboqs-mem-tmp dir is not present before starting
+    if [ -d "$test_scripts_path/tmp/" ]; then
+    rm -rf "$test_scripts_path/tmp/"
+    fi
 
-      # Outputting current test run
-      echo -e "Memory Test Run - $run_count\n\n"
-      
-      # Outputting starting kem tests
-      echo -e "KEM Memory Tests\n"
+    rm -rf logs/files
+    mkdir -p logs/files
 
-      # KEM memory tests
-      for kem_alg in "${kem_algs[@]}"; do
+    # Performing the memory tests with the specified number of runs
+    for run_count in $(seq 1 $number_of_runs); do
 
-          # Testing memory metrics for each operation
-          for operation in {0..2}; do
+        # Outputting current test run
+        echo -e "Memory Test Run - $run_count\n\n"
+        
+        # Outputting starting kem tests
+        echo -e "KEM Memory Tests\n"
 
-              # Getting operation string and outputting to terminal
-              op_kem_str=${op_kem[operation]}
-              echo -e "$kem_alg - $op_kem_str Test\n"
+        # KEM memory tests
+        for kem_alg in "${kem_algs[@]}"; do
 
-              # Running valgrind and outputting metrics
-              filename="$kem_mem_results/$kem_alg-$operation-$run_count.txt"
-              valgrind --tool=massif --stacks=yes --massif-out-file="$mem_tmp_dir/massif.out" "$kem_mem_bin" "$kem_alg" "$operation"
-              ms_print "$mem_tmp_dir/massif.out" > $filename
-              rm -f "$mem_tmp_dir/massif.out" && echo -e "\n"
-              
-          done
+            # Testing memory metrics for each operation
+            for operation in {0..2}; do
 
-          # Clearing the tmp directory before next test
-          rm -rf "$test_scripts_path/tmp/*"
+                # Getting operation string and outputting to terminal
+                op_kem_str=${op_kem[operation]}
+                echo -e "$kem_alg - $op_kem_str Test\n"
 
-      done
+                # Running valgrind and outputting metrics
+                filename="$kem_mem_results/$kem_alg-$operation-$run_count.txt"
+                valgrind --tool=massif --stacks=yes --massif-out-file="$mem_tmp_dir/massif.out" "$kem_mem_bin" "$kem_alg" "$operation"
+                ms_print "$mem_tmp_dir/massif.out" > $filename
+                rm -f "$mem_tmp_dir/massif.out" && echo -e "\n"
+
+                
+            done
+
+            # Clearing the tmp directory before next test
+            rm -rf "$test_scripts_path/tmp/"
+
+        done
 
         # Outputting starting digital signature tests
         echo -e "\nDigital Signature Memory Tests\n"
@@ -282,7 +297,6 @@ function mem_tests() {
                 op_sig_str=${op_sig[operation]}
                 echo -e "$sig_alg - $op_sig_str Test\n"
 
-
                 # Running valgrind and outputting metrics
                 filename="$sig_mem_results/$sig_alg-$operation-$run_count.txt"
                 valgrind --tool=massif --stacks=yes --massif-out-file="$mem_tmp_dir/massif.out" "$sig_mem_bin" "$sig_alg" "$operation"
@@ -292,13 +306,17 @@ function mem_tests() {
             done
 
             # Clearing the tmp directory before the next test
-            rm -rf "$test_scripts_path/tmp/*"
-        
+            rm -rf "$test_scripts_path/tmp/"
+
         done
+
+        # Cleaning up mem tmp dirs
+        rm -rf $mem_tmp_dir && rm -rf "$test_scripts_path/tmp"
+        mkdir -p "$mem_tmp_dir"
 
     done
 
-    # Cleaning up mem tmp dirs
+    # # Cleaning up mem tmp dirs
     rm -rf $mem_tmp_dir
     rm -rf "$test_scripts_path/tmp"
 

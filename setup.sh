@@ -246,7 +246,6 @@ function openssl_build() {
                 echo $conf_change >> "$open_ssl_path/openssl.cnf"
             done
 
-
         else
             echo "openssl build present, skipping build"
         fi
@@ -306,7 +305,7 @@ function liboqs-build() {
 
             #ARM arrch64 build options for pi
             build_options="no-shared linux-aarch64"
-            build_flags="-D_OQS_RASPBERRY_PI -DSPEED_USE_ARM_PMU"
+            build_flags="-DOQS_SPEED_USE_ARM_PMU=ON"
             build_flag1="-D_OQS_RASPBERRY_PI"
             build_flag2="-DSPEED_USE_ARM_PMU"
             threads=$(nproc)
@@ -328,12 +327,15 @@ function liboqs-build() {
         cp "$root_dir/modded-lib-files/test_sig_mem.c" "$liboqs_source/tests/test_sig_mem.c"
         cp "$root_dir/modded-lib-files/test_kem_mem.c" "$liboqs_source/tests/test_kem_mem.c"
 
-        # Setting up build directory and building liboqs
-        cmake  -DCMAKE_C_FLAGS="$build_flags" -S "$liboqs_source/" -B "$liboqs_path/build" -GNinja \
-            -DCMAKE_INSTALL_PREFIX="$liboqs_path" -DOQS_USE_OPENSSL=ON -DOPENSSL_ROOT_DIR="$open_ssl_path"
+        # # Setting up build directory and building liboqs
+        # cmake -GNinja -DCMAKE_C_FLAGS="$build_flags" -S "$liboqs_source/" -B "$liboqs_path/build" -DCMAKE_INSTALL_PREFIX="$liboqs_path" -DOQS_USE_OPENSSL=ON -DOPENSSL_ROOT_DIR="$open_ssl_path"
 
-        cmake --build "$liboqs_path/build" -- -j $threads
-        cmake --build "$liboqs_path/build" --target install -- -j $threads
+        # cmake --build "$liboqs_path/build" -- -j $threads
+        # cmake --build "$liboqs_path/build" --target install -- -j $threads
+
+        # Setting up build directory and configuring liboqs
+        cmake -GNinja  -S "$liboqs_source/" -B "$liboqs_path/build" -DCMAKE_INSTALL_PREFIX="$liboqs_path" -DCMAKE_C_FLAGS="$build_flags"-DOQS_USE_OPENSSL=ON -DOPENSSL_ROOT_DIR="$open_ssl_path"
+        ninja -C "$liboqs_path/build" -j $threads && ninja -C "$liboqs_path/build" install -j $threads
 
         # Making test data store dirs
         mkdir -p "$liboqs_path/mem-results/kem-mem-metrics/" && mkdir -p "$liboqs_path/mem-results/sig-mem-metrics/" && mkdir "$liboqs_path/speed-results"
