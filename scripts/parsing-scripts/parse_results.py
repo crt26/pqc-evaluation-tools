@@ -57,58 +57,55 @@ def main():
         print(f"\n")
 
         # Setting parse_mode based on option
-        match user_parse_mode:
-            case '1':
-                # Outputting selected option
-                print("Parsing only liboqs results selected")
+        if user_parse_mode == '1':
+            # Outputting selected option
+            print("Parsing only liboqs results selected")
 
-                # Getting total machines
-                print(f"Setting total liboqs machine results\n")
-                liboqs_test_opts = get_test_opts()
+            # Getting total machines
+            print(f"Setting total liboqs machine results\n")
+            liboqs_test_opts = get_test_opts()
 
-                # Calling parsing script
-                parse_liboqs(liboqs_test_opts)
-                break
+            # Calling parsing script
+            parse_liboqs(liboqs_test_opts)
+            break
+        
+        elif user_parse_mode == '2':
+            # Outputting selected option
+            print("Parsing only oqs-openssl results selected")
 
-            case '2':
-                # Outputting selected option
-                print("Parsing only oqs-openssl results selected")
+            # Getting total machines
+            print(f"Setting total oqs-openssl machine results\n")
+            openssl_test_opts = get_test_opts()
 
-                # Getting total machines
-                print(f"Setting total oqs-openssl machine results\n")
-                openssl_test_opts = get_test_opts()
+            # Calling parsing script
+            parse_openssl(openssl_test_opts)
+            break
 
-                # Calling parsing script
-                parse_openssl(openssl_test_opts)
-                break
-                
-            case '3':
-                # Outputting selected option
-                print("Parsing both result sets selected")
+        elif user_parse_mode == '3':
+            # Outputting selected option
+            print("Parsing both result sets selected")
 
-                # Getting test options
-                print(f"Setting total liboqs machine results\n")
-                liboqs_test_opts = get_test_opts()
-                print(f"\nSetting total oqs-openssl machine results\n")
-                openssl_test_opts = get_test_opts()
-                print(f"\nTest options set, parsing results...\n")
-                
-                # Parsing liboqs results
-                parse_liboqs(liboqs_test_opts)
-                print("\nLiboqs Parsing complete\n")
+            # Getting test options
+            print(f"Setting total liboqs machine results\n")
+            liboqs_test_opts = get_test_opts()
+            print(f"\nSetting total oqs-openssl machine results\n")
+            openssl_test_opts = get_test_opts()
+            print(f"\nTest options set, parsing results...\n")
+            
+            # Parsing liboqs results
+            parse_liboqs(liboqs_test_opts)
+            print("\nLiboqs Parsing complete\n")
 
-                # Parsing OQS-OpenSSL Results
-                parse_openssl(openssl_test_opts)
-                print("\nOQS-OpenSSL Parsing complete\n")
+            # Parsing OQS-OpenSSL Results
+            parse_openssl(openssl_test_opts)
+            print("\nOQS-OpenSSL Parsing complete\n")
 
-                break
+        elif user_parse_mode == '4':
+            print("Exiting...")
+            break
 
-            case '4':
-                print("Exiting...")
-                break
-
-            case _:
-                print("Invalid option, please select a valid option value (1-4)")
+        else:
+            print("Invalid option, please select a valid option value (1-4)")
 
     # Outputting the parsing complete message to the terminals
     print(f"\nResults processing complete, parsed results can be found in the results folder at the repo root")
