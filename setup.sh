@@ -266,9 +266,10 @@ function enable_pmu() {
 
     #Enabling user access PMU
     echo -e "\nEnabling ARM PMU\n"
-    cd $dependency_dir
+    cd $libs_dir
     git clone --branch main https://github.com/mupq/pqax.git
-    cd "$dependency_dir/pqax/enable_ccr" && make && make install
+    cd "$libs_dir/pqax/enable_ccr" && make && make install
+    cd $root_dir
 
 }
 
