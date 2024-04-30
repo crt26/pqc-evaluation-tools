@@ -329,14 +329,17 @@ function liboqs-build() {
         cp "$root_dir/modded-lib-files/test_kem_mem.c" "$liboqs_source/tests/test_kem_mem.c"
 
         # # Setting up build directory and building liboqs
-        # cmake -GNinja -DCMAKE_C_FLAGS="$build_flags" -S "$liboqs_source/" -B "$liboqs_path/build" -DCMAKE_INSTALL_PREFIX="$liboqs_path" -DOQS_USE_OPENSSL=ON -DOPENSSL_ROOT_DIR="$open_ssl_path"
+        cmake -GNinja -DCMAKE_C_FLAGS="$build_flags" -S "$liboqs_source/" -B "$liboqs_path/build" -DCMAKE_INSTALL_PREFIX="$liboqs_path" \
+            -DOQS_USE_OPENSSL=ON -DOPENSSL_ROOT_DIR="$open_ssl_path"
 
-        # cmake --build "$liboqs_path/build" -- -j $threads
-        # cmake --build "$liboqs_path/build" --target install -- -j $threads
+        cmake --build "$liboqs_path/build" -- -j $threads
+        cmake --build "$liboqs_path/build" --target install -- -j $threads
 
-        # Setting up build directory and configuring liboqs
-        cmake -GNinja  -S "$liboqs_source/" -B "$liboqs_path/build" -DCMAKE_INSTALL_PREFIX="$liboqs_path" -DCMAKE_C_FLAGS="$build_flags"-DOQS_USE_OPENSSL=ON -DOPENSSL_ROOT_DIR="$open_ssl_path"
-        ninja -C "$liboqs_path/build" -j $threads && ninja -C "$liboqs_path/build" install -j $threads
+        # # Setting up build directory and configuring liboqs
+        # cmake -GNinja  -S "$liboqs_source/" -B "$liboqs_path/build" -DCMAKE_INSTALL_PREFIX="$liboqs_path" \
+        #     -DCMAKE_C_FLAGS="$build_flags"-DOQS_USE_OPENSSL=ON -DOPENSSL_ROOT_DIR="$open_ssl_path"
+        
+        # ninja -C "$liboqs_path/build" -j $threads && ninja -C "$liboqs_path/build" install -j $threads
 
         # Making test data store dirs
         mkdir -p "$liboqs_path/mem-results/kem-mem-metrics/" && mkdir -p "$liboqs_path/mem-results/sig-mem-metrics/" && mkdir "$liboqs_path/speed-results"

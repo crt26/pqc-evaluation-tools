@@ -289,10 +289,19 @@ def memory_processing():
                 kem_up_filepath = os.path.join(kem_up_dir, kem_up_filename)
 
                 try:
+
+                    # Create peak memory metrics list for current KEM algorithm and setting up the new row
                     peak_metrics = get_peak(kem_up_filepath, peak_metrics)
                     new_row.extend([kem_alg, alg_operations['kem_operations'][operation]])
-                    new_row.extend(peak_metrics)
+
+                    # Assigning empty values for algorithm/operation row if no memory metrics were gathered
+                    if peak_metrics is None:
+                        peak_metrics = []
+                        for _ in range(1, (len(fieldnames) - 2)):
+                            peak_metrics.append("")
                     
+                    # Filling in the row with algorithm/operation memory metrics before appending to dataframe
+                    new_row.extend(peak_metrics)
                     temp_df.loc[len(temp_df)] = new_row
 
                     # Clearing lists
@@ -300,9 +309,12 @@ def memory_processing():
                     new_row.clear()
                 
                 except Exception as e:
-                    print(f"Missing file {kem_up_filename}")
+                    print(f"\nKEM algorithm memory parsing error, run - {run_count}")
                     print(f"error - {e}")
-
+                    print(f"Filename {kem_up_filename}\n")
+                    #print(f"alg - {kem_alg}, peak mertrics: \n{peak_metrics}\n")
+                    #print(f"peak metrics len - {len(peak_metrics)}")
+                    
         # Outputting kem csv file for this run
         kem_filename = "kem-mem-metrics-" + str(run_count) + ".csv"
         kem_filepath = os.path.join(dir_paths["type_mem_dir"], kem_filename)
@@ -319,8 +331,18 @@ def memory_processing():
                 sig_up_filepath = os.path.join(sig_up_dir, sig_up_filename)
 
                 try:
+
+                    # Create peak memory metrics list for current KEM algorithm and setting up the new row
                     peak_metrics = get_peak(sig_up_filepath, peak_metrics)
                     new_row.extend((sig_alg, alg_operations['sig_operations'][operation]))
+
+                    # Assigning empty values for algorithm/operation row if no memory metrics were gathered
+                    if peak_metrics is None:
+                        peak_metrics = []
+                        for _ in range(0, (len(fieldnames) - 2)):
+                            peak_metrics.append("")
+                        
+                    # Filling in the row with algorithm/operation memory metrics before appending to dataframe
                     new_row.extend(peak_metrics)
                     temp_df.loc[len(temp_df)] = new_row
 
@@ -329,8 +351,11 @@ def memory_processing():
                     new_row.clear()
                 
                 except Exception as e:
-                    print(f"Missing file {sig_up_filename}")
+                    print(f"\nsig alg error, run - {run_count}")
                     print(f"error - {e}")
+                    print(f"Filename {sig_up_filename}\n")
+                    #print(f"alg - {sig_alg}, peak mertrics: \n{peak_metrics}\n")
+                    #print(f"peak metrics len - {len(peak_metrics)}")
 
         # Outputting digital signature csv file for this run
         sig_filename = "sig-mem-metrics-" + str(run_count) + ".csv"
