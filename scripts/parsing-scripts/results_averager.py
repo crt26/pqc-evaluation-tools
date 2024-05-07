@@ -220,11 +220,12 @@ class LiboqsResultAverager:
 class OqsOpensslResultAverager:
 
     #------------------------------------------------------------------------------
-    def __init__(self, dir_paths, num_runs, algs_dict, col_headers):
+    def __init__(self, dir_paths, num_runs, algs_dict, pqc_type_vars, col_headers):
         """A class that contains needed for creating the metric average files for the various OQS-Provider results"""
         self.dir_paths = dir_paths
         self.num_runs = num_runs
         self.algs_dict = algs_dict
+        self.pqc_type_vars = pqc_type_vars
         self.col_headers = col_headers
 
 
@@ -233,66 +234,67 @@ class OqsOpensslResultAverager:
         """ Method for taking in the provided PQC TLS handshake
             results and generating an average for all the runs for
             that current machine """
-        
-        count = 1
+       
+        # Process result averages for both PQC-only (0) and PQC-Hybrid (1) TLS results
+        for type_index in range (0,2):
 
-        # Looping through each signing algorithm
-        for sig in self.algs_dict['sig_algs']:
+            # Looping through each signing algorithm
+            for sig in self.algs_dict[self.pqc_type_vars["sig_alg_type"][type_index]]:
 
-            # Getting current signing sig from sig_path
-            sig_path = os.path.join(self.dir_paths['pqc_handshake_results'], sig)
+                # Getting current signing sig from sig_path
+                sig_path = os.path.join(self.dir_paths[self.pqc_type_vars['results_type'][type_index]], sig)
 
-            # Creating dataframes and filepaths
-            sig_avg_df = pd.DataFrame(columns=self.col_headers['pqc_headers'])
-            
-            # Getting sig/kem averages by getting the average for specific kem from all runs
-            for kem in self.algs_dict['kem_algs']:
-
-                # Resetting combined sig dataframe
-                sig_first_combined_df = pd.DataFrame(columns=self.col_headers['pqc_headers'])
-                sig_reused_combined_df = pd.DataFrame(columns=self.col_headers['pqc_headers'])
-
-                # Looping through runs
-                for current_run in range(1, self.num_runs+1):
-
-                    # Setting current run filepath
-                    current_run_filename = f"tls-handshake-{sig}-run-{current_run}.csv"
-                    current_run_filepath = os.path.join(sig_path, current_run_filename)
-
-                    # Reading in current run csv to get metrics
-                    current_run_df = pd.read_csv(current_run_filepath)
-
-                    # Extracting the data for the current kem
-                    kem_df = current_run_df[current_run_df["KEM Algorithm"].str.contains(kem, regex=False)]
-
-                    # Separating the data into combined dataframes
-                    if current_run == 1:
-                        sig_first_combined_df = kem_df.iloc[0:1]
-                        sig_reused_combined_df = kem_df.iloc[1:2]
-                    else:
-                        sig_first_combined_df = pd.concat([sig_first_combined_df, kem_df.iloc[0:1]])
-                        sig_reused_combined_df = pd.concat([sig_reused_combined_df, kem_df.iloc[1:2]])
-  
-                    # Defining the average rows
-                    sig_first_average_row = [sig, kem, ""]
-                    sig_reused_average_row = [sig, kem, "*"]
+                # Creating dataframes and filepaths
+                sig_avg_df = pd.DataFrame(columns=self.col_headers['pqc_based_headers'])
                 
-                # Get average value for each column and append to new row var
-                for column in self.col_headers['pqc_headers']:
-                    if column in self.col_headers['pqc_headers'][:3]:
-                        continue
-                    else:
-                        sig_first_average_row.append(float(sig_first_combined_df[column].mean()))
-                        sig_reused_average_row.append(float(sig_reused_combined_df[column].mean()))
-                
-                # Append average rows
-                sig_avg_df.loc[len(sig_avg_df)] = sig_first_average_row
-                sig_avg_df.loc[len(sig_avg_df)] = sig_reused_average_row
+                # Getting sig/kem averages by getting the average for specific kem from all runs
+                for kem in self.algs_dict[self.pqc_type_vars["kem_alg_type"][type_index]]:
 
-            # Output average file
-            avg_out_filename = f"tls-handshake-{sig}-avg.csv"
-            avg_out_filepath = os.path.join(sig_path, avg_out_filename)
-            sig_avg_df.to_csv(avg_out_filepath, index=False)
+                    # Resetting combined sig dataframe
+                    sig_first_combined_df = pd.DataFrame(columns=self.col_headers['pqc_based_headers'])
+                    sig_reused_combined_df = pd.DataFrame(columns=self.col_headers['pqc_based_headers'])
+
+                    # Looping through runs
+                    for current_run in range(1, self.num_runs+1):
+
+                        # Setting current run filepath
+                        current_run_filename = f"tls-handshake-{sig}-run-{current_run}.csv"
+                        current_run_filepath = os.path.join(sig_path, current_run_filename)
+
+                        # Reading in current run csv to get metrics
+                        current_run_df = pd.read_csv(current_run_filepath)
+
+                        # Extracting the data for the current kem
+                        kem_df = current_run_df[current_run_df["KEM Algorithm"].str.contains(kem, regex=False)]
+
+                        # Separating the data into combined dataframes
+                        if current_run == 1:
+                            sig_first_combined_df = kem_df.iloc[0:1]
+                            sig_reused_combined_df = kem_df.iloc[1:2]
+                        else:
+                            sig_first_combined_df = pd.concat([sig_first_combined_df, kem_df.iloc[0:1]])
+                            sig_reused_combined_df = pd.concat([sig_reused_combined_df, kem_df.iloc[1:2]])
+    
+                        # Defining the average rows
+                        sig_first_average_row = [sig, kem, ""]
+                        sig_reused_average_row = [sig, kem, "*"]
+                    
+                    # Get average value for each column and append to new row var
+                    for column in self.col_headers['pqc_based_headers']:
+                        if column in self.col_headers['pqc_based_headers'][:3]:
+                            continue
+                        else:
+                            sig_first_average_row.append(float(sig_first_combined_df[column].mean()))
+                            sig_reused_average_row.append(float(sig_reused_combined_df[column].mean()))
+                    
+                    # Append average rows
+                    sig_avg_df.loc[len(sig_avg_df)] = sig_first_average_row
+                    sig_avg_df.loc[len(sig_avg_df)] = sig_reused_average_row
+
+                # Output average file
+                avg_out_filename = f"tls-handshake-{sig}-avg.csv"
+                avg_out_filepath = os.path.join(sig_path, avg_out_filename)
+                sig_avg_df.to_csv(avg_out_filepath, index=False)
 
 
     #------------------------------------------------------------------------------
@@ -341,8 +343,8 @@ class OqsOpensslResultAverager:
                 curve_reused_combined_row = [cipher, alg, "*"]
 
                 # Get average value for each column and append to new row var
-                for column in self.col_headers['pqc_headers']:
-                    if column in self.col_headers['pqc_headers'][:3]:
+                for column in self.col_headers['classic_headers']:
+                    if column in self.col_headers['classic_headers'][:3]:
                         continue
                     else:
                         curve_first_combined_row.append(float(curve_first_combined_df[column].mean()))

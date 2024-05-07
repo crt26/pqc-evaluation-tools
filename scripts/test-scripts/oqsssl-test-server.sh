@@ -43,35 +43,46 @@ export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
 # Decalring current group var that will be passed to DEFAULT_GROUP env var when changing test type
 current_group=""
 
-#------------------------------------------------------------------------------
-function get_algs() {
-    # Function for reading in the various algorithms into an array for use within the script
+# Declaring static algorithm arrays and alg-list filepaths
+kem_alg_file="$test_data_dir/alg-lists/ssl-kem-algs.txt"
+sig_alg_file="$test_data_dir/alg-lists/ssl-sig-algs.txt"
+hybrid_kem_alg_file="$test_data_dir/alg-lists/ssl-hybr-kem-algs.txt"
+hybrid_sig_alg_file="$test_data_dir/alg-lists/ssl-hybr-sig-algs.txt"
 
-    # Declaring algorithm lists filepaths
-    kem_alg_file="$test_data_dir/alg-lists/ssl-kem-algs.txt"
-    sig_alg_file="$test_data_dir/alg-lists/ssl-sig-algs.txt"
-    hybrid_kem_alg_file="$test_data_dir/alg-lists/ssl-hybr-kem-algs.txt"
-    hybrid_kem_alg_file="$test_data_dir/alg-lists/ssl-hybr-sig-algs.txt"
+classic_algs=( "RSA_2048" "RSA_3072" "RSA_4096" "prime256v1" "secp384r1" "secp521r1")
+ciphers=("TLS_AES_256_GCM_SHA384" "TLS_CHACHA20_POLY1305_SHA256" "TLS_AES_128_GCM_SHA256")
 
-    # Kem algorithms array
-    kem_algs=()
-    while IFS= read -r line; do
-        kem_algs+=("$line")
-    done < $kem_alg_file
 
-    # Sig algorithms array
-    sig_algs=()
-    while IFS= read -r line; do
-        sig_algs+=("$line")
-    done < $sig_alg_file
+# #------------------------------------------------------------------------------
+# function set_algs() {
+#     # Function for reading in the various algorithms into an array for use within the script
 
-    # classic algorithms array
-    classic_algs=( "RSA_2048" "RSA_3072" "RSA_4096" "prime256v1" "secp384r1" "secp521r1")
+#     # Kem algorithms array
+#     kem_algs=()
+#     while IFS= read -r line; do
+#         kem_algs+=("$line")
+#     done < $kem_alg_file
 
-    # Define the cipher suites
-    ciphers=("TLS_AES_256_GCM_SHA384" "TLS_CHACHA20_POLY1305_SHA256" "TLS_AES_128_GCM_SHA256")
+#     # Sig algorithms array
+#     sig_algs=()
+#     while IFS= read -r line; do
+#         sig_algs+=("$line")
+#     done < $sig_alg_file
 
-}
+#     # Hybrid kem algorithms array
+#     hybrid_kem_algs=()
+#     while IFS= read -r line; do
+#         hybrid_kem_algs+=("$line")
+#     done < $hybrid_kem_alg_file
+
+#     # Hybrid sig algorithms array
+#     hybrid_sig_algs=()
+#     while IFS= read -r line; do
+#         hybrid_sig_algs+=("$line")
+#     done < $hybrid_sig_alg_file
+
+
+# }
 
 #------------------------------------------------------------------------------
 function set_test_env() {
@@ -86,6 +97,18 @@ function set_test_env() {
 
     if [ "$test_type" -eq 0 ]; then
 
+        # Kem algorithms array
+        kem_algs=()
+        while IFS= read -r line; do
+            kem_algs+=("$line")
+        done < $kem_alg_file
+
+        # Sig algorithms array
+        sig_algs=()
+        while IFS= read -r line; do
+            sig_algs+=("$line")
+        done < $sig_alg_file
+
         # Populate current group array with PQC algs
         for kem_alg in "${kem_algs[@]}"; do
             current_group+=":$kem_alg"
@@ -97,14 +120,32 @@ function set_test_env() {
         # Set configurations in openssl.cnf file for PQC testing
         "$util_scripts/configure-openssl-cnf.sh" $configure_mode
 
-    elif [ "$test_type" -eq 1 ]; then
-        # for classic_alg in "${kem_algs[@]}"; do
-        #     current_group+=":$classic_sig"
-        # done
+    elif [ "$test_type" -eq 1 ]; then # probs not needed and can remove
 
+        # Set configurations in openssl.cnf file for Classic testing
+        "$util_scripts/configure-openssl-cnf.sh" $configure_mode
 
-        echo $configure_mode
+    elif [ "$test_type" -eq 2 ]; then
 
+        # Hybrid kem algorithms array
+        kem_algs=()
+        while IFS= read -r line; do
+            kem_algs+=("$line")
+        done < $hybrid_kem_alg_file
+
+        # Hybrid sig algorithms array
+        sig_algs=()
+        while IFS= read -r line; do
+            sig_algs+=("$line")
+        done < $hybrid_sig_alg_file
+
+        # Populate current group array with PQC algs
+        for hyrb_kem_alg in "${kem_algs[@]}"; do
+            current_group+=":$hyrb_kem_alg"
+        done
+        
+        # Remove beginning : at index 0
+        current_group="${current_group:1}"
         # Set configurations in openssl.cnf file for PQC testing
         "$util_scripts/configure-openssl-cnf.sh" $configure_mode
 
@@ -317,24 +358,18 @@ function pqc_tests() {
                 # Wait for ready from client signal
                 nc -l -p 12345 > /dev/null
 
-                # if contains "$sig" "${classic_algs[@]}" && contains "$kem" "${classic_algs[@]}"; then
+                # Setting cert and key files depending on test type
+                if [ "$test_type" -eq 0 ]; then
+                    cert_file="$pqc_cert_dir/""${sig/:/_}""-srv.crt"
+                    key_file="$pqc_cert_dir/""${sig/:/_}""-srv.key"
 
-                #     # Sending skip signal to server 
-                #     echo "[OUTPUT] - Skipping as Sig and Kem are both classic!!!"
-                #     control_signal "skip"
-
-                #     # Wait for done signal from client
-                #     nc -l -p 12345 > /dev/null
-                #     break
-
-                # else
-
-                # Setting cert and key files
-                pqc_cert_file="$pqc_cert_dir/""${sig/:/_}""-srv.crt"
-                pqc_key_file="$pqc_cert_dir/""${sig/:/_}""-srv.key"
+                elif [ "$test_type" -eq 2 ]; then
+                    cert_file="$hybrid_cert_dir/""${sig/:/_}""-srv.crt"
+                    key_file="$hybrid_cert_dir/""${sig/:/_}""-srv.key"
+                fi
 
                 # Starting server process
-                "$open_ssl_path/bin/openssl" s_server -cert $pqc_cert_file -key $pqc_key_file -www -tls1_3 -groups $kem \
+                "$open_ssl_path/bin/openssl" s_server -cert $cert_file -key $key_file -www -tls1_3 -groups $kem \
                     -provider oqsprovider -provider-path $provider_path -accept 4433 &
                 server_pid=$!
 
@@ -401,8 +436,8 @@ function main() {
         control_signal "iteration_handshake"
 
         # Calling PQC Tests
-        #test_type=0 #0=pqc, 1=classic, 2=hybrid
-        set_test_env 0 1
+        test_type=0 #0=pqc, 1=classic, 2=hybrid
+        set_test_env $test_type 1
         pqc_tests
         echo -e "[OUTPUT] - Completed $run_num PQC Tests"
 
@@ -414,11 +449,22 @@ function main() {
 
         # Performing current run classic Tests
         test_type=1 #0=pqc, 1=classic, 2=hybrid
-        set_test_env 1 1
+        set_test_env $test_type 1
         classic_tests
         echo "[OUTPUT] - Completed $run_num Classic TLS Handshake Tests"
 
-        #set_test_env 0 0
+        # Performing run handshake
+        echo "-----------------"
+        echo "Hybrid-PQC run $run_num"
+        echo -e "-----------------\n"
+        control_signal "iteration_handshake"
+
+        # Performing current run classic Tests
+        test_type=2 #0=pqc, 1=classic, 2=hybrid
+        set_test_env $test_type 1
+        echo $DEFAULT_GROUPS
+        pqc_tests
+        echo "[OUTPUT] - Completed $run_num Classic TLS Handshake Tests"
 
         # Outputting run complete
         echo "[OUTPUT] - All $run_num Testing Completed"

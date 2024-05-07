@@ -17,6 +17,7 @@ from results_averager import OqsOpensslResultAverager
 # Declaring global variables
 dir_paths = {}
 algs_dict = {}
+pqc_type_vars = {}
 speed_sig_algs = []
 speed_kem_algs = []
 col_headers = {}
@@ -28,21 +29,33 @@ num_runs = 0
 def setup_parse_env() :
     """Function for setting up the parsing environment by defining various algorithms, ciphers and column headers"""
 
-    global root_dir, dir_paths, col_headers, algs_dict
+    global root_dir, dir_paths, col_headers, algs_dict, pqc_type_vars
 
     # Declaring algs dict that will be used by various methods and functions
     algs_dict = {
         'kem_algs': [], 
         'sig_algs': [],
+        "hybrid_kem_algs": [],
+        "hybrid_sig_algs": [],
         'classic_algs': ["RSA_2048", "RSA_3072", "RSA_4096", "prime256v1", "secp384r1", "secp521r1"], 
         'ciphers': ["TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256", "TLS_AES_128_GCM_SHA256"]
     }
 
     # Declaring column headers dict that will be used by various methods and functions
     col_headers = {
-        'pqc_headers': ["Signing Algorithm", "KEM Algorithm", "Reused Session ID", "Connections in User Time", "User Time (s)", "Connections Per User Second", "Connections in Real Time", "Real Time (s)"],
+        'pqc_based_headers': ["Signing Algorithm", "KEM Algorithm", "Reused Session ID", "Connections in User Time", "User Time (s)", "Connections Per User Second", "Connections in Real Time", "Real Time (s)"],
         'classic_headers': ["Ciphersuite", "Classic Algorithm", "Reused Session ID", "Connections in User Time", "User Time (s)", "Connections Per User Second", "Connections in Real Time", "Real Time (s)"]
 
+    }
+
+    # Declaring dictionary which will contain the respective keys for alg_dict and dir_paths for PQC-only and PQC-Hybrid results
+    pqc_type_vars = {
+        "kem_alg_type": ["kem_algs", "hybrid_kem_algs"],
+        "sig_alg_type": ["sig_algs", "hybrid_sig_algs"],
+        "up_results_path": "",
+        "results_type": ["pqc_handshake_results", "hybrid_handshake_results"],
+        "type_prefix": ["pqc", "hybrid"],
+        "base_type": ["pqc_base_results", "hybrid_base_results"]
     }
 
     # Setting main path vars
@@ -55,18 +68,22 @@ def setup_parse_env() :
     dir_paths['up_results'] = os.path.join(root_dir, "test-data", "up-results", "oqs-openssl")
 
     # Setting the alg list filename based on version flag
-    kem_algs_file = os.path.join(root_dir, "test-data", "alg-lists", "ssl-kem-algs.txt")
-    sig_algs_file = os.path.join(root_dir, "test-data", "alg-lists", "ssl-sig-algs.txt")
+    alg_list_files = {
+        "kem_algs": os.path.join(root_dir, "test-data", "alg-lists", "ssl-kem-algs.txt"),
+        "sig_algs": os.path.join(root_dir, "test-data", "alg-lists", "ssl-sig-algs.txt"),
+        "hybrid_kem_algs": os.path.join(root_dir, "test-data", "alg-lists", "ssl-hybr-kem-algs.txt"),
+        "hybrid_sig_algs": os.path.join(root_dir, "test-data", "alg-lists", "ssl-hybr-sig-algs.txt")
+    }
 
-    # Inserting the kem algs into list for later use
-    with open(kem_algs_file, "r") as kem_file:
-        for line in kem_file:
-            algs_dict['kem_algs'].append(line.strip())
-    
-    # Inserting the digital signature algs into list for later use
-    with open(sig_algs_file, "r") as alg_file:
-        for line in alg_file:
-            algs_dict['sig_algs'].append(line.strip())
+    # Pulling algorithm names for alg-lists files and creating relevant alg lists
+    for alg_type, filepath in alg_list_files.items():
+        with open(filepath, "r") as alg_file:
+            for line in alg_file:
+                algs_dict[alg_type].append(line.strip())
+
+
+    # Emptying alg_list_files dict as no longer needed
+    alg_list_files = None
 
 
 #------------------------------------------------------------------------------
@@ -201,86 +218,62 @@ def get_metrics(current_row, test_filepath, get_reuse_metrics):
 
 
 #------------------------------------------------------------------------------
-def output_processing():
-    """ Function for processing the outputs of the 
-        s_time TLS benchmarking tests """
+def pqc_based_processing(current_run):
+    """Function for parsing PQC or PQC-Hybrid TLS results based on 
+       type passed to function for current run"""
 
-    # Setting PQC and Classic up-results dir
-    pqc_up_results_dir = os.path.join(dir_paths['mach_up_results_dir'], "handshake-results", "pqc")
-    classic_up_results_dir = os.path.join(dir_paths['mach_up_results_dir'], "handshake-results", "classic")
+    # Process results for both PQC-only (0) and PQC-Hybrid (1) TLS results
+    for type_index in range (0,2):
 
-    # Setting different results paths for current machine
-    dir_paths['pqc_handshake_results'] = os.path.join(dir_paths['mach_handshake_dir'], "pqc")
-    dir_paths['classic_handshake_results'] = os.path.join(dir_paths['mach_handshake_dir'], "classic")
-    dir_paths['hybrid_handshake_results'] = os.path.join(dir_paths['mach_handshake_dir'], "hybrid")
-
-    dir_paths['pqc_base_results'] = os.path.join(dir_paths['pqc_handshake_results'], "base-results")
-    #dir_paths['classic_base_results'] = os.path.join(dir_paths['classic_handshake_results'], "base-results")
-    dir_paths['hybrid_base_results'] = os.path.join(dir_paths['hybrid_handshake_results'], "base-results")
-
-    # Making base-results dirs
-    os.makedirs(dir_paths['pqc_base_results'])
-    os.makedirs(dir_paths['classic_handshake_results'])
-    os.makedirs(dir_paths['hybrid_base_results'])
-
-    # Loop through the runs
-    for current_run in range(1, num_runs+1):
-
-        # Declaring dataframes
-        sig_metrics_df = pd.DataFrame(columns=col_headers['pqc_headers'])
-        cipher_metrics_df = pd.DataFrame(columns=col_headers['classic_headers'])
-
-        """ PQC Test Results Pre-Processing """
+        """Results Pre-Processing """
+        # Declaring dataframe used in pre-processing
+        sig_metrics_df = pd.DataFrame(columns=col_headers['pqc_based_headers'])
 
         # Loop through the sig list to create csv
-        for sig in algs_dict['sig_algs']:
+        for sig in algs_dict[pqc_type_vars["sig_alg_type"][type_index]]:
 
             # Loop through KEM files signed with current sig
-            for kem in algs_dict['kem_algs']:
+            for kem in algs_dict[pqc_type_vars["kem_alg_type"][type_index]]:
 
                 # Set filename and path
                 filename = f"tls-handshake-{current_run}-{sig}-{kem}.txt"
-                test_filepath = os.path.join(pqc_up_results_dir, filename)
+                test_filepath = os.path.join(pqc_type_vars["up_results_path"][type_index], filename)
                 
                 # Getting session id first use metrics for current kem
                 current_row = [kem, ""]
-                get_reuse_metrics = False
-                current_row = get_metrics(current_row, test_filepath, get_reuse_metrics)
+                current_row = get_metrics(current_row, test_filepath, get_reuse_metrics=False)
                 current_row.insert(0, sig)
 
                 # Adding session id first use row to dataframe
-                new_row_df = pd.DataFrame([current_row], columns=col_headers['pqc_headers'])
+                new_row_df = pd.DataFrame([current_row], columns=col_headers['pqc_based_headers'])
                 sig_metrics_df = pd.concat([sig_metrics_df, new_row_df], ignore_index=True)
                 current_row.clear()
 
                 # Getting session id reused metrics for current kem
                 current_row = [kem, "*"]
-                get_reuse_metrics = True
-                current_row = get_metrics(current_row, test_filepath, get_reuse_metrics)
+                current_row = get_metrics(current_row, test_filepath, get_reuse_metrics=True)
                 current_row.insert(0, sig)
 
                 # Adding session id reused use row to dataframe
-                new_row_df = pd.DataFrame([current_row], columns=col_headers['pqc_headers'])
+                new_row_df = pd.DataFrame([current_row], columns=col_headers['pqc_based_headers'])
                 sig_metrics_df = pd.concat([sig_metrics_df, new_row_df], ignore_index=True)
                 current_row.clear()
 
         # Outputting full base PQC TLS metrics for current run
-        base_out_filename = f"pqc-base-results-run-{current_run}.csv"
-        output_filepath = os.path.join(dir_paths['pqc_base_results'], base_out_filename)
+        base_out_filename = f"{pqc_type_vars['type_prefix'][type_index]}-base-results-run-{current_run}.csv"
+        output_filepath = os.path.join(dir_paths[pqc_type_vars["base_type"][type_index]], base_out_filename)
         sig_metrics_df.to_csv(output_filepath,index=False)
 
-        """Parse PQC Results"""
-
+        """Parse Results"""
         # Setting base results filename and path based on current run
-        pqc_base_filename = f"pqc-base-results-run-{current_run}.csv"
-        pqc_base_filepath = os.path.join(dir_paths['pqc_base_results'], pqc_base_filename)
-
+        pqc_base_filename = f"{pqc_type_vars['type_prefix'][type_index]}-base-results-run-{current_run}.csv"
+        pqc_base_filepath = os.path.join(dir_paths[pqc_type_vars["base_type"][type_index]], pqc_base_filename)
 
         # Making storage dir and files for separated sig/kem combo results
-        for sig in algs_dict['sig_algs']:
+        for sig in algs_dict[pqc_type_vars["sig_alg_type"][type_index]]:
 
             # Set path for sig/kem combo dir
-            sig_path = os.path.join(dir_paths['pqc_handshake_results'], sig)
+            sig_path = os.path.join(dir_paths[pqc_type_vars["results_type"][type_index]], sig)
 
             # Making storage dir for seperated sig/kem combo results if not made
             if not os.path.exists(sig_path):
@@ -296,43 +289,48 @@ def output_processing():
             current_sig_df.to_csv(output_filepath, index=False)
 
 
-        """Classic Test Result Processing"""
+#------------------------------------------------------------------------------
+def classic_based_processing(current_run):
+    """ Function for processing results from classic cipher TLS testing"""
 
-        # Looping through each ciphersuite
-        for cipher in algs_dict['ciphers']:
+    # Setting up-results dir path and creating dataframe used in test processing
+    classic_up_results_dir = os.path.join(dir_paths['mach_up_results_dir'], "handshake-results", "classic")
+    cipher_metrics_df = pd.DataFrame(columns=col_headers['classic_headers'])
 
-            # Looping through each ecc alg
-            for alg in algs_dict['classic_algs']:
+    # Looping through each ciphersuite
+    for cipher in algs_dict['ciphers']:
 
-                # Set filename and path
-                filename = f"tls-handshake-classic-{current_run}-{cipher}-{alg}.txt"
-                test_filepath = os.path.join(classic_up_results_dir, filename)
-                
-                # Getting session id first use metrics for current kem
-                current_row = [alg, ""]
-                current_row = get_metrics(current_row, test_filepath, get_reuse_metrics=False)
-                current_row.insert(0, cipher)
+        # Looping through each ecc alg
+        for alg in algs_dict['classic_algs']:
 
-                # Adding session id first use row to dataframe
-                new_row_df = pd.DataFrame([current_row], columns=col_headers['classic_headers'])
-                cipher_metrics_df = pd.concat([cipher_metrics_df, new_row_df], ignore_index=True)
-                current_row.clear()
-                
-                # Getting session id reused metrics for current kem
-                current_row = [alg, "*"]
-                get_reuse_metrics = True
-                current_row = get_metrics(current_row, test_filepath, get_reuse_metrics=True)
-                current_row.insert(0, cipher)
+            # Set filename and path
+            filename = f"tls-handshake-classic-{current_run}-{cipher}-{alg}.txt"
+            test_filepath = os.path.join(classic_up_results_dir, filename)
+            
+            # Getting session id first use metrics for current kem
+            current_row = [alg, ""]
+            current_row = get_metrics(current_row, test_filepath, get_reuse_metrics=False)
+            current_row.insert(0, cipher)
 
-                # Adding session id reused use row to dataframe
-                new_row_df = pd.DataFrame([current_row], columns=col_headers['classic_headers'])
-                cipher_metrics_df = pd.concat([cipher_metrics_df, new_row_df], ignore_index=True)
-                current_row.clear()
+            # Adding session id first use row to dataframe
+            new_row_df = pd.DataFrame([current_row], columns=col_headers['classic_headers'])
+            cipher_metrics_df = pd.concat([cipher_metrics_df, new_row_df], ignore_index=True)
+            current_row.clear()
+            
+            # Getting session id reused metrics for current kem
+            current_row = [alg, "*"]
+            current_row = get_metrics(current_row, test_filepath, get_reuse_metrics=True)
+            current_row.insert(0, cipher)
 
-        # Outputting full base Classic TLS metrics for current run
-        cipher_out_filename = f"classic-results-run-{current_run}.csv"
-        output_filepath = os.path.join(dir_paths['classic_handshake_results'], cipher_out_filename)
-        cipher_metrics_df.to_csv(output_filepath, index=False)
+            # Adding session id reused use row to dataframe
+            new_row_df = pd.DataFrame([current_row], columns=col_headers['classic_headers'])
+            cipher_metrics_df = pd.concat([cipher_metrics_df, new_row_df], ignore_index=True)
+            current_row.clear()
+
+    # Outputting full base Classic TLS metrics for current run
+    cipher_out_filename = f"classic-results-run-{current_run}.csv"
+    output_filepath = os.path.join(dir_paths['classic_handshake_results'], cipher_out_filename)
+    cipher_metrics_df.to_csv(output_filepath, index=False)
 
 
 #------------------------------------------------------------------------------
@@ -347,7 +345,7 @@ def ssl_speed_drop_last(data_cells):
     sig_alg_name = ''.join(alg_name_list)
     data_cells[0] = sig_alg_name
 
-    # Take s character out of sign and verify values
+    # Take 's' character out of sign and verify values
     sign_string = data_cells[1]
     verify_string = data_cells[2]
     sign_list = list(sign_string)
@@ -442,16 +440,41 @@ def ssl_speed_processing(mach_up_results_dir, mach_speed_results_dir):
 
 
 #------------------------------------------------------------------------------
+def output_processing():
+    """ Function for processing the outputs of the 
+        s_time TLS benchmarking tests for the current machine"""
+
+    # Setting different results paths for current machine
+    dir_paths['pqc_handshake_results'] = os.path.join(dir_paths['mach_handshake_dir'], "pqc")
+    dir_paths['classic_handshake_results'] = os.path.join(dir_paths['mach_handshake_dir'], "classic")
+    dir_paths['hybrid_handshake_results'] = os.path.join(dir_paths['mach_handshake_dir'], "hybrid")
+
+    dir_paths['pqc_base_results'] = os.path.join(dir_paths['pqc_handshake_results'], "base-results")
+    #dir_paths['classic_base_results'] = os.path.join(dir_paths['classic_handshake_results'], "base-results")
+    dir_paths['hybrid_base_results'] = os.path.join(dir_paths['hybrid_handshake_results'], "base-results")
+
+    # Making base-results dirs
+    os.makedirs(dir_paths['pqc_base_results'])
+    os.makedirs(dir_paths['classic_handshake_results'])
+    os.makedirs(dir_paths['hybrid_base_results'])
+
+    # Loop through the runs and call result processing functions
+    for current_run in range(1, num_runs+1):
+        pqc_based_processing(current_run)
+        classic_based_processing(current_run)
+
+
+#------------------------------------------------------------------------------
 def process_tests(num_machines, algs_dict):
     """ Function for controlling the parsing scripts for
         the OQS-OpenSSL up-result files and calling average 
         calculation scripts """
     
-    global dir_paths
+    global dir_paths, pqc_type_vars
 
     # Declare average_gen class instance
     oqs_provider_avg = None
-    oqs_provider_avg = OqsOpensslResultAverager(dir_paths, num_runs, algs_dict, col_headers)
+    oqs_provider_avg = OqsOpensslResultAverager(dir_paths, num_runs, algs_dict, pqc_type_vars, col_headers)
 
     # Looping through the specified number of machines
     for machine in range(1, num_machines+1):
@@ -461,6 +484,15 @@ def process_tests(num_machines, algs_dict):
         dir_paths['mach_up_results_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine)}")
         dir_paths['mach_handshake_dir']  = os.path.join(dir_paths['results_dir'], f"machine-{str(machine)}", "handshake-results")
         dir_paths['mach_speed_results_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine)}", "speed-results")
+
+        # Clearing and setting pqc-var types dictionary so that both PQC-only and PQC-hybrid results can be processed
+        #pqc_type_vars = None
+        pqc_type_vars.update({
+           "up_results_path": [
+                os.path.join(dir_paths['mach_up_results_dir'], "handshake-results", "pqc"), 
+                os.path.join(dir_paths['mach_up_results_dir'], "handshake-results", "hybrid")
+            ], 
+        })
 
         # Creating results directory for current machine and handling Machine-ID clashes
         handle_results_dir_creation(machine)

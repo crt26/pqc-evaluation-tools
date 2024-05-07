@@ -9,7 +9,7 @@ p384_kyber768
 x448_kyber768
 x25519_kyber768
 p256_kyber768
-p521_kyber1024 
+p521_kyber1024
 p256_frodo640aes
 x25519_frodo640aes
 p256_frodo640shake
@@ -24,7 +24,7 @@ p256_hqc128
 x25519_hqc128
 p384_hqc192
 x448_hqc192
-p521_hqc256 
+p521_hqc256
 p256_mlkem512
 x25519_mlkem512
 p384_mlkem768

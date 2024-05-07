@@ -153,7 +153,7 @@ function openssl_build() {
     # Setting thread count for build
     threads=$(nproc)
 
-    "Groups = \"\$ENV::DEFAULT_GROUPS\""
+    #"Groups = \"\$ENV::DEFAULT_GROUPS\""
 
     # Declaring conf file changes array
     oqsprovider_path="$oqs_openssl_path/lib/oqsprovider.so"
@@ -268,8 +268,17 @@ function enable_pmu() {
     echo -e "\nEnabling ARM PMU\n"
     cd $libs_dir
     git clone --branch main https://github.com/mupq/pqax.git
-    cd "$libs_dir/pqax/enable_ccr" && make && make install
+    cd "$libs_dir/pqax/enable_ccr"
+    make
+    make_status=$? 
+    make install
     cd $root_dir
+
+    if [ "$make_status" -eq 0 ]; then
+        enabled_pmu=1
+    else
+        enabled_pmu=0
+    fi
 
 }
 
@@ -304,19 +313,24 @@ function liboqs-build() {
 
         elif [[ "$(uname -m)" = arm* || "$(uname -m)" == aarch* ]]; then
 
-            #ARM arrch64 build options for pi
-            build_options="no-shared linux-aarch64"
-            build_flags="-DOQS_SPEED_USE_ARM_PMU=ON"
-            build_flag1="-D_OQS_RASPBERRY_PI"
-            build_flag2="-DSPEED_USE_ARM_PMU"
-            threads=$(nproc)
-            
             # Enabling ARM PMU if needed
             if lsmod | grep -q 'enable_ccr'; then
                 echo "The enable_ccr module enabled, skipping build."
             else
                 enable_pmu
             fi
+
+            #ARM arrch64 build options for pi
+            # build_options="no-shared linux-aarch64"
+            if [ $enabled_pmu -eq 1 ];then
+                build_flags="-DOQS_SPEED_USE_ARM_PMU=ON"
+            else
+                build_flags=""
+            fi
+            # build_flag1="-D_OQS_RASPBERRY_PI"
+            # build_flag2="-DSPEED_USE_ARM_PMU"
+            threads=$(nproc)
+            
 
         else
             # Unsupported system error 
