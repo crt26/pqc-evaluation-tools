@@ -20,11 +20,10 @@ This is the **development branch**, it may not be in a fully functioning state a
 - [x] Update [full-pqc-tls-test.sh](scripts/test-scripts/full-pqc-tls-test.sh) to account for changes in directory structure and OQS-OpenSSL-Provider tools
 - [x] Update all automated testing scripts to use a more refined and efficient method for storing result data compared to current up-results method
 - [x] Update documentation to reflect changes to repository functionality and structure
-- [ ] Resolve issues with testing on ARMv8 devices [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761)
-- [ ] Integrate Hybrid algorithmic testing to OQS-OpenSSL-Provider scripts
-- [ ] Integrate Hybrid test handling in parsing scripts
+- [x] Integrate Hybrid algorithmic testing to OQS-OpenSSL-Provider scripts
+- [x] Integrate Hybrid test handling in parsing scripts
 - [ ] Resolve issue with scripts being required to be executed from only their stored directory
-
+- [ ] Resolve issues with testing on ARMv8 devices [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761)
 ## Contents <!-- omit from toc --> 
 - [Overview](#overview)
 - [Supported Hardware](#supported-hardware)
