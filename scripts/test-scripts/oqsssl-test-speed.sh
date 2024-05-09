@@ -9,98 +9,112 @@
 
 #------------------------------------------------------------------------------
 # Declaring directory path variables
-current_dir=$(pwd)
-root_dir=$(dirname "$current_dir")
-device_name=$(hostname)
-keys_dir="$root_dir/keys"
-build_dir="$root_dir/builds/oqs-openssl-build/openssl"
+root_dir=$(cd "$PWD"/../.. && pwd)
+libs_dir="$root_dir/lib"
+tmp_dir="$root_dir/tmp"
+test_data_dir="$root_dir/test-data"
+test_scripts_path="$root_dir/scripts/test-scripts"
+util_scripts="$root_dir/scripts/utility-scripts"
 
-# Declaring algorithm lists filepaths
-sig_alg_file="$root_dir/alg-lists/ssl-speed-sig-algs.txt"
-kem_alg_file="$root_dir/alg-lists/ssl-speed-kem-algs.txt"
+# Declaring global library path files
+open_ssl_path="$libs_dir/openssl_3.2"
+oqs_openssl_path="$libs_dir/oqs-openssl"
+provider_path="$libs_dir/oqs-openssl/lib"
 
-# Declaring output dir
-speed_output_dir="$root_dir/up-results/openssl/speed-tests"
+# Exporting openssl lib path
+if [[ -d "$open_ssl_path/lib64" ]]; then
+    openssl_lib_path="$open_ssl_path/lib64"
+else
+    openssl_lib_path="$open_ssl_path/lib"
+fi
+
+export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
+
+# Declaring static algorithm arrays and alg-list filepaths
+kem_alg_file="$test_data_dir/alg-lists/ssl-kem-algs.txt"
+sig_alg_file="$test_data_dir/alg-lists/ssl-sig-algs.txt"
+hybrid_kem_alg_file="$test_data_dir/alg-lists/ssl-hybr-kem-algs.txt"
+hybrid_sig_alg_file="$test_data_dir/alg-lists/ssl-hybr-sig-algs.txt"
+
 
 #------------------------------------------------------------------------------
-function get_algs() {
-    # Function for reading in the various algorithms into an array for use within the script
+function set_test_env() {
+    # Function for setting up the testing environment by getting algs and creating output dirs
 
-    # Creating algorithm list arrays
-
-    # Kem algorithms
+    # Kem algorithms array
     kem_algs=()
     while IFS= read -r line; do
         kem_algs+=("$line")
     done < $kem_alg_file
 
-    # Sig algorithms
+    # Sig algorithms array
     sig_algs=()
     while IFS= read -r line; do
         sig_algs+=("$line")
     done < $sig_alg_file
 
-}
+    # Hybrid kem algorithms array
+    hybrid_kem_algs=()
+    while IFS= read -r line; do
+        hybrid_kem_algs+=("$line")
+    done < $hybrid_kem_alg_file
 
-#------------------------------------------------------------------------------
-function get_options() {
-    # Function for reading in the test parameters which were specified within the OQS-OpenSSL
-    # test control script
+    # Hybrid sig algorithms array
+    hybrid_sig_algs=()
+    while IFS= read -r line; do
+        hybrid_sig_algs+=("$line")
+    done < $hybrid_sig_alg_file
 
-    # Getting in the test time parameter
-    if [ -f "$root_dir/tmp/tls_speed_time.txt" ]; then
-
-        # Read the run number value from the tmp file
-        opt1_file_input=$(<"$root_dir/tmp/tls_speed_time.txt")
-
-        # Check if the run number value is a valid
-        if [[ $opt1_file_input =~ ^[0-9]+$ ]]; then
-            # Store the value as an integer variable
-            tls_speed_time=$opt1_file_input
-        else
-            echo "Invalid run number value, please ensure value is correct when starting test"
-            exit 1
-        fi
-
-    else
-        echo "Run number file not found, please ensure run number file is present in repo tmp directory"
-        exit 1
-    
+    # Creating output dirs and removing old if needed
+    if [ -d $PQC_SPEED ]; then
+        rm -rf $PQC_SPEED
     fi
+    mkdir -p $PQC_SPEED
+
+    if [ -d $HYBRID_SPEED ]; then
+        rm -rf $HYBRID_SPEED
+    fi
+    mkdir -p $HYBRID_SPEED
 
 }
+
 
 #------------------------------------------------------------------------------
 function main() {
     # Main function which controls testing scripts which are called for TLS
     # speed performance test
 
-    # Getting test parameters
-    get_algs
-    get_test_options
+    set_test_env
 
     # Joining the elements of algorithm arrays into a string variable to create test parameter
     kem_algs_string="${kem_algs[@]}"
     sig_algs_string="${sig_algs[@]}"
+    hybrid_kem_algs_string="${hybrid_kem_algs[@]}"
+    hybrid_sig_algs_string="${hybrid_sig_algs[@]}"
 
-    # Creating output dirs and removing old if needed
-    if [ -d $speed_output_dir ]; then
-        rm -rf $speed_output_dir
-    fi
-    mkdir -p $speed_output_dir
+    "$util_scripts/configure-openssl-cnf.sh" 0
 
     # Performing TLS speed tests
-    for run_num in {1..15}; do
+    for run_num in $(seq 1 $NUM_RUN); do
 
         # Creating output names for current run
-        kem_output_filename="$speed_output_dir/ssl-speed-kem-$run_num.txt"
-        sig_output_filename="$speed_output_dir/ssl-speed-sig-$run_num.txt"
+        kem_output_filename="$PQC_SPEED/ssl-speed-kem-$run_num.txt"
+        sig_output_filename="$PQC_SPEED/ssl-speed-sig-$run_num.txt"
+        hybrid_kem_output_filename="$HYBRID_SPEED/ssl-speed-hybrid-kem-$run_num.txt"
+        hybrid_sig_output_filename="$HYBRID_SPEED/ssl-speed-hybrid-sig-$run_num.txt"
+        classic_output_filename="$CLASSIC_SPEED/ssl-speed-classic-$run_num.txt"
 
-        # Performing the speed tests for sig and kem algs
-        "$build_dir/apps/openssl" speed -seconds $tls_speed_time $kem_algs_string > $kem_output_filename
-        "$build_dir/apps/openssl" speed -seconds $tls_speed_time $sig_algs_string > $sig_output_filename
-    
+        # PQC-only sig and kem algs speed tests
+        "$open_ssl_path/bin/openssl" speed -seconds $TIME_NUM -provider-path $provider_path -provider oqsprovider  $kem_algs_string > $kem_output_filename
+        "$open_ssl_path/bin/openssl" speed -seconds $TIME_NUM -provider-path $provider_path -provider oqsprovider $sig_algs_string > $sig_output_filename
+
+        # PQC-Hybrid sig and kem algs speed tests
+        "$open_ssl_path/bin/openssl" speed -seconds $TIME_NUM -provider-path $provider_path -provider oqsprovider  $hybrid_kem_algs_string > $hybrid_kem_output_filename
+        "$open_ssl_path/bin/openssl" speed -seconds $TIME_NUM -provider-path $provider_path -provider oqsprovider $hybrid_sig_algs_string > $hybrid_sig_output_filename
+
     done
+
+    "$util_scripts/configure-openssl-cnf.sh" 1
 
 }
 main

@@ -18,8 +18,10 @@ from results_averager import OqsOpensslResultAverager
 dir_paths = {}
 algs_dict = {}
 pqc_type_vars = {}
+speed_type_vars = {}
 speed_sig_algs = []
 speed_kem_algs = []
+speed_headers = []
 col_headers = {}
 root_dir = ""
 num_runs = 0
@@ -29,7 +31,7 @@ num_runs = 0
 def setup_parse_env() :
     """Function for setting up the parsing environment by defining various algorithms, ciphers and column headers"""
 
-    global root_dir, dir_paths, col_headers, algs_dict, pqc_type_vars
+    global root_dir, dir_paths, col_headers, algs_dict, pqc_type_vars, speed_type_vars, speed_headers
 
     # Declaring algs dict that will be used by various methods and functions
     algs_dict = {
@@ -57,6 +59,13 @@ def setup_parse_env() :
         "type_prefix": ["pqc", "hybrid"],
         "base_type": ["pqc_base_results", "hybrid_base_results"]
     }
+
+    speed_type_vars = {"PQC": "", "Hybrid": ""}
+
+    speed_headers = [
+        ["Algorithm", "Keygen", "encaps", "decaps", "Keygen/s", "Encaps/s", "Decaps/s"], 
+        ["Algorithm", "Keygen", "Signs", "Verify", "Keygen/s", "sign/s", "verify/s"]
+    ]
 
     # Setting main path vars
     current_dir = os.getcwd()
@@ -332,118 +341,92 @@ def classic_based_processing(current_run):
     output_filepath = os.path.join(dir_paths['classic_handshake_results'], cipher_out_filename)
     cipher_metrics_df.to_csv(output_filepath, index=False)
 
-
 #------------------------------------------------------------------------------
 def ssl_speed_drop_last(data_cells):
     """Function for removing unwanted characters from 
-        sig values during the ssl-speed parsing"""
-    
-    # Convert alg name to list, remove colon and set back to string
-    sig_alg_name = data_cells[0]
-    alg_name_list = list(sig_alg_name)
-    del alg_name_list[-1]
-    sig_alg_name = ''.join(alg_name_list)
-    data_cells[0] = sig_alg_name
+        metric values during the ssl-speed parsing"""
 
-    # Take 's' character out of sign and verify values
-    sign_string = data_cells[1]
-    verify_string = data_cells[2]
-    sign_list = list(sign_string)
-    verify_list = list(verify_string)
-    del sign_list[-1]
-    del verify_list[-1]
-    sign_number = ''.join(sign_list)
-    verify_number = ''.join(verify_list)
-    data_cells[1] = sign_number
-    data_cells[2] = verify_number
+    # Loop through values and remove an s chars present in metrics
+    for cell_index in range(1, len(data_cells)):
+        cell_value = data_cells[cell_index]
+        if "s" in cell_value:
+            data_cells[cell_index] = data_cells[cell_index].replace('s', '')
 
     return data_cells
 
 
 #------------------------------------------------------------------------------
-def ssl_speed_processing(mach_up_results_dir, mach_speed_results_dir):
-    """Function for parsing OQS-OpenSSL speed up-result files"""
+def get_speed_metrics(speed_filepath, alg_type):
 
-    # Setting speed up-results dir path
-    speed_up_results_dir = os.path.join(mach_up_results_dir, "speed-tests")
+    # Declaring vars needed for getting metrics and setting up dataframe with test/alg type headers
+    start = False
+    data_lists = []
+    headers = speed_headers[0] if alg_type == "kem" else speed_headers[1]
+    speed_metrics_df = pd.DataFrame(columns=headers)
 
-    # Declaring column headers list
-    kem_headers = ["Algorithm", "Keygen/s", "Encaps/s", "Decaps/s"]
-    sig_headers = ["Algorithm", "Sign", "Verify", "sign/s", "verify/s"]
+    # Opening file and extracting
+    with open(speed_filepath, "r") as speed_file:
 
-    # Loop through the specified number of runs
-    for current_run in range(1, num_runs+1):
+        for line in speed_file:
 
-        # Declaring flag and data list variables
-        start = False
-        data_lists = []
-        alg_type_flags = [False, True] # False is KEM and True is Sig
+            # Checking to see if result table has started
+            if "keygens/s" in line:
+                start = True
+                continue
+            elif "sign" in line and "verify" in line:
+                start = True
+                continue
 
-        # Getting the data for sig and kem
-        for alg_type in alg_type_flags:
+            # If result table has started extract data
+            if start:
+                data_lists.append(line.strip())
+    
+    # Appending data onto dataframe
+    for data in data_lists:
 
-            # Setting variables based on alg type
-            if alg_type == False:
-                speed_metrics_df = pd.DataFrame(columns=kem_headers)
-                speed_file_name = f"ssl-speed-kem-{str(current_run)}.txt"
-                speed_filepath = os.path.join(speed_up_results_dir, speed_file_name)
-                algs = speed_kem_algs
-                headers = kem_headers
-                test_alg_type = "kem"
-            
-            elif alg_type == True:
-                speed_metrics_df = pd.DataFrame(columns=sig_headers)
-                speed_file_name = f"ssl-speed-sig-{str(current_run)}.txt"
-                speed_filepath = os.path.join(speed_up_results_dir, speed_file_name)
-                algs = speed_sig_algs
-                headers = sig_headers
-                test_alg_type = "sig"
+        # Inserting alg name to row
+        data_cells = data.split()
 
-            # Resetting start flag
-            start = False
+        # Removing any s char present in speed metric values for the row
+        data_cells = ssl_speed_drop_last(data_cells)
 
-            # Opening file and extracting
-            with open(speed_filepath, "r") as speed_file:
-                for line in speed_file:
+        # Adding new data row to speed metrics data frame
+        new_row_df = pd.DataFrame([data_cells], columns=headers)
+        speed_metrics_df = pd.concat([speed_metrics_df, new_row_df], ignore_index=True)
 
-                    # Checking to see if result table has started
-                    if "keygen/s" in line:
-                        start = True
-                        continue
-                    elif "sign" in line and "verify" in line:
-                        start = True
-                        continue
+    return speed_metrics_df
 
-                    # If result table has started extract data
-                    if start:
-                        data_lists.append(line.strip())
-            
-            # Appending data onto dataframe
-            for data in data_lists:
+#------------------------------------------------------------------------------
+def speed_processing(current_run):
+    """Function for processing openssl speed metrics for both PQC-only and PQC-Hybrid algorithms
+       for the current run"""
 
-                # Inserting alg name to row
-                data_cells = data.split()
+    # Define alg type list 
+    alg_types = ["kem", "sig"]
 
-                # Removing colon from sig algs
-                if alg_type == True:
-                    data_cells = ssl_speed_drop_last(data_cells)
+    # Loop through test types and process up-results for speed metrics
+    for test_type, dir_list in dir_paths['speed_types_dirs'].items():
 
-                # Adding new data row to speed metrics data frame
-                new_row_df = pd.DataFrame([data_cells], columns=headers)
-                speed_metrics_df = pd.concat([speed_metrics_df, new_row_df], ignore_index=True)
+        # Set file prefix depending on test type
+        pqc_fileprefix = "ssl-speed" if test_type == "pqc" else "ssl-speed-hybrid"
+
+        # Process both KEM and Sig results for the current test type
+        for alg_type in alg_types:
+
+            # Setting up-results filepath and pulling metrics from raw file
+            speed_filepath = os.path.join(dir_list[0], f"{pqc_fileprefix}-{alg_type}-{str(current_run)}.txt")
+            speed_metrics_df = get_speed_metrics(speed_filepath, alg_type)
 
             # Outputting speed metrics csv
-            speed_out_filename = f"ssl-speed-{test_alg_type}-{current_run}.csv"
-            output_filepath = os.path.join(mach_speed_results_dir, speed_out_filename)
+            output_filepath = os.path.join(dir_list[1], f"{pqc_fileprefix}-{alg_type}-{str(current_run)}.csv")
             speed_metrics_df.to_csv(output_filepath, index=False)
-            data_lists.clear()
 
 
 #------------------------------------------------------------------------------
 def output_processing():
     """ Function for processing the outputs of the 
         s_time TLS benchmarking tests for the current machine"""
-
+    
     # Setting different results paths for current machine
     dir_paths['pqc_handshake_results'] = os.path.join(dir_paths['mach_handshake_dir'], "pqc")
     dir_paths['classic_handshake_results'] = os.path.join(dir_paths['mach_handshake_dir'], "classic")
@@ -462,7 +445,7 @@ def output_processing():
     for current_run in range(1, num_runs+1):
         pqc_based_processing(current_run)
         classic_based_processing(current_run)
-
+        speed_processing(current_run)
 
 #------------------------------------------------------------------------------
 def process_tests(num_machines, algs_dict):
@@ -483,10 +466,14 @@ def process_tests(num_machines, algs_dict):
         dir_paths['mach_results_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine)}")
         dir_paths['mach_up_results_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine)}")
         dir_paths['mach_handshake_dir']  = os.path.join(dir_paths['results_dir'], f"machine-{str(machine)}", "handshake-results")
+        dir_paths['mach_up_speed_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine)}", "speed-results")
         dir_paths['mach_speed_results_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine)}", "speed-results")
+        dir_paths['speed_types_dirs'] = {
+            "pqc": [os.path.join(dir_paths['mach_up_speed_dir'], "pqc"), os.path.join(dir_paths['mach_speed_results_dir'])], 
+            "hybrid": [os.path.join(dir_paths['mach_up_speed_dir'], "hybrid"), os.path.join(dir_paths['mach_speed_results_dir'])],
+        }
 
-        # Clearing and setting pqc-var types dictionary so that both PQC-only and PQC-hybrid results can be processed
-        #pqc_type_vars = None
+        # Setting pqc-var types dictionary so that both PQC-only and PQC-hybrid results can be processed
         pqc_type_vars.update({
            "up_results_path": [
                 os.path.join(dir_paths['mach_up_results_dir'], "handshake-results", "pqc"), 
@@ -499,11 +486,11 @@ def process_tests(num_machines, algs_dict):
 
         # Calling processing functions
         output_processing()
-        #ssl_speed_processing(mach_up_results_dir, mach_speed_results_dir)
 
         # Calling average calculation function
         oqs_provider_avg.gen_pqc_avgs()
         oqs_provider_avg.gen_classic_avgs()
+        oqs_provider_avg.gen_speed_avgs(speed_headers)
 
 
 #------------------------------------------------------------------------------

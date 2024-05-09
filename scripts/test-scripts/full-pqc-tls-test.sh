@@ -50,11 +50,10 @@ function set_paths() {
     export HYBRID_HANDSHAKE="$MACHINE_HANDSHAKE_RESULTS/hybrid"
 
     export PQC_SPEED="$MACHINE_SPEED_RESULTS/pqc"
-    export CLASSIC_SPEED="$MACHINE_SPEED_RESULTS/classic"
     export HYBRID_SPEED="$MACHINE_SPEED_RESULTS/hybrid"
 
     # Decalring result paths array
-    result_dir_paths=("$PQC_HANDSHAKE" "$CLASSIC_HANDSHAKE" "$HYBRID_HANDSHAKE" "$PQC_SPEED" "$CLASSIC_SPEED" "$HYBRID_SPEED")
+    result_dir_paths=("$PQC_HANDSHAKE" "$CLASSIC_HANDSHAKE" "$HYBRID_HANDSHAKE" "$PQC_SPEED" "$HYBRID_SPEED")
 
 }
 
@@ -421,11 +420,11 @@ function run_tests() {
         #>> "$root_dir/client-test-output.txt" - uncomment to save output for debugging
 
         # # Running ssl-speed tests
-        # echo -e "\n##########################"
-        # echo "Performing TLS Speed Tests"
-        # echo -e "##########################\n"
+        echo -e "\n##########################"
+        echo "Performing TLS Speed Tests"
+        echo -e "##########################\n"
 
-        # $test_scripts_path/oqsssl-test-speed.sh
+        $test_scripts_path/oqsssl-test-speed.sh
     
     fi
 

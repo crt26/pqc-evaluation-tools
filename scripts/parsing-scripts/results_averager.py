@@ -1,3 +1,4 @@
+from pdb import run
 import pandas as pd
 import os
 import shutil
@@ -361,69 +362,80 @@ class OqsOpensslResultAverager:
 
 
     #------------------------------------------------------------------------------
-    def gen_speed_avgs(self, mach_speed_results_dir):
+    def get_speed_algs(self, temp_filename, dir_list):
+
+        temp_alg_filepath = os.path.join(dir_list[1], temp_filename)
+
+        # Getting algs
+        temp_alg_df = pd.read_csv(temp_alg_filepath)
+        algs = temp_alg_df["Algorithm"].to_list()
+
+        return algs
+
+
+    #------------------------------------------------------------------------------
+    def gen_speed_avgs(self, speed_headers):
         """ Method for taking in the provided TLS speed results 
             and generating an average for all the runs for that current machine """
+        
 
-        # Declaring column header variables
-        kem_headers = ["Algorithm", "Keygen/s", "Encaps/s", "Decaps/s"]
-        sig_headers = ["Algorithm", "Sign", "Verify", "sign/s", "verify/s"]
+        # Defining alg_types list for average processing
+        alg_types = ["kem", "sig"]
 
-        # Getting average of sig and kem files
-        for index in range(1,3):
-            
-            # Setting variables based on alg type
-            if index == 1:
-                headers = kem_headers
-                alg_type = "kem"
-                temp_alg_filename = f"ssl-speed-kem-1.csv"
-                temp_alg_filepath = os.path.join(mach_speed_results_dir, temp_alg_filename)
-            else:
-                headers = sig_headers
-                alg_type = "sig"
-                temp_alg_filename = f"ssl-speed-sig-1.csv"
-                temp_alg_filepath = os.path.join(mach_speed_results_dir, temp_alg_filename)
+        # Loop through test types and process averages for speed metrics
+        for test_type, dir_list in self.dir_paths["speed_types_dirs"].items():
 
-            # Setting speed average dataframe
-            speed_avg_df = pd.DataFrame(columns=headers)
+            # Set file prefix depending on test type
+            pqc_fileprefix = "ssl-speed" if test_type == "pqc" else "ssl-speed-hybrid"
 
-            # Getting algs
-            temp_alg_df = pd.read_csv(temp_alg_filepath)
-            algs = temp_alg_df["Algorithm"].to_list()
+            # Process both KEM and Sig averages for the current test type
+            for alg_type in alg_types:
 
-            # Looping through the algs to get combined average dataframes
-            for alg in algs:
+                # Getting algorithms present in for current test/alg type being processed
+                temp_filename = f"{pqc_fileprefix}-{alg_type}-1.csv"
+                algs = self.get_speed_algs(temp_filename, dir_list)
 
-                # Setting clean combined alg speed dataframe
-                combined_df = pd.DataFrame(columns=headers)
+                # Setting headers used in csv files based on alg_type and creating dataframe
+                headers = speed_headers[0] if alg_type == "kem" else speed_headers[1]
+                speed_avg_df = pd.DataFrame(columns=headers)
 
-                # Looping through the runs to get averages for alg type
-                for run_num in range(1, self.num_runs+1):
+                # Looping through the algs to get combined average dataframes
+                for alg in algs:
 
-                    # Setting filename and path
-                    current_filename = f"ssl-speed-{alg_type}-{run_num}.csv"
-                    current_filepath = os.path.join(mach_speed_results_dir, current_filename)
+                    # Setting clean combined alg speed dataframe
+                    combined_df = pd.DataFrame(columns=headers)
 
-                    # Getting speed metics across runs for current alg
-                    current_run_df = pd.read_csv(current_filepath)
-                    current_run_df = current_run_df[current_run_df["Algorithm"].str.contains(alg, regex=False)]
-                    combined_df = pd.concat([combined_df, current_run_df.iloc[0:1]])
+                    # Looping through the runs to get averages for alg type
+                    for run_num in range(1, self.num_runs+1):
 
-                # Get average value for each column and append to new row var
-                speed_avg_row = []
-                
-                for column in headers:
-                    if column in headers[0]:
-                        continue
-                    else:
-                        speed_avg_row.append(float(combined_df[column].mean()))
+                        # Setting filename and path
+                        current_filename = f"{pqc_fileprefix}-{alg_type}-{run_num}.csv"
+                        current_filepath = os.path.join(dir_list[1], current_filename)
+                    
+                        # Pulling in the algorithm values for the current run and alg
+                        current_run_df = pd.read_csv(current_filepath)
+                        current_run_df = current_run_df[current_run_df["Algorithm"].str.contains(alg, regex=False)]
 
-                # Appending row to main average dateframe
-                speed_avg_row.insert(0, alg)
-                speed_avg_df.loc[len(speed_avg_df)] = speed_avg_row
+                        # Adding algorithm values to the combined dataframe that will be used to get averages for the alg across runs
+                        if run_num == 1:
+                            combined_df = current_run_df.loc[current_run_df['Algorithm'].str.contains(alg, regex=False)]
+                        else:
+                            combined_df = pd.concat([combined_df, current_run_df.iloc[0:1]])
 
-            # Exporting average csv file
-            speed_avg_filename = f"ssl-speed-{alg_type}-avg.csv"
-            speed_avg_filepath = os.path.join(mach_speed_results_dir, speed_avg_filename)
-            speed_avg_df.to_csv(speed_avg_filepath, index=False)
+                    # Get average value for each column and append to new row var
+                    speed_avg_row = []
+                    
+                    for column in headers:
+                        if column in headers[0]:
+                            continue
+                        else:
+                            speed_avg_row.append(float(combined_df[column].mean()))
 
+                    # Appending row to main average dateframe
+                    speed_avg_row.insert(0, alg)
+                    speed_avg_df.loc[len(speed_avg_df)] = speed_avg_row
+
+                # Exporting average csv file
+                speed_avg_filename = f"{pqc_fileprefix}-{alg_type}-avg.csv"
+                speed_avg_filepath = os.path.join(dir_list[1], speed_avg_filename)
+                speed_avg_df.to_csv(speed_avg_filepath, index=False)
