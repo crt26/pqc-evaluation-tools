@@ -6,7 +6,8 @@ This is the **development branch**, it may not be in a fully functioning state a
 - [x] Functioning State*
 - [x] Up to date documentation
 
-****Current functioning state only works on x86 machines***
+> *Dev branch Notice: Current functioning state works for both x86 and ARM machines. However, on ARM devices, memory profiling for Falcon algorithm variations is non-functioning. Please refer to [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761) for more details. Work is underway to resolve this issue but for now the repository has methods in place to account for this. Automated testing and parsing scripts can still be used to gather performance metrics for all other algorithms on ARM systems. 
+
 
 ## Current Development Branch Tasks <!-- omit from toc --> 
 
@@ -24,6 +25,10 @@ This is the **development branch**, it may not be in a fully functioning state a
 - [x] Integrate Hybrid test handling in parsing scripts
 - [ ] Resolve issue with scripts being required to be executed from only their stored directory
 - [ ] Resolve issues with testing on ARMv8 devices [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761)
+- [ ] Add functionality for automatically getting supported algorithms for both Liboqs and OQS-Provider to improve scalability. 
+- [ ] Add better handling for differentiating between different ARM devices in setup script. 
+- [ ] Improve script exception handling. 
+- [ ] Prepare for merge to main branch with newer version
 ## Contents <!-- omit from toc --> 
 - [Overview](#overview)
 - [Supported Hardware](#supported-hardware)
@@ -55,15 +60,17 @@ This repository provides tools that will simplify the process for the gathering 
 
 At the current moment, the repository provides automation in PQC performance testing by integrating tools created by the [Open Quantum Safe](https://openquantumsafe.org/) project using their **Liboqs** and **OQS-Provider libraries** into performance evaliation scripts. Furthermore, it provides an automated and robust way in which to gather network performance testing using physical networks. Going forward, this project aims to incorporate other PQC libraries present in the field, alongside performance testing of other cryptographic systems such as homomorphic encryption. The project aims to provide a cross-platform method of evaluating these systems on multiple systems ranging from standard desktop devices to IoT devices.
 
+The testing scripts allow for the evaluation of all algorithms supported by Liboqs version 0.10.0 alongside the evaluation of both PQC only and PQC-Hybrid schemes in TLS exchanges to allow for an extensive assessment of the performance of PQC solutions on the system the repository is ran on. 
+
 > Notice: At the current moment, due to how directory paths variables are handled by the scripts in the project, all scripts must be executed from the directory that stored in. This issue will be addressed in following version of the project.
 
 ## Supported Hardware
 The automated testing tool is currently only supported on the following devices:
 
-- x86 Debian Based Linux Machines
-- ARMv8 Raspberry Pis using a 64-bit Operating System
+- x86 Linux Machines using Debian based distros
+- ARM devices using a 64-bit Operating System
 
-> Notice: As this is a early release version of the testing suites, the supported hardware is currently limited. However, future versions will address this issue and allow for support on a wider range of architectures and operating systems.
+> Notice: Current functioning state works for both x86 and ARM machines. However, on ARM devices, memory profiling for Falcon algorithm variations is non-functioning. Please refer to [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761) for more details. Work is underway to resolve this issue but for now the repository has methods in place to account for this. Automated testing and parsing scripts can still be used to gather performance metrics for all other algorithms on ARM systems. 
 
 
 ## Installation Instructions
@@ -124,7 +131,7 @@ The test script can be executed using the following command:
 
 ### OQS-Provider Performance Testing
 
-This script is focused on benchmarking the performance of PQC algorithms when integrated within the OpenSSL (3.2.1) library via the OQS-Provider. The script firstly can test the computational efficiency of the PQC algorithms when integrated into the OpenSSL library. Alongside, how PQC algorithms perform when integrated into the TLS protocol by measuring empty TLS handshake performance. Furthermore, metrics for how classic algorithms perform when conducting the TLS handshake to gather data which can be used as a baseline to compare the PQC metrics against.   
+This script is focused on benchmarking the performance of PQC and PQC-Hybrid algorithms when integrated within the OpenSSL (3.2.1) library via the OQS-Provider. The script firstly can test the computational efficiency of the PQC algorithms when integrated into the OpenSSL library. Alongside, how PQC/PQC-Hybrid algorithms perform when integrated into the TLS protocol by measuring empty TLS handshake performance. Furthermore, metrics for how classic algorithms perform when conducting the TLS handshake to gather data which can be used as a baseline to compare the PQC metrics against.   
 
 The testing tool allows for tests to be conducted on a single machine or using two machine connected via a physical network. It should be noted that when using two physical machines the complexity of setup increases. However, regardless of which scenario, the process requires more additional steps then the liboqs testing.
 
@@ -145,7 +152,7 @@ After selecting the desired testing script, the performance benchmarks will be p
 
 The results from the automated tests can be transformed into workable CSV files using the `parse_results.py` script located in the `scripts/parsing-scripts` directory. Options are provided to parse the liboqs results, the OQS-Provider results, or both.
 
-The script requires the test parameters used during the benchmarking, including the number of runs and number of machines tested, if multiple machine results have been stored within the `test-data/up-results` directory.
+The script requires the test parameters used during the benchmarking, including the number of runs and number of machines tested, if multiple machine results have been stored within the `test-data/up-results` directory. Please make sure all up-results are present in this directory that you wish to be parsed before executing the `parse_results.py` script.
 
 
 ### Parsing Script Usage
