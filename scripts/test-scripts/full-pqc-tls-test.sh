@@ -33,7 +33,7 @@ export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
 
 # Declaring option variables
 machine_type=""
-MACHINE_NUM=""
+MACHINE_NUM="1"
 
 
 #------------------------------------------------------------------------------
