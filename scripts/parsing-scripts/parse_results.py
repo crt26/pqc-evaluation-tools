@@ -99,6 +99,7 @@ def main():
             # Parsing OQS-OpenSSL Results
             parse_openssl(openssl_test_opts)
             print("\nOQS-OpenSSL Parsing complete\n")
+            break
 
         elif user_parse_mode == '4':
             print("Exiting...")

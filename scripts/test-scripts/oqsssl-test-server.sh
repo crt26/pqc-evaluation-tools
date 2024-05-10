@@ -53,37 +53,6 @@ classic_algs=( "RSA_2048" "RSA_3072" "RSA_4096" "prime256v1" "secp384r1" "secp52
 ciphers=("TLS_AES_256_GCM_SHA384" "TLS_CHACHA20_POLY1305_SHA256" "TLS_AES_128_GCM_SHA256")
 
 
-# #------------------------------------------------------------------------------
-# function set_algs() {
-#     # Function for reading in the various algorithms into an array for use within the script
-
-#     # Kem algorithms array
-#     kem_algs=()
-#     while IFS= read -r line; do
-#         kem_algs+=("$line")
-#     done < $kem_alg_file
-
-#     # Sig algorithms array
-#     sig_algs=()
-#     while IFS= read -r line; do
-#         sig_algs+=("$line")
-#     done < $sig_alg_file
-
-#     # Hybrid kem algorithms array
-#     hybrid_kem_algs=()
-#     while IFS= read -r line; do
-#         hybrid_kem_algs+=("$line")
-#     done < $hybrid_kem_alg_file
-
-#     # Hybrid sig algorithms array
-#     hybrid_sig_algs=()
-#     while IFS= read -r line; do
-#         hybrid_sig_algs+=("$line")
-#     done < $hybrid_sig_alg_file
-
-
-# }
-
 #------------------------------------------------------------------------------
 function set_test_env() {
     # Function for setting the default group depending on what type of tls test is being performed (pqc,classic,hybrid)
