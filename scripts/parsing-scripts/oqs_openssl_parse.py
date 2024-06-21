@@ -109,7 +109,7 @@ def handle_results_dir_creation(machine_num):
         while True:
 
             # Outputting potential options and handling user choice
-            print(f"\nFrom the following options, choose how would you like to handle the old results:\n")
+            print(f"\nFrom the following options, choose how would you like to handle the old OQS-OpenSSL-Provider results:\n")
             print("Option 1 - Replace old parsed results with new ones")
             print("Option 2 - Exit parsing programme to move old results and rerun after (if you choose this option, please move the entire folder not just its contents)")
             print("Option 3 - Make parsing script programme wait until you have move files before continuing")

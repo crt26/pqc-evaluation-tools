@@ -485,7 +485,7 @@ function main() {
                 rm -rf $tmp_dir/*
 
                 # Setting root_dir path for scripts
-                echo "$root_dir" > "$test_data_dir/root_path.txt"
+                #echo "$root_dir" > "$test_data_dir/root_path.txt"
                 break;;
 
             4)
