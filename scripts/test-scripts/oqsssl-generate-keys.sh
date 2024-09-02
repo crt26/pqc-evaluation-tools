@@ -1,14 +1,14 @@
 #!/bin/bash
 
-#Copyright (c) 2023 Callum Turino
+#Copyright (c) 2024 Callum Turino
 #SPDX-License-Identifier: MIT
 
-# Script used to generate all the certs and keys needed for the TLS benchmarking tests, this includes creating the
+# This is a utility script used to generate all the certificates and keys needed for the TLS benchmarking tests, this includes creating the
 # CA cert and keys, creating a signing requests for the CA, and then signing the certs and keys for the TLS test.
-# The keys must then be copied to the client machine, so that each machine has a copy for the tests. This script will 
-# create all the PQC and classic certs and keys needed for the TLS handshake benchmarking tests.
+# The keys must then be copied to the client machine, so that each machine has a copy for the tests. 
+# This script will  create all the PQC and classic certs and keys needed for the TLS handshake benchmarking tests.
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 # Declaring global main dir path variables
 root_dir=$(cd "$PWD"/../.. && pwd)
 libs_dir="$root_dir/lib"
@@ -39,11 +39,11 @@ hybrid_cert_dir="$keys_dir/hybrid"
 sig_alg_file="$test_data_dir/alg-lists/ssl-sig-algs.txt"
 hybrid_sig_alg_file="$test_data_dir/alg-lists/ssl-hybr-sig-algs.txt"
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function get_algs() {
     # Function for reading in the signature algorithms into an array for use within the script
 
-    # Creating algorithm list arrays
+    # Creating algorithm list arrays for PQC and Hybrid-PQC sigs
     sig_algs=()
     while IFS= read -r line; do
         sig_algs+=("$line")
@@ -54,26 +54,26 @@ function get_algs() {
         hybrid_sig_algs+=("$line")
     done < $hybrid_sig_alg_file
 
+    # Declaring classic sigs array
+    classic_sigs=( "RSA:2048" "RSA:3072" "RSA:4096" "prime256v1" "secp384r1" "secp521r1")
+
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function classic_keygen() {
-    # Function for generating all of the certs and keys needed for the classic benchmarking tests
-
-    # Declaring sigs array
-    classic_sigs=( "RSA:2048" "RSA:3072" "RSA:4096" "prime256v1" "secp384r1" "secp521r1")
+    # Function for generating all of the certificates and keys needed for the classic TLS benchmarking tests
 
     # Looping through classic sigs to generate CA/server cert and key files
     for sig in "${classic_sigs[@]}"; do
 
-        # Modify sig name if RSA
+        # Modify sig name formatting if RSA
         if [[ $sig == RSA:* ]]; then 
             sig_name="${sig/:/_}"
         else
             sig_name=$sig
         fi
 
-        # Check if signature is RSA or ECC curve
+        # Check if signature is RSA or ECC curve and generate certs and keys accordingly
         if [[ $sig == RSA:* ]]; then
 
             # Generate CA cert and key alongside server cert and key for current RSA signature algorithm
@@ -84,7 +84,8 @@ function classic_keygen() {
                 -out "$classic_cert_dir/$sig_name-srv.csr" -nodes -subj "/CN=oqstest server" -config "$open_ssl_path/openssl.cnf"
             
             "$open_ssl_path/bin/openssl" x509 -req -in "$classic_cert_dir/$sig_name-srv.csr" \
-                -out "$classic_cert_dir/$sig_name-srv.crt" -CA "$classic_cert_dir/$sig_name-CA.crt" -CAkey "$classic_cert_dir/$sig_name-CA.key" -CAcreateserial -days 365
+                -out "$classic_cert_dir/$sig_name-srv.crt" -CA "$classic_cert_dir/$sig_name-CA.crt" \
+                -CAkey "$classic_cert_dir/$sig_name-CA.key" -CAcreateserial -days 365
 
             # Remove server CSR file
             rm -f "$classic_cert_dir/$sig_name-srv.csr"
@@ -105,7 +106,8 @@ function classic_keygen() {
 
             # Sign server CSR with ECC CA cert
             "$open_ssl_path/bin/openssl" x509 -req -in "$classic_cert_dir/${sig_name}-srv.csr" \
-                -out "$classic_cert_dir/${sig_name}-srv.crt" -CA "$classic_cert_dir/${sig_name}-CA.crt" -CAkey "$classic_cert_dir/${sig_name}-CA.key" -CAcreateserial -days 365
+                -out "$classic_cert_dir/${sig_name}-srv.crt" -CA "$classic_cert_dir/${sig_name}-CA.crt" \
+                -CAkey "$classic_cert_dir/${sig_name}-CA.key" -CAcreateserial -days 365
 
             # Remove server CSR file
             rm -f "$classic_cert_dir/${sig_name}-srv.csr"
@@ -116,29 +118,9 @@ function classic_keygen() {
 
 }
 
-#------------------------------------------------------------------------------
-function hybrid_pqc_keygen() {
-    # Function for generating all of the certs and keys needed for the Hybrid-PQC benchmarking tests
-
-    for sig in "${hybrid_sig_algs[@]}"; do
-
-        echo -e "\n\nSig - $sig"
-        # Generate CA cert and key alongside server cert and key for current PQC signature algorithm
-        "$open_ssl_path/bin/openssl" req -x509 -new -newkey $sig -keyout "$hybrid_cert_dir/$sig-CA.key" \
-            -out "$hybrid_cert_dir/$sig-CA.crt" -nodes -subj "/CN=oqstest $sig CA" -days 365 -config "$open_ssl_path/openssl.cnf"
-
-        "$open_ssl_path/bin/openssl" req -new -newkey $sig -keyout "$hybrid_cert_dir/$sig-srv.key" \
-            -out "$hybrid_cert_dir/$sig-srv.csr" -nodes -subj "/CN=oqstest $sig server" -config "$open_ssl_path/openssl.cnf"
-
-        "$open_ssl_path/bin/openssl" x509 -req -in "$hybrid_cert_dir/$sig-srv.csr" \
-            -out "$hybrid_cert_dir/$sig-srv.crt" -CA "$hybrid_cert_dir/$sig-CA.crt" -CAkey "$hybrid_cert_dir/$sig-CA.key" -CAcreateserial -days 365
-
-    done
-}
-
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function pqc_keygen() {
-    # Function for generating all of the certs and keys needed for the PQC benchmarking tests
+    # Function for generating all of the certs and keys needed for the PQC TLS benchmarking tests
 
     # Generate a certificate and key for PQC tests
     for sig in "${sig_algs[@]}"; do
@@ -157,37 +139,55 @@ function pqc_keygen() {
 
 }
 
-#------------------------------------------------------------------------------
-function main() {
-    # Main function which controls the generation process
+#-------------------------------------------------------------------------------------------------------------------------------
+function hybrid_pqc_keygen() {
+    # Function for generating all of the certs and keys needed for the Hybrid-PQC TLS benchmarking tests
 
-    # Get alg lists
+    # Looping through Hybrid-PQC sigs to generate CA/server cert and key files
+    for sig in "${hybrid_sig_algs[@]}"; do
+
+        # Generate CA cert and key alongside server cert and key for current Hybrid-PQC signature algorithm
+        "$open_ssl_path/bin/openssl" req -x509 -new -newkey $sig -keyout "$hybrid_cert_dir/$sig-CA.key" \
+            -out "$hybrid_cert_dir/$sig-CA.crt" -nodes -subj "/CN=oqstest $sig CA" -days 365 -config "$open_ssl_path/openssl.cnf"
+
+        "$open_ssl_path/bin/openssl" req -new -newkey $sig -keyout "$hybrid_cert_dir/$sig-srv.key" \
+            -out "$hybrid_cert_dir/$sig-srv.csr" -nodes -subj "/CN=oqstest $sig server" -config "$open_ssl_path/openssl.cnf"
+
+        "$open_ssl_path/bin/openssl" x509 -req -in "$hybrid_cert_dir/$sig-srv.csr" \
+            -out "$hybrid_cert_dir/$sig-srv.crt" -CA "$hybrid_cert_dir/$sig-CA.crt" -CAkey "$hybrid_cert_dir/$sig-CA.key" -CAcreateserial -days 365
+
+    done
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
+function main() {
+    # Main function which controls the cert and key generation process for the various TLS benchmarking tests
+
+    # Creating the algorithm arrays for the generation of certs and keys
     get_algs
 
-    # Modifying openssl.cnf file to temporarily remove the default groups configuration
+    # Modifying the OpenSSL conf file to temporarily remove the default groups configuration
     "$util_scripts/configure-openssl-cnf.sh" 0
 
-    # Removing old keys if present and creating key dirs
+    # Removing old keys if present and creating key directories
     if [ -d "$keys_dir" ]; then
         rm -rf "$keys_dir"
     fi
-    mkdir -p $pqc_cert_dir
-    mkdir -p $classic_cert_dir
-    mkdir -p $hybrid_cert_dir
+    mkdir -p $pqc_cert_dir && mkdir -p $classic_cert_dir && mkdir -p $hybrid_cert_dir
 
-    # #Generating certs and keys for classic ciphersuite tests
+    # Generating certs and keys for classic ciphersuite tests
     echo -e "\nGenerating certs and keys for classic ciphersuite tests:"
     classic_keygen
-
-    # Generating certs and keys for PQC tests
-    echo "Generating certs and keys for Hybrid-PQC tests:"
-    hybrid_pqc_keygen
 
     # Generating certs and keys for PQC tests
     echo "Generating certs and keys for PQC tests:"
     pqc_keygen
 
-    # Restoring conf file to have configuration needed for testing scripts
+    # Generating certs and keys for Hybrid-PQC tests
+    echo "Generating certs and keys for Hybrid-PQC tests:"
+    hybrid_pqc_keygen
+
+    # Restoring OpenSSL conf file to have configuration needed for testing scripts
     "$util_scripts/configure-openssl-cnf.sh" 1
 
 }

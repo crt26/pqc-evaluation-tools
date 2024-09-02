@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#Copyright (c) 2023 Callum Turino
+#Copyright (c) 2024 Callum Turino
 #SPDX-License-Identifier: MIT
 
-# Script for controlling the Liboqs benchmark testing, it takes in the test parameters and call the relevant test scripts
+# This is a utility script for removing all previous test results and generated keys from the testing suite project directory.
 
 #------------------------------------------------------------------------------
 # Declaring global main dir path variables
@@ -13,11 +13,11 @@ tmp_dir="$root_dir/tmp"
 test_data_dir="$root_dir/test-data"
 test_scripts_path="$root_dir/scripts/test-scripts"
 
-
 # Declaring global library path files
 open_ssl_path="$libs_dir/openssl_3.2"
 liboqs_path="$libs_dir/liboqs"
 oqs_openssl_path="$libs_dir/oqs-openssl"
+
 # Declaring global test parameter variables
 machine_num=""
 number_of_runs=0

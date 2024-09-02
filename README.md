@@ -8,9 +8,7 @@ This is the **development branch**, it may not be in a fully functioning state a
 
 > *Dev branch Notice: Current functioning state works for both x86 and ARM machines. However, on ARM devices, memory profiling for Falcon algorithm variations is non-functioning. Please refer to [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761) for more details. Work is underway to resolve this issue but for now the repository has methods in place to account for this. Automated testing and parsing scripts can still be used to gather performance metrics for all other algorithms on ARM systems. 
 
-
 ## Current Development Branch Tasks <!-- omit from toc --> 
-
 - [x] Update [alg-lists](alg-lists) files to include the latest version of supported algorithms in Liboqs and OQS-OpenSSL-Provider
 - [x] Update [oqsssl-generate-keys](scripts/test-scripts/oqsssl-generate-keys.sh) to use current supported algorithms and steps for new OQS-OpenSSL-Provider PQC key generation
 - [x] Update [oqsssl-generate-keys](scripts/test-scripts/oqsssl-generate-keys.sh) storage method for generated keys to better suit new directory structure
@@ -29,6 +27,7 @@ This is the **development branch**, it may not be in a fully functioning state a
 - [ ] Add better handling for differentiating between different ARM devices in setup script. 
 - [ ] Improve script exception handling. 
 - [ ] Prepare for merge to main branch with newer version
+
 ## Contents <!-- omit from toc --> 
 - [Overview](#overview)
 - [Supported Hardware](#supported-hardware)
@@ -68,7 +67,7 @@ The testing scripts allow for the evaluation of all algorithms supported by Libo
 The automated testing tool is currently only supported on the following devices:
 
 - x86 Linux Machines using Debian based distros
-- ARM devices using a 64-bit Operating System
+- ARM Linux devices using a 64-bit Operating System
 
 > Notice: Current functioning state works for both x86 and ARM machines. However, on ARM devices, memory profiling for Falcon algorithm variations is non-functioning. Please refer to [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761) for more details. Work is underway to resolve this issue but for now the repository has methods in place to account for this. Automated testing and parsing scripts can still be used to gather performance metrics for all other algorithms on ARM systems. 
 
@@ -247,8 +246,6 @@ pqc-eval-tools/
   - test-scripts: Contains scripts that are used for testing various components of the project.
 
   - utility-scripts: Contains the utility scripts used by the user and the automated testing scripts. 
-  
-
 
 ## Helpful Documentation Links
 - [liboqs Webpage](https://openquantumsafe.org/liboqs/)

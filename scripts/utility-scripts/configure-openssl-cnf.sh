@@ -1,10 +1,13 @@
 #!/bin/bash
 
-#Copyright (c) 2023 Callum Turino
+#Copyright (c) 2024 Callum Turino
 #SPDX-License-Identifier: MIT
 
+# This is a utility script used to configure the openssl.cnf file for the OpenSSL library 
+# to allow for the generation of post-quantum cryptographic keys. The script is used to 
+# comment out the default groups in the configuration file to allow for the use of the scheme groups included with the OQS-Provider library.
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 # Declaring directory path variables
 root_dir=$(cd "$PWD"/../.. && pwd)
 libs_dir="$root_dir/lib"
@@ -26,14 +29,16 @@ fi
 
 export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function configure_conf_statements() {
     # Function for commenting out additional lines in the openssl to temporarily remove the default groups configuration
     # used in testing scripts to allow key generation to be performed
 
+    # Declare required local variables
     local conf_path="$open_ssl_path/openssl.cnf"
     local configure_mode="$1"
 
+    # Set the configurations based on the configuration mode passed
     if [ "$configure_mode" -eq 0 ]; then
 
         # Comment out the unnecessary lines for standard configuration
@@ -52,8 +57,9 @@ function configure_conf_statements() {
 
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function main() {
+    # Main function for controlling the utility script
 
     # Check if the correct number of arguments is passed
     if [ "$#" -ne 1 ]; then

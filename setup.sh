@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#Copyright (c) 2023 Callum Turino
+#Copyright (c) 2024 Callum Turino
 #SPDX-License-Identifier: MIT
 
 # Setup script for the automated PQC benchmark testing tools, the script provides various setup options
 # depending on the need of the user. The script will generate the needed directories and also install the 
 # required dependency packages based on the system the tools are being setup on.
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 # Declaring global main dir path variables
 root_dir=$(pwd)
 dependency_dir="$root_dir/dependency-libs"
@@ -20,16 +20,15 @@ open_ssl_path="$libs_dir/openssl_3.2"
 liboqs_path="$libs_dir/liboqs"
 oqs_openssl_path="$libs_dir/oqs-openssl"
 
-# Declaring global source-code paht files
+# Declaring global source-code path files
 liboqs_source="$tmp_dir/liboqs-source"
 oqs_openssl_source="$tmp_dir/oqs-openssl-source"
 openssl_source="$tmp_dir/openssl-3.2.1"
 
 # Setting Global flag variables
-#use_system_openssl=0
 install_type=0 # 0=liboqs-only, 1=liboqs+oqs-openssl, 2=oqs-openssl-only
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function get_reinstall_choice() {
     
     # Check if user would like to reinstall libs
@@ -38,28 +37,36 @@ function get_reinstall_choice() {
         read -p "would you like to reinstall? (y/n):" user_input
 
         case $user_input in
+
             [Yy]* )
                 echo -e "Deleting old files and reinstalling...\n"
                 break;;
+
             [Nn]* )
                 echo "Will not reinstall, exiting setup script"
                 exit 0
                 break;;
+
+            * )
+                echo -e "Please answer y or n\n"
+                ;;
+        
         esac
 
     done
 
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function configure_dirs() {
     # Function for creating the required directories for the automated tools alongside setting the root directory path tmp file
 
     # Declaring directory check array
-    required_dirs=("$libs_dir" "$dependency_dir" "$oqs_source_dir" "$tmp_dir")
+    required_dirs=("$libs_dir" "$dependency_dir" "$oqs_openssl_source" "$tmp_dir")
 
-    # Check if libs have already been installed based on install type
+    # Check if libs have already been installed based on install type selected
     case $install_type in
+
         0)
             if [ -d "$liboqs_path" ]; then
                 get_reinstall_choice
@@ -77,37 +84,36 @@ function configure_dirs() {
                 get_reinstall_choice
             fi
             ;;
+
     esac
 
     # Removing old dirs depending on install type
     for dir in "${required_dirs[@]}"; do
-        echo $dir
+        
         # Check if dir exists and removes for clean install
         if [ -d "$dir" ]; then
             
             # If liboqs is installed and user chooses install type 2, remove only oqs-openssl lib dir and not liboqs_dir
             if [ "$dir" == "$libs_dir" ] && [ "$install_type" -eq 2 ]; then
-                rm -rf "$oqs_openssl_path"
-                mkdir -p "$oqs_openssl_path"
+                rm -rf "$oqs_openssl_path" && mkdir -p "$oqs_openssl_path"
 
             elif [ "$dir" == "$tmp_dir" ] && [ "$install_type" -eq 2 ]; then 
                 rm -rf "$oqs_openssl_path"
 
             else
-                rm -rf "$dir"
-                mkdir -p "$dir"
+                rm -rf "$dir" && mkdir -p "$dir"
+                
             fi
 
         else
-            rm -rf "$dir"
-            mkdir -p "$dir"
+            rm -rf "$dir" && mkdir -p "$dir"
         fi
 
     done
 
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function dependency_install() {
     # Function for checking if there any missing dependencies required for the testing
 
@@ -147,15 +153,13 @@ function dependency_install() {
 
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function openssl_build() {
+    # Function for building the required version of OpenSSL (3.2.1) for the testing tools
 
-    # Setting thread count for build
+    # Setting thread count for build and Declaring conf file changes array
     threads=$(nproc)
 
-    #"Groups = \"\$ENV::DEFAULT_GROUPS\""
-
-    # Declaring conf file changes array
     oqsprovider_path="$oqs_openssl_path/lib/oqsprovider.so"
     conf_changes=(
         "[openssl_init]"
@@ -175,44 +179,34 @@ function openssl_build() {
         "Groups = \$ENV::DEFAULT_GROUPS"
     )
 
-    #     conf_changes=(
-    #     "[openssl_init]"
-    #     "providers = provider_sect"
-    #     "[provider_sect]"
-    #     "default = default_sect"
-    #     "oqsprovider = oqsprovider_sect"
-    #     "[default_sect]"
-    #     "activate = 1"
-    #     "[oqsprovider_sect]"
-    #     "activate = 1"
-    #     "module = $oqsprovider_path"
-    # )
-
-    # Checking for correct verison of OpenSSL and if missing installing
+    # Checking for correct version of OpenSSL and if missing installing
     installed_version=$(openssl version | awk '{print $2}')
-    minimum_version="3.2.0"
+    minimum_version="3.2.1"
 
-    # Compare the versions and instal if required
+    # Compare the versions and install new version if required
     if [[ "$(printf '%s\n' "$installed_version" "$minimum_version" | sort -V | head -n1)" = "$minimum_version" ]]; then
-        # If the installed version is greater than or equal to the minimum version
         use_system_openssl=1
         open_ssl_path="/usr/bin/openssl"
 
     else
 
+        # Set default flag for using system openssl
         use_system_openssl=0
 
+        # Check if previous openssl build is present and build if not
         if [ ! -d "$open_ssl_path" ]; then
 
-            # Getting reuquired version of openssl and extracting
+            # Outputting current task to terminal
             echo -e "\n######################################"
             echo "Downloading and Building OpenSSL-3.2.1"
             echo -e "######################################\n"
+
+            # Getting required version of openssl and extracting
             wget -O "$tmp_dir/openssl-3.2.1.tar.gz" https://www.openssl.org/source/openssl-3.2.1.tar.gz
             tar -xf "$tmp_dir/openssl-3.2.1.tar.gz" -C $tmp_dir
             rm "$tmp_dir/openssl-3.2.1.tar.gz"
 
-            # Building required version of OpenSSL in testing repo only
+            # Building required version of OpenSSL in testing-repo directory only
             echo "Building OpenSSL Library"
             cd $openssl_source
             ./config --prefix="$open_ssl_path" --openssldir="$open_ssl_path" shared >/dev/null
@@ -231,7 +225,7 @@ function openssl_build() {
             # Exporting openssl lib path for check
             export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
 
-            # Testing if version has correclty installed
+            # Testing if the new version has correctly installed
             test_output=$("$open_ssl_path/bin/openssl" version)
 
             if [[ "$test_output" != "OpenSSL 3.2.1 30 Jan 2024 (Library: OpenSSL 3.2.1 30 Jan 2024)" ]]; then
@@ -239,7 +233,7 @@ function openssl_build() {
                 exit 1
             fi
 
-            # Modify conf file to include oqs-openssl as a provider
+            # Modify OpenSSL conf file to include oqs-openssl as a provider
             cd $open_ssl_path && rm -f openssl.conf && cp "$root_dir/modded-lib-files/openssl.cnf" "$open_ssl_path/"
 
             for conf_change in "${conf_changes[@]}"; do
@@ -254,17 +248,17 @@ function openssl_build() {
 
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function enable_pmu() {
-    # Function for enabling the ARM PMU and allowing it to be used in user space on Pi
+    # Function for enabling the ARM PMU and allowing it to be used in user space on Raspberry-Pi
 
-    # Checking if the system is a Pi and installing kernel-headers
+    # Checking if the system is a Raspberry-Pi and installing kernel-headers
     if ! dpkg -s "raspberrypi-kernel-headers" >/dev/null 2>&1; then
         sudo apt-get update
         sudo apt-get install raspberrypi-kernel-headers
     fi
 
-    #Enabling user access PMU
+    # Enabling user access PMU
     echo -e "\nEnabling ARM PMU\n"
     cd $libs_dir
     git clone --branch main https://github.com/mupq/pqax.git
@@ -274,6 +268,7 @@ function enable_pmu() {
     make install
     cd $root_dir
 
+    # Setting enabled PMU flag
     if [ "$make_status" -eq 0 ]; then
         enabled_pmu=1
     else
@@ -282,8 +277,8 @@ function enable_pmu() {
 
 }
 
-#------------------------------------------------------------------------------
-function liboqs-build() {
+#-------------------------------------------------------------------------------------------------------------------------------
+function liboqs_build() {
     # Function for building OQS Liboqs library, will build relevant version based on system architecture
 
     # Building liboqs if install type is 0 or 1
@@ -295,8 +290,7 @@ function liboqs-build() {
         fi
         mkdir -p $liboqs_path
 
-
-        # Outputting Current Task        
+        # Outputting Current Task  
         echo -e "\n#################################"
         echo "Downloading and Installing Liboqs"
         echo -e "#################################\n"
@@ -305,8 +299,9 @@ function liboqs-build() {
         git clone https://github.com/open-quantum-safe/liboqs.git $liboqs_source
 
         # Setting build options based on current system
-        if [ "$(uname -m)" = "x86_64" ] && [ "$(uname -s)" = "Linux" ]; then 
-            # x86 linux build options
+        if [ "$(uname -m)" = "x86_64" ] && [ "$(uname -s)" = "Linux" ]; then
+
+            # Setting x86 linux build options
             build_options="no-shared linux-x86_64"
             build_flags=""
             threads=$(nproc)
@@ -315,23 +310,19 @@ function liboqs-build() {
 
             # Enabling ARM PMU if needed
             if lsmod | grep -q 'enable_ccr'; then
-                echo "The enable_ccr module enabled, skipping build."
+                echo "The enable_ccr module is already enabled, skipping build."
             else
                 enable_pmu
             fi
 
-            #ARM arrch64 build options for pi
-            # build_options="no-shared linux-aarch64"
+            # Setting ARM arrch64 build options for pi
             if [ $enabled_pmu -eq 1 ];then
                 build_flags="-DOQS_SPEED_USE_ARM_PMU=ON"
             else
                 build_flags=""
             fi
-            # build_flag1="-D_OQS_RASPBERRY_PI"
-            # build_flag2="-DSPEED_USE_ARM_PMU"
             threads=$(nproc)
             
-
         else
             # Unsupported system error 
             echo -e "Unsupported System Detected - Manual Build Required!\n"
@@ -342,20 +333,14 @@ function liboqs-build() {
         cp "$root_dir/modded-lib-files/test_sig_mem.c" "$liboqs_source/tests/test_sig_mem.c"
         cp "$root_dir/modded-lib-files/test_kem_mem.c" "$liboqs_source/tests/test_kem_mem.c"
 
-        # # Setting up build directory and building liboqs
+        # Setting up build directory and building liboqs
         cmake -GNinja -DCMAKE_C_FLAGS="$build_flags" -S "$liboqs_source/" -B "$liboqs_path/build" -DCMAKE_INSTALL_PREFIX="$liboqs_path" \
             -DOQS_USE_OPENSSL=ON -DOPENSSL_ROOT_DIR="$open_ssl_path"
 
         cmake --build "$liboqs_path/build" -- -j $threads
         cmake --build "$liboqs_path/build" --target install -- -j $threads
 
-        # # Setting up build directory and configuring liboqs
-        # cmake -GNinja  -S "$liboqs_source/" -B "$liboqs_path/build" -DCMAKE_INSTALL_PREFIX="$liboqs_path" \
-        #     -DCMAKE_C_FLAGS="$build_flags"-DOQS_USE_OPENSSL=ON -DOPENSSL_ROOT_DIR="$open_ssl_path"
-        
-        # ninja -C "$liboqs_path/build" -j $threads && ninja -C "$liboqs_path/build" install -j $threads
-
-        # Making test data store dirs
+        # Creating test-data store dirs
         mkdir -p "$liboqs_path/mem-results/kem-mem-metrics/" && mkdir -p "$liboqs_path/mem-results/sig-mem-metrics/" && mkdir "$liboqs_path/speed-results"
 
         echo "Liboqs Install Complete"
@@ -364,17 +349,17 @@ function liboqs-build() {
 
 }
 
-#------------------------------------------------------------------------------
-function oqs-openssl-build() {
+#-------------------------------------------------------------------------------------------------------------------------------
+function oqs_provider_build() {
     # Function for building OQS-OpenSSL library, will build relevant version based on system architecture
 
-    # Cloning needed repos
+    # Cloning required repositories
     echo -e "\n#######################################"
     echo "Downloading and Installing OQS-Provider"
     echo -e "#######################################\n"
     git clone https://github.com/open-quantum-safe/oqs-provider.git $oqs_openssl_source >> /dev/null
 
-    # Enabling disabled signature algorithms before building
+    # Enabling all disabled signature algorithms before building
     export LIBOQS_SRC_DIR="$liboqs_source"
     cp "$root_dir/modded-lib-files/generate.yml" "$oqs_openssl_source/oqs-template/generate.yml"
     cd $oqs_openssl_source
@@ -382,7 +367,9 @@ function oqs-openssl-build() {
     cd $root_dir
 
     # Building OQS-Provider library
-    cmake -S $oqs_openssl_source -B "$oqs_openssl_path" -DOPENSSL_ROOT_DIR="$open_ssl_path" -Dliboqs_DIR="$liboqs_path/lib/cmake/liboqs"
+    cmake -S $oqs_openssl_source -B "$oqs_openssl_path" \
+        -DCMAKE_INSTALL_PREFIX="$oqs_openssl_path" -DOPENSSL_ROOT_DIR="$open_ssl_path" -Dliboqs_DIR="$liboqs_path/lib/cmake/liboqs"
+
     cmake --build "$oqs_openssl_path" -- -j $(nproc)
     cmake --install "$oqs_openssl_path"
 
@@ -390,11 +377,11 @@ function oqs-openssl-build() {
 
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function main() {
-    # Function for  building the specified test suite
+    # Function for building the specified test suite
 
-    # Loop for setup option selection
+    # Getting setup options from user
     while true; do
 
         # Outputting options to user and getting input
@@ -405,7 +392,7 @@ function main() {
         echo "4 - Exit Setup"
         read -p "Enter your choice (1-4): " user_opt
 
-        # Determining action from user input
+        # Determining setup action based on user input
         case "$user_opt" in 
 
             1)
@@ -422,12 +409,8 @@ function main() {
 
                 # Building libraries and cleaning up
                 openssl_build
-                liboqs-build
+                liboqs_build
                 rm -rf $tmp_dir/*
-
-                # Setting root_dir path for scripts
-                echo "$root_dir" > "$test_data_dir/root_path.txt"
-
                 break;;
             
             2)
@@ -444,13 +427,9 @@ function main() {
 
                 # Building libraries and cleaning up
                 openssl_build
-                liboqs-build
-                oqs-openssl-build
+                liboqs_build
+                oqs_provider_build
                 rm -rf $tmp_dir/*
-
-                # Setting root_dir path for scripts
-                echo "$root_dir" > "$test_data_dir/root_path.txt"
-
                 break;;
 
             3)
@@ -465,27 +444,24 @@ function main() {
                 configure_dirs
                 dependency_install
 
-                # Building OpenSSL
+                # Building OpenSSL 3.2.1
                 openssl_build
 
                 # Check if liboqs is present and install if not
                 if [ ! -d "$liboqs_path" ]; then
                     echo -e "\n!!!Liboqs not installed, will install now!!!"
                     install_type=1
-                    liboqs-build
+                    liboqs_build
                 fi
 
-                # Recloning liboqs repo for alg docs if missing as needed for enabling disabled algs in oqs-openssl-build
+                # Re-clone liboqs repo for alg docs if missing as needed for enabling disabled algs in oqs_provider_build
                 if [ ! -d "$liboqs_source" ]; then
                     git clone https://github.com/open-quantum-safe/liboqs.git $liboqs_source >/dev/null
                 fi
 
                 # Building oqs-provider
-                oqs-openssl-build
+                oqs_provider_build
                 rm -rf $tmp_dir/*
-
-                # Setting root_dir path for scripts
-                #echo "$root_dir" > "$test_data_dir/root_path.txt"
                 break;;
 
             4)
@@ -496,6 +472,7 @@ function main() {
             *)
                 echo "Invalid option, please select valid option value (1-4)"
                 ;;
+
         esac
     
     done

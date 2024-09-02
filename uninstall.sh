@@ -1,9 +1,10 @@
 #!/bin/bash
 
-#Copyright (c) 2023 Callum Turino
+#Copyright (c) 2024 Callum Turino
 #SPDX-License-Identifier: MIT
 
-# Script for controlling the Liboqs benchmark testing, it takes in the test parameters and call the relevant test scripts
+# This is a utility script for uninstalling the OQS-OpenSSL libraries from the system. 
+# The script will remove the liboqs, OQS-Provider, and OpenSSL 3.2.1 libraries from the system.
 
 #------------------------------------------------------------------------------
 # Declaring global main dir path variables
@@ -25,7 +26,7 @@ openssl_source="$tmp_dir/openssl-3.2.1"
 
 #------------------------------------------------------------------------------
 function select_uninstall_mode() {
-
+    # Function for selecting the uninstall option for the currently installed OQS libraries
 
     # Loop for setup option selection
     while true; do
@@ -49,14 +50,12 @@ function select_uninstall_mode() {
                 break;;
             
             2)
-
                 # Uninstal OQS-Provider only
                 rm -rf "$oqs_openssl_path"
                 echo -e "\OQS-Provider Uninstalled"
                 break;;
 
             3)
-
                 # Uninstall OpenSSL 3.2.1 only
                 rm -rf "$open_ssl_path"
                 echo -e "\OpenSSL 3.2.1 Uninstalled"
@@ -65,7 +64,7 @@ function select_uninstall_mode() {
             4)
                 # Uninstall all libs
                 rm -rf "$libs_dir" && rm -rf "$tmp_dir" && rm -rf "$dependency_dir"
-                echo -e "\All Libraries Uninstalled"
+                echo -e "\nAll Libraries Uninstalled"
                 break;;
 
             5)
@@ -76,20 +75,23 @@ function select_uninstall_mode() {
             *)
                 echo "Invalid option, please select valid option value (1-4)"
                 ;;
+            
         esac
+
     done
 
 }
 
-
 #------------------------------------------------------------------------------
 function main() {
-    # Function for  building the specified test suite
+    # Main function for controlling the uninstall utility script
 
+    # Outputting script title to the terminal
     echo "########################"
     echo "Uninstall Utility Script"
     echo -e "########################\n"
 
+    # Calling the function that handles the uninstall mode selection and execution
     select_uninstall_mode
     
 }

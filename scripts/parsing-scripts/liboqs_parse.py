@@ -1,5 +1,5 @@
 """
-Copyright (c) 2023 Callum Turino
+Copyright (c) 2024 Callum Turino
 SPDX-License-Identifier: MIT
 
 This python script will parse the liboqs result files outputted by the bash scripts
@@ -8,7 +8,8 @@ for the results.
 
 """
 
-#------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
+# Script imports
 import pandas as pd
 import re
 import os
@@ -23,45 +24,45 @@ dir_paths = {}
 root_dir = ""
 num_runs = 0
 
-
-#------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
 def setup_parse_env() :
-
+    """ Function for setting up the environment for the Liboqs parsing script. The function
+        will set the various directory paths, read in the algorithm lists and set the root directories """
 
     global root_dir, kem_algs, sig_algs, dir_paths
 
-    # Setting main path vars
+    # Setting main directory path variables
     current_dir = os.getcwd()
     root_dir = os.path.dirname(os.path.dirname(current_dir))
 
-    # Creating test results dir paths dict
+    # Setting the test results directory paths in central paths dictionary
     dir_paths['root_dir'] = os.path.dirname(os.path.dirname(current_dir))
     dir_paths['results_dir'] = os.path.join(root_dir, "test-data", "results", "liboqs")
     dir_paths['up_results'] = os.path.join(root_dir, "test-data", "up-results", "liboqs")
 
-    # Setting the alg list filename based on version flag
+    # Setting the text alg list filenames
     kem_algs_file = os.path.join(root_dir, "test-data", "alg-lists", "kem-algs.txt")
     sig_algs_file = os.path.join(root_dir, "test-data", "alg-lists", "sig-algs.txt")
 
-    # Inserting the kem algs into list for later use
+    # Reading in the algorithms from the kem algs text file
     with open(kem_algs_file, "r") as kem_file:
         for line in kem_file:
             kem_algs.append(line.strip())
     
-    # Inserting the digital signature algs into list for later use
+    # Reading in the algorithms from the sig algs text file
     with open(sig_algs_file, "r") as alg_file:
         for line in alg_file:
             sig_algs.append(line.strip())
 
-
-#------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
 def handle_results_dir_creation(machine_num):
-    """Function for handling what the user wants to do with old results"""
+    """ Function for handling the presence of older parsed results, ensuring that the user
+        is aware of the old results and can choose how to handle them before the parsing continues """
 
     # Checking if there are old parsed results for current Machine-ID and handling clashes 
     if os.path.exists(dir_paths["type_mem_dir"]) or os.path.exists(dir_paths["type_speed_dir"]):
 
-        # Outputting warning message
+        # Outputting warning message to the terminal
         print(f"There are already parsed Liboqs testing results present for Machine-ID ({machine_num})\n")
 
         # Get decision from user on how to handle old results before parsing continues
@@ -76,14 +77,13 @@ def handle_results_dir_creation(machine_num):
 
             if user_choice == "1":
 
-                # Replacing all old results and creating new empty dir to store parsed results
+                # Replacing all old results and creating new empty dir to store the parsed results
                 print(f"Removing old results directory for Machine-ID ({machine_num}) before continuing...")
                 shutil.rmtree(dir_paths["results_dir"], f"machine-{machine_num}")
                 print("Old results removed")
 
                 os.makedirs(dir_paths["type_speed_dir"])
                 os.makedirs(dir_paths["type_mem_dir"])
-
                 break
 
             elif user_choice == "2":
@@ -96,9 +96,13 @@ def handle_results_dir_creation(machine_num):
 
                 # Halting script until old results have been moved for current Machine-ID
                 while True:
+
                     input(f"Halting parsing script so old parsed results for Machine-ID ({machine_num}) can be moved, press enter to continue")
+
+                    # Checking if old results have been moved before continuing
                     if os.path.exists(dir_paths["type_mem_dir"]) or os.path.exists(dir_paths["type_speed_dir"]):
                         print(f"Old parsed results for Machine-ID ({machine_num}) still present!!!\n")
+
                     else:
                         print("Old results have been moved, now continuing with parsing script")
                         os.makedirs(dir_paths["type_speed_dir"])
@@ -111,37 +115,60 @@ def handle_results_dir_creation(machine_num):
                 print("Incorrect value, please select (1/2/3)")
 
     else:
-
         # No old parsed results for current machine-id present so creating new dirs
         os.makedirs(dir_paths["type_speed_dir"])
         os.makedirs(dir_paths["type_mem_dir"])
 
+#-----------------------------------------------------------------------------------------------------------
+def get_peak(mem_file, peak_metrics):
+    """ Function that takes the current massif.out file and gets 
+        the peak memory metrics, returning the values to continue
+        processing. The function comes from the run_mem.py script 
+        found in OQS Profiling Project
+        https://github.com/open-quantum-safe/profiling """
 
-#------------------------------------------------------------------------------
+    # Gets max memory metric for current algorithm operation
+    with open(mem_file, "r") as lines:
+        peak = -1
+        for line in lines:
+            if line.startswith(" Detailed snapshots: ["):
+                match=re.search("\d+ \(peak\).*", line)
+                if match:
+                    peak = int(match.group(0).split()[0])      
+            if (peak > 0):
+                
+                if line.startswith('{: >3d}'.format(peak)): # remove "," and print all numbers except first:
+                    nl = line.replace(",", "")
+                    peak_metrics = nl.split()
+                    del peak_metrics[0]
+                    return peak_metrics
+
+#-----------------------------------------------------------------------------------------------------------
 def pre_speed_processing():
     """ Function for preparing the speed up-result data to 
         by removing system information in file, allowing for
         further processing in the script """
     
-    # Setting up destination dir in current machines up-results for pre-processed speed files
+    # Setting up destination directory in current machines up-results for pre-processed speed files
     if not os.path.exists(dir_paths['up_speed_dir']):
         os.makedirs(dir_paths['up_speed_dir'])
     else:
         shutil.rmtree(dir_paths["up_speed_dir"])
         os.makedirs(dir_paths['up_speed_dir'])
 
-    # Declaring initial variables
+    # Declaring initial prefix variables for kem and sig files
     kem_prefix = "test-kem-speed-"
     sig_prefix = "test-sig-speed-"
 
-    # Pre-formatting kem csv files
+    # Pre-formatting the kem and sig csv speed files to remove system information from file
     for run_count in range(1, num_runs+1):
 
-        # Setting filename based on run
+        """ Pre-formatting kem csv files """
+        # Setting filename based on current run
         kem_pre_filename = kem_prefix + str(run_count) + ".csv"
         kem_filename = os.path.join(dir_paths["raw_speed_dir"], kem_pre_filename)
 
-        # Getting header start index
+        # Reading in the file
         with open(kem_filename, 'r') as pre_file:
             rows = pre_file.readlines()
 
@@ -154,14 +181,12 @@ def pre_speed_processing():
         speed_dest_dir = os.path.join(dir_paths["up_speed_dir"], kem_pre_filename)
         kem_pre_speed_df.to_csv(speed_dest_dir, index=False, sep="|")
 
-    # Pre-formatting sig csv files
-    for run_count in range(1, num_runs+1):
-
-        # Setting filename based on run
+        """ Pre-formatting sig csv files """
+        # Setting filename based on current run
         sig_pre_filename = sig_prefix + str(run_count) + ".csv"
         sig_filename = os.path.join(dir_paths["raw_speed_dir"], sig_pre_filename)
 
-        # Getting header start index
+        # Reading in the file
         with open(sig_filename, 'r') as pre_file:
             rows = pre_file.readlines()
 
@@ -174,17 +199,16 @@ def pre_speed_processing():
         speed_dest_dir = os.path.join(dir_paths["up_speed_dir"], sig_pre_filename)
         sig_pre_speed_df.to_csv(speed_dest_dir, index=False, sep="|")
 
-
-#------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
 def speed_processing():
-    """ Function for processing the speed up-results and 
+    """ Function for processing the CPU speed up-results and 
         exporting the data into a clean CSV format """
 
-    # Declaring initial variables
+    # Declaring filename prefix variables
     kem_prefix = "test-kem-speed-"
     sig_prefix = "test-sig-speed-"
 
-    # Creating algorithm list to insert into new column
+    # Creating algorithm list to insert into new header column
     new_col_kem = [alg for alg in kem_algs for _ in range(3)]
     new_col_sig = [alg for alg in sig_algs for _ in range(3)]
     
@@ -197,14 +221,12 @@ def speed_processing():
         filename_kem_pre = os.path.join(dir_paths['up_speed_dir'], filename_kem_pre)
         temp_df = pd.read_csv(filename_kem_pre, delimiter="|", index_col=False)
 
-        # Striping trailing spaces and removing algorithms from Operation
+        # Striping trailing spaces and removing algorithms from Operation column
         temp_df.columns = [col.strip() for col in temp_df.columns]
         temp_df = temp_df.loc[~temp_df['Operation'].str.strip().isin(kem_algs)]
-        #temp_df = temp_df.applymap(lambda val: val.strip() if isinstance(val, str) else val)
         temp_df = temp_df.apply(lambda col: col.str.strip() if col.dtype == 'object' else col)
 
-
-        # Inserting new algorithm column and outputting formatted csv
+        # Inserting the new algorithm column and outputting formatted csv
         temp_df.insert(0, "Algorithm", new_col_kem)
         filename_kem = kem_prefix + str(file_count) + ".csv"
         filename_kem = os.path.join(dir_paths['type_speed_dir'], filename_kem)
@@ -219,44 +241,15 @@ def speed_processing():
         # Striping trailing spaces and removing algorithms from Operation
         temp_df.columns = [col.strip() for col in temp_df.columns]
         temp_df = temp_df.loc[~temp_df['Operation'].str.strip().isin(sig_algs)]
-        #temp_df = temp_df.applymap(lambda val: val.strip() if isinstance(val, str) else val)
         temp_df = temp_df.apply(lambda col: col.str.strip() if col.dtype == 'object' else col)
 
-        
-        # Inserting new column and outputting formatted csv
+        # Inserting the new algorithm column and outputting formatted csv
         temp_df.insert(0, 'Algorithm', new_col_sig)
         filename_sig = sig_prefix + str(file_count) + ".csv"
         filename_sig = os.path.join(dir_paths['type_speed_dir'], filename_sig)
         temp_df.to_csv(filename_sig, index=False)
 
-
-#------------------------------------------------------------------------------
-def get_peak(mem_file, peak_metrics):
-    """ Function that takes the current massif.out file and gets 
-        the peak memory metrics, returning the values to continue
-        processing. The function comes from the run_mem.py script 
-        found in OQS Profiling Project
-        https://github.com/open-quantum-safe/profiling """
-
-    # Gets max memory metric from algorithm operation
-    with open(mem_file, "r") as lines:
-        peak = -1
-        for line in lines:
-            if line.startswith(" Detailed snapshots: ["):
-                match=re.search("\d+ \(peak\).*", line)
-                if match:
-                    peak = int(match.group(0).split()[0])      
-            if (peak > 0):
-                
-                if line.startswith('{: >3d}'.format(peak)): # remove "," and print all numbers except first:
-                    nl = line.replace(",", "")
-                    peak_metrics = nl.split()
-                    del peak_metrics[0]
-                    #print(" ".join(res))
-                    return peak_metrics
-
-
-#------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
 def memory_processing():
     """ Function for taking in the memory up-results, processing
         and outputting the results into a CSV format """
@@ -269,14 +262,14 @@ def memory_processing():
     new_row = []
     peak_metrics = []
 
-    # Defining column names for dataframe
+    # Defining header column names for dataframe
     fieldnames = ["Algorithm", "Operation", "intits", "maxBytes", "maxHeap", "extHeap", "maxStack"]
     
-    # Looping through the number runs specified
+    # Looping through the number test runs specified
     for run_count in range(1, num_runs+1):
 
-        # Creating temp dataframe
-        temp_df = pd.DataFrame(columns=fieldnames)
+        # Creating dataframe to store memory metrics for current run
+        mem_results_df = pd.DataFrame(columns=fieldnames)
 
         # Looping through the kem algorithms
         for kem_alg in kem_algs:
@@ -302,7 +295,7 @@ def memory_processing():
                     
                     # Filling in the row with algorithm/operation memory metrics before appending to dataframe
                     new_row.extend(peak_metrics)
-                    temp_df.loc[len(temp_df)] = new_row
+                    mem_results_df.loc[len(mem_results_df)] = new_row
 
                     # Clearing lists
                     peak_metrics.clear()
@@ -312,15 +305,13 @@ def memory_processing():
                     print(f"\nKEM algorithm memory parsing error, run - {run_count}")
                     print(f"error - {e}")
                     print(f"Filename {kem_up_filename}\n")
-                    #print(f"alg - {kem_alg}, peak mertrics: \n{peak_metrics}\n")
-                    #print(f"peak metrics len - {len(peak_metrics)}")
                     
         # Outputting kem csv file for this run
         kem_filename = "kem-mem-metrics-" + str(run_count) + ".csv"
         kem_filepath = os.path.join(dir_paths["type_mem_dir"], kem_filename)
-        temp_df.to_csv(kem_filepath, index=False)
+        mem_results_df.to_csv(kem_filepath, index=False)
 
-        # Looping through sig algorithms
+        # Looping through the sig algorithms
         for sig_alg in sig_algs:
 
             # Looping the operations and adding to temp dataframe 
@@ -344,7 +335,7 @@ def memory_processing():
                         
                     # Filling in the row with algorithm/operation memory metrics before appending to dataframe
                     new_row.extend(peak_metrics)
-                    temp_df.loc[len(temp_df)] = new_row
+                    mem_results_df.loc[len(mem_results_df)] = new_row
 
                     # Clearing lists
                     peak_metrics.clear()
@@ -354,16 +345,13 @@ def memory_processing():
                     print(f"\nsig alg error, run - {run_count}")
                     print(f"error - {e}")
                     print(f"Filename {sig_up_filename}\n")
-                    #print(f"alg - {sig_alg}, peak mertrics: \n{peak_metrics}\n")
-                    #print(f"peak metrics len - {len(peak_metrics)}")
 
         # Outputting digital signature csv file for this run
         sig_filename = "sig-mem-metrics-" + str(run_count) + ".csv"
         sig_filepath = os.path.join(dir_paths["type_mem_dir"], sig_filename)
-        temp_df.to_csv(sig_filepath, index=False)
+        mem_results_df.to_csv(sig_filepath, index=False)
 
-
-#------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
 def process_tests(num_machines):
     """ Function for parsing the results for multiple machines 
         and stores them as csv files. Once up-results are processed
@@ -371,36 +359,35 @@ def process_tests(num_machines):
     
     global dir_paths
 
-    # Creating an instance of the liboq average generator class before processing results
+    # Creating an instance of the Liboqs average generator class before processing results
     liboqs_avg = LiboqsResultAverager(dir_paths, kem_algs, sig_algs, num_runs, alg_operations)
 
     # Processing the results for the machine/s
     for machine_num in range(1, num_machines+1):
         
-        # Setting up directory paths
+        # Setting the unparsed-directory paths in the central paths dictionary
         dir_paths['up_speed_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine_num)}", "speed-results")
         dir_paths['up_mem_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine_num)}", "mem-results")
         dir_paths['type_speed_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine_num)}", "speed-results")
         dir_paths['type_mem_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine_num)}", "mem-results")
         dir_paths['raw_speed_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine_num)}", "raw-speed-results")
 
-        # Creating required dirs and handling any clashes with previous parsed results
+        # Creating required directories and handling any clashes with previously parsed results
         handle_results_dir_creation(machine_num)
 
-        # Parsing results
+        # Parsing the up-results for Liboqs testing
         pre_speed_processing()
         speed_processing()
         memory_processing()
 
-        # Calling average generation methods
+        # Calling average generation methods for memory and CPU performance results
         liboqs_avg.avg_mem()
         liboqs_avg.avg_speed()
 
-
-#------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
 def parse_liboqs(test_opts):
-    """ Main function for controlling the liboqs up-result
-        data processing and average calculation"""
+    """ Main function for controlling the parsing of the Liboqs benchmarking results. This function
+        is called from the main parsing control script and will call the necessary functions to parse the results """
 
     # Getting test options
     global num_runs

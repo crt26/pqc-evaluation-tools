@@ -1,11 +1,13 @@
 #!/bin/bash
 
-#Copyright (c) 2023 Callum Turino
+#Copyright (c) 2024 Callum Turino
 #SPDX-License-Identifier: MIT
 
-# Script for controlling the Liboqs benchmark testing, it takes in the test parameters and call the relevant test scripts
+# Script for controlling the Liboqs benchmark testing, it takes in the test parameters and calls the relevant test scripts
+# to perform the speed and memory benchmarking tests for included in the Liboqs library. The script also handles the storage of the results
+# and ensures that the results are stored in the correct directories based on the assigned machine number.
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 # Declaring global main dir path variables
 root_dir=$(cd "$PWD"/../.. && pwd)
 libs_dir="$root_dir/lib"
@@ -22,9 +24,9 @@ oqs_openssl_path="$libs_dir/oqs-openssl"
 machine_num=""
 number_of_runs=0
 
-
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function set_result_paths() {
+    # Function for setting the result paths based on the assigned machine number
 
     # Setting results path based on assigned machine number for results
     machine_results_path="$test_data_dir/up-results/liboqs/machine-$machine_num"
@@ -35,11 +37,15 @@ function set_result_paths() {
 
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function get_machine_num() {
+    # Function for getting the machine ID from the user to assign to the test results
 
+    # Getting the machine ID from the user
     while true; do
+
         read -p "What machine number would you like to assign to these results? - " response
+        
         case $response in
 
             # Asking the user to enter a number
@@ -49,13 +55,16 @@ function get_machine_num() {
             # If a number is entered by the user it is stored for later use
             * ) machine_num="$response"; echo -e "\nMachine-ID set to $response \n";
             break;;
+
         esac
+
     done
-    
+
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function handle_machine_id_clash() {
+    # Function for handling the clash of pre-existing machine IDs when assigning a new machine ID
 
     # Get user choice for handling clash
     while true; do
@@ -66,9 +75,11 @@ function handle_machine_id_clash() {
         echo -e "2 - Assign a different machine ID"
         read -p "Enter Option: " user_response
 
+        # Handling user response
         case $user_response in
 
             1)
+                # Remove old results and create new directories
                 echo -e "\nReplacing old results\n"
                 rm -rf $machine_results_path
                 mkdir -p "$machine_speed_results"
@@ -76,7 +87,6 @@ function handle_machine_id_clash() {
                 break;;
 
             2)
-
                 # Getting new machine ID to be assigned to results
                 echo -e "Assigning new Machine-ID for test results"
                 get_machine_num
@@ -99,13 +109,11 @@ function handle_machine_id_clash() {
 
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function get_test_options() {
     # Function for getting the test parameters from the user before performing the tests
 
-    # Getting if tests being done will compare multiple machine
-
-    # Getting y/n input from user and storing result
+    # Getting if tests being done will be compared against other machines
     while true; do
 
         read -p "Do you intend to compare the results against other machines [y/n]? - " response_1
@@ -127,7 +135,7 @@ function get_test_options() {
 
     done
 
-    # Getting the number of runs
+    # Getting the number of test runs required
     while true; do
 
         # Prompt the user to input an integer
@@ -146,22 +154,20 @@ function get_test_options() {
 
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function setup_test_suite() {
     # Function for setting up the test suite directories and removing old results if needed
 
-    # Performing setup of test suite
+    # Outputting current task to terminal
     echo "#########################"
     echo "Configure Test Parameters"
     echo -e "#########################\n"
 
-    # Getting test options from user
+    # Getting test options from user and setting results path for machine ID
     get_test_options
-
-    # Setting results path based on assigned machine number for results
     set_result_paths
 
-    # Creating unparsed results directorys for machine ID and handling old results if present
+    # Creating unparsed-results directories for machine ID and handling old results if present
     if [ -d "$test_data_dir/up-results" ]; then
 
         # Check if there is already results present for assigned machine number and offer to replace
@@ -184,10 +190,9 @@ function setup_test_suite() {
     kem_speed_bin="$liboqs_test_path/speed_kem"
     sig_speed_bin="$liboqs_test_path/speed_sig"
 
-    # Setting paths to mem test binaries
+    # Setting paths to memory test binaries
     kem_mem_bin="$liboqs_test_path/test_kem_mem"
     sig_mem_bin="$liboqs_test_path/test_sig_mem"
-
 
     # Ensure liboqs binaries are present and executable
     test_bins=("$kem_speed_bin" "$sig_speed_bin" "$kem_mem_bin" "$sig_mem_bin")
@@ -203,8 +208,6 @@ function setup_test_suite() {
         fi
 
     done
-
-    # Configuring mem test vars:
 
     # Setting alg list txt paths
     kem_alg_file="$test_data_dir/alg-lists/kem-algs.txt"
@@ -231,23 +234,19 @@ function setup_test_suite() {
 
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function mem_tests() {
-  # Main function for performing the memory benchmark testing
+    # Function for performing the Liboqs memory benchmarking tests
 
-    # Outputting test start message
+    # Outputting current task to terminal
     echo -e "***********************"
     echo -e "Performing Memory Tests"
     echo -e "***********************\n"
-    #run_count=1
 
     # Ensuring liboqs-mem-tmp dir is not present before starting
     if [ -d "$test_scripts_path/tmp/" ]; then
-    rm -rf "$test_scripts_path/tmp/"
+        rm -rf "$test_scripts_path/tmp/"
     fi
-
-    rm -rf logs/files
-    mkdir -p logs/files
 
     # Performing the memory tests with the specified number of runs
     for run_count in $(seq 1 $number_of_runs); do
@@ -255,7 +254,7 @@ function mem_tests() {
         # Outputting current test run
         echo -e "Memory Test Run - $run_count\n\n"
         
-        # Outputting starting kem tests
+        # Outputting starting kem algorithm tests
         echo -e "KEM Memory Tests\n"
 
         # KEM memory tests
@@ -268,13 +267,12 @@ function mem_tests() {
                 op_kem_str=${op_kem[operation]}
                 echo -e "$kem_alg - $op_kem_str Test\n"
 
-                # Running valgrind and outputting metrics
+                # Running Valgrind profiler and outputting memory metrics
                 filename="$kem_mem_results/$kem_alg-$operation-$run_count.txt"
                 valgrind --tool=massif --stacks=yes --massif-out-file="$mem_tmp_dir/massif.out" "$kem_mem_bin" "$kem_alg" "$operation"
                 ms_print "$mem_tmp_dir/massif.out" > $filename
                 rm -f "$mem_tmp_dir/massif.out" && echo -e "\n"
-
-                
+  
             done
 
             # Clearing the tmp directory before next test
@@ -314,29 +312,29 @@ function mem_tests() {
 
     done
 
-    # # Cleaning up mem tmp dirs
+    # Performing final clean up of Liboqs memory test tmp dirs
     rm -rf $mem_tmp_dir
     rm -rf "$test_scripts_path/tmp"
 
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function speed_tests() {
+    # Function for performing the Liboqs CPU speed benchmarking tests
 
-    # Performing liboqs CPU speed benchmarking tests
-
+    # Outputting current task to terminal
     echo "######################"
     echo "Performing Speed Tests"
     echo -e "######################\n"
 
-    # Performing both KEM and Digital Signature test
+    # Performing CPU speed testing for the specified number of runs
     for run_num in $(seq 1 $number_of_runs); do 
 
         # Conducting KEM performance testing
         echo -e "Conducting KEM Speed Test Run Number - $run_num\n"
         "$kem_speed_bin" > "$machine_speed_results/test-kem-speed-$run_num.csv"
 
-        # Conducting Sig performance testing
+        # Conducting Digital Signature performance testing
         echo -e "Conducting Sig Speed Test Run number - $run_num\n"
         "$sig_speed_bin" > "$machine_speed_results/test-sig-speed-$run_num.csv"
 
@@ -344,14 +342,14 @@ function speed_tests() {
 
 }
 
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 function main() {
-    # Main function for controlling liboqs testing
+    # Main function for controlling Liboqs performance testing
 
     # Performing test suite setup 
     setup_test_suite
 
-    # Performing liboqs speed and memory tests
+    # Performing liboqs speed and memory performance tests
     speed_tests
     mem_tests
 
