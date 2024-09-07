@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#Copyright (c) 2024 Callum Turino
-#SPDX-License-Identifier: MIT
+# Copyright (c) 2024 Callum Turino
+# SPDX-License-Identifier: MIT
 
-# This is a utility script used to generate all the certificates and keys needed for the TLS benchmarking tests, this includes creating the
+# This script is used to generate all the certificates and keys needed for the TLS benchmarking tests, this includes creating the
 # CA cert and keys, creating a signing requests for the CA, and then signing the certs and keys for the TLS test.
 # The keys must then be copied to the client machine, so that each machine has a copy for the tests. 
 # This script will  create all the PQC and classic certs and keys needed for the TLS handshake benchmarking tests.
@@ -180,11 +180,11 @@ function main() {
     classic_keygen
 
     # Generating certs and keys for PQC tests
-    echo "Generating certs and keys for PQC tests:"
+    echo -e "\nGenerating certs and keys for PQC tests:"
     pqc_keygen
 
     # Generating certs and keys for Hybrid-PQC tests
-    echo "Generating certs and keys for Hybrid-PQC tests:"
+    echo -e "\nGenerating certs and keys for Hybrid-PQC tests:"
     hybrid_pqc_keygen
 
     # Restoring OpenSSL conf file to have configuration needed for testing scripts

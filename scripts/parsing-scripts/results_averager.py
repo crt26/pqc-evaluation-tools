@@ -10,7 +10,6 @@ to be run as a standalone script.
 """
 
 #-----------------------------------------------------------------------------------------------------------
-# Script imports
 from pdb import run
 import pandas as pd
 import os

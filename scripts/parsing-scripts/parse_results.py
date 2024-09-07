@@ -9,7 +9,6 @@ alongside taking in the test parameters used during the benchmarking to output f
 """
 
 #-----------------------------------------------------------------------------------------------------------
-# Script imports
 from liboqs_parse import parse_liboqs
 from oqs_openssl_parse import parse_openssl
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#Copyright (c) 2024 Callum Turino
-#SPDX-License-Identifier: MIT
+# Copyright (c) 2024 Callum Turino
+# SPDX-License-Identifier: MIT
 
 # Script ran from the client machine for testing the computational efficiency of the PQC algorithms when integrated into OpenSSL. 
 # The script will take in the test parameters from the OQS-OpenSSL test control script and gather the speed metrics. The script will then

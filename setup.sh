@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#Copyright (c) 2024 Callum Turino
-#SPDX-License-Identifier: MIT
+# Copyright (c) 2024 Callum Turino
+# SPDX-License-Identifier: MIT
 
 # Setup script for the automated PQC benchmark testing tools, the script provides various setup options
 # depending on the need of the user. The script will generate the needed directories and also install the 
@@ -14,6 +14,8 @@ dependency_dir="$root_dir/dependency-libs"
 libs_dir="$root_dir/lib"
 tmp_dir="$root_dir/tmp"
 test_data_dir="$root_dir/test-data"
+alg_lists_dir="$test_data_dir/alg-lists"
+util_scripts="$root_dir/scripts/utility-scripts"
 
 # Declaring global library path files
 open_ssl_path="$libs_dir/openssl_3.2"
@@ -62,7 +64,7 @@ function configure_dirs() {
     # Function for creating the required directories for the automated tools alongside setting the root directory path tmp file
 
     # Declaring directory check array
-    required_dirs=("$libs_dir" "$dependency_dir" "$oqs_openssl_source" "$tmp_dir")
+    required_dirs=("$libs_dir" "$dependency_dir" "$oqs_openssl_source" "$tmp_dir" "$test_data_dir" "$alg_lists_dir")
 
     # Check if libs have already been installed based on install type selected
     case $install_type in
@@ -93,7 +95,7 @@ function configure_dirs() {
         # Check if dir exists and removes for clean install
         if [ -d "$dir" ]; then
             
-            # If liboqs is installed and user chooses install type 2, remove only oqs-openssl lib dir and not liboqs_dir
+            # If Liboqs is installed and user chooses install type 2, remove only oqs-openssl lib dir and not liboqs_dir
             if [ "$dir" == "$libs_dir" ] && [ "$install_type" -eq 2 ]; then
                 rm -rf "$oqs_openssl_path" && mkdir -p "$oqs_openssl_path"
 
@@ -148,6 +150,13 @@ function dependency_install() {
     pip install matplotlib --break-system-packages
     pip install jinja2 --break-system-packages
     pip install tabulate --break-system-packages
+
+    # Determine location of Python3 binary
+    if [ -x "$(command -v python3)" ]; then
+        python_bin="python3" 
+    else
+        python_bin="python"
+    fi
 
     echo "Dependency checks complete"
 
@@ -396,7 +405,6 @@ function main() {
         case "$user_opt" in 
 
             1)
-                
                 # Outputting selection choice
                 echo -e "\n############################"
                 echo "Liboqs Only Install Selected"
@@ -411,10 +419,16 @@ function main() {
                 openssl_build
                 liboqs_build
                 rm -rf $tmp_dir/*
+
+                # Creating the required alg-list files for testing
+                cd "$util_scripts"
+                $python_bin "get_algorithms.py" "1"
+                py_exit_status=$?
+                cd $root_dir
+
                 break;;
             
             2)
-
                 # Outputting selection choice
                 echo -e "\n########################################"
                 echo "Liboqs and OQS-Provider Install Selected"
@@ -430,10 +444,15 @@ function main() {
                 liboqs_build
                 oqs_provider_build
                 rm -rf $tmp_dir/*
+
+                # Creating the required alg-list files for testing
+                cd "$util_scripts"
+                $python_bin "get_algorithms.py" "2"
+                py_exit_status=$?
+                cd $root_dir
                 break;;
 
             3)
-
                 # Outputting selection choice
                 echo -e "\n##################################"
                 echo "OQS-Provider Only Install Selected"
@@ -462,6 +481,12 @@ function main() {
                 # Building oqs-provider
                 oqs_provider_build
                 rm -rf $tmp_dir/*
+
+                # Creating the required alg-list files for testing
+                cd "$util_scripts"
+                $python_bin "get_algorithms.py" "3"
+                py_exit_status=$?
+                cd $root_dir
                 break;;
 
             4)
@@ -476,6 +501,15 @@ function main() {
         esac
     
     done
+
+    # Outputting there was an issue with the python utility script that creates the alg-list files
+    if [ "$py_exit_status" -ne 0 ]; then
+        echo -e "\n!!!Error creating algorithm list files, please verify both setup and python scripts and rerun setup!!!"
+        echo -e "If the issue persists, you may want to consider re-cloning the repo and rerunning the setup script\n"
+    
+    elif [ -z "$py_exit_status" ]; then
+        echo -e "\nThe Python get_algorithms script did not return an exit status, please verify the script and rerun setup\n"
+    fi
 
     # Outputting setup complete message
     echo -e "\n\nSetup complete, completed builds can be found in the builds directory"

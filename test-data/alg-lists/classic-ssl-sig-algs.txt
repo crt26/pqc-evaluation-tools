@@ -1,6 +1,0 @@
-RSA_2048
-RSA_3072
-RSA_4096
-prime256v1
-secp384r1
-secp521r1

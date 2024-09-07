@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#Copyright (c) 2024 Callum Turino
-#SPDX-License-Identifier: MIT
+# Copyright (c) 2024 Callum Turino
+# SPDX-License-Identifier: MIT
 
 # Script for controlling the Liboqs benchmark testing, it takes in the test parameters and calls the relevant test scripts
 # to perform the speed and memory benchmarking tests for included in the Liboqs library. The script also handles the storage of the results

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#Copyright (c) 2024 Callum Turino
-#SPDX-License-Identifier: MIT
+# Copyright (c) 2024 Callum Turino
+# SPDX-License-Identifier: MIT
 
 # Server script for the TLS handshake tests, this script will coordinate with the client machine to conduct the tests
 # using all the combinations of PQC and classic sig/kem using the global test parameters provided. 

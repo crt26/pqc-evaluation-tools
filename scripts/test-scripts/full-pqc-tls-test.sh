@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#Copyright (c) 2024 Callum Turino
-#SPDX-License-Identifier: MIT
+# Copyright (c) 2024 Callum Turino
+# SPDX-License-Identifier: MIT
 
 # Script for controlling the OQS-Provider benchmark testing, it takes in the test parameters and calls the relevant test scripts.
 # The script will also determine which test machine it is being executed on within the test parameter collection functions. 

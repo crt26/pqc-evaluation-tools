@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#Copyright (c) 2024 Callum Turino
-#SPDX-License-Identifier: MIT
+# Copyright (c) 2024 Callum Turino
+# SPDX-License-Identifier: MIT
 
 # Client script for the TLS handshake tests, this script will coordinate with the server machine to conduct the tests
 # using all the combinations of PQC and classic sig/kem using the global test parameters provided. 
@@ -335,6 +335,7 @@ function pqc_tests() {
                     # Performing testing until successful or fail counter reaches limit
                     while true; do
 
+                        #"$open_ssl_path/bin/openssl" s_client -connect $SERVER_IP:4433 -CAfile $cert_file -provider default -provider oqsprovider -provider-path $provider_path -groups "$kem"
                         # Running OpenSSL s_time process with current test parameters
                         "$open_ssl_path/bin/openssl" s_time -connect $server_ip:4433 -CAfile $cert_file -time $TIME_NUM  -verify 1 \
                             -provider default -provider oqsprovider -provider-path $provider_path > $handshake_dir/$output_name

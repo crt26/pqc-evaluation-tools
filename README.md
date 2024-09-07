@@ -21,16 +21,17 @@ This is the **development branch**, it may not be in a fully functioning state a
 - [x] Update documentation to reflect changes to repository functionality and structure
 - [x] Integrate Hybrid algorithmic testing to OQS-OpenSSL-Provider scripts
 - [x] Integrate Hybrid test handling in parsing scripts
+- [x] Add functionality for automatically getting supported algorithms for both Liboqs and OQS-Provider to improve scalability. 
 - [ ] Resolve issue with scripts being required to be executed from only their stored directory
 - [ ] Resolve issues with testing on ARMv8 devices [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761)
-- [ ] Add functionality for automatically getting supported algorithms for both Liboqs and OQS-Provider to improve scalability. 
+
 - [ ] Add better handling for differentiating between different ARM devices in setup script. 
 - [ ] Improve script exception handling. 
 - [ ] Prepare for merge to main branch with newer version
 
 ## Contents <!-- omit from toc --> 
 - [Overview](#overview)
-- [Supported Hardware](#supported-hardware)
+- [Supported Hardware and Software](#supported-hardware-and-software)
 - [Installation Instructions](#installation-instructions)
 - [Automated Testing Tools](#automated-testing-tools)
   - [Tools Description](#tools-description)
@@ -44,6 +45,7 @@ This is the **development branch**, it may not be in a fully functioning state a
   - [Graph Generation](#graph-generation)
 - [Utility Scripts](#utility-scripts)
 - [Repository Structure](#repository-structure)
+- [OQS Version Issue Handling](#oqs-version-issue-handling)
 - [Helpful Documentation Links](#helpful-documentation-links)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
@@ -63,14 +65,26 @@ The testing scripts allow for the evaluation of all algorithms supported by Libo
 
 > Notice: At the current moment, due to how directory paths variables are handled by the scripts in the project, all scripts must be executed from the directory that stored in. This issue will be addressed in following version of the project.
 
-## Supported Hardware
+## Supported Hardware and Software
+
+### Compatible Hardware and Operating Systems <!-- omit from toc --> 
 The automated testing tool is currently only supported on the following devices:
 
 - x86 Linux Machines using Debian based distros
 - ARM Linux devices using a 64-bit Operating System
 
-> Notice: Current functioning state works for both x86 and ARM machines. However, on ARM devices, memory profiling for Falcon algorithm variations is non-functioning. Please refer to [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761) for more details. Work is underway to resolve this issue but for now the repository has methods in place to account for this. Automated testing and parsing scripts can still be used to gather performance metrics for all other algorithms on ARM systems. 
+> Notice: Current functioning state works for both x86 and ARM machines. However, on ARM devices, memory profiling for Falcon algorithm variations is non-functioning. Please refer to [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761) for more details. Work is underway to resolve this issue but for now the repository has methods in place to account for this. Automated testing and parsing scripts can still be used to gather performance metrics for all other algorithms on ARM systems.
 
+### Tested Dependency Software <!-- omit from toc --> 
+This version of the repository has been fully tested using the following versions of the dependency libraries:
+
+- Liboqs Version 0.10.0
+
+- OQS Provider Version 0.6.1
+
+- OpenSSL Version 3.2.1
+
+The automated setup scripts are designed to pull the latest versions of the OQS libraries and dynamically handle algorithm changes in order to provide performance analysis for the currently supported PQC algorithms. If there are any issues with the latest dependency versions, details on how to handle this can be found in the [OQS Version Issue Handling](#oqs-version-issue-handling) section.
 
 ## Installation Instructions
 
@@ -176,15 +190,31 @@ The results files outputted from the parsing scripts can be used with Microsoft 
 
 
 ## Utility Scripts
-The utility scripts provided may be useful when developing or testing using the various scripts contained in the repository or when setting up performance testing environments. More refined and encompassing utility scripts will be added as the project progresses. All utility scripts bar the `uninstall.sh` script can be found in the `scripts/utility-scripts` directory.
+The utility scripts provided may be useful when developing or testing using the various scripts contained in the repository or when setting up performance testing environments. More refined and encompassing utility scripts will be added as the project progresses. All utility scripts bar the `uninstall.sh` script can be found in the `scripts/utility-scripts` directory. The only exception to the is the `cleaner.sh` script which is stored at the projects root for easy access and uninstalling.
 
 The current set of utility scripts includes:
 
-- **uninstall.sh** - A script for automatically removing certain all libraries installed depending on the options supplied.
+### cleaner.sh <!-- omit from toc --> 
+This is a utility script for cleaning the various project files produced from the compiling and benchmarking operations. The script provides functionality for either uninstalling the OQS-OpenSSL libraries from the system, clearing the old results and generated TLS keys, or both. When selecting the uninstalling option, the script will remove the liboqs, OQS-Provider, and OpenSSL 3.2.1 libraries from the system. When selecting the clearing the old results and keys option, the script will remove the old test results and generated keys directories from the test-data directory.
 
-- **clear-test-data.sh** - This script will remove all results and generated keys that are currently being stored. This can be useful in development of the automated testing tools or to clear old results quickly.
-  
-- **configure-openssl-cnf.sh** - This script can change the configurations added to the OpenSSL 3.2.1 configuration file by commenting or uncommenting the lines which set what default groups OpenSSL uses. This is needed to allow both the `oqsssl-generate-keys.sh` and the TLS performance testing scripts to operate correctly. This script is mainly used by the automated scripts, however it can be called manually using the following commands:
+### get_algorithms.py <!-- omit from toc --> 
+This is a Python utility script which is used to dynamically determine the algorithms which are supported by the version of Liboqs and OQS-Provider libraries installed. These are then outputted accordingly to the `test-data/alg-lists` text files for the different algorithm and test types. The main usage of the script is to be called from the `setup.sh` script where it is passed an argument which dictates which install type is being performed in the setup process. There is also the option to call the `get_algorithms.py` manually to create the algorithm list files if required. However, this script must be ran from the `scripts/utility-scripts` directory. 
+
+Based on the the install type that has been selected in the main setup script, the following integer arguments can be supplied to the utility script:
+
+- 1 - (Liboqs only)
+- 2 - (Liboqs and OQS-Provider)
+- 3 - (OQS-Provider only)
+
+
+Example usage when running manually:
+```
+cd scripts/utility-scripts
+python3 get_algorithms.py 1
+```
+
+### configure-openssl-cnf.sh <!-- omit from toc --> 
+This script can change the configurations added to the OpenSSL 3.2.1 configuration file by commenting or uncommenting the lines which set what default groups OpenSSL uses. This is needed to allow both the `oqsssl-generate-keys.sh` and the TLS performance testing scripts to operate correctly. This script is mainly used by the automated scripts, however it can be called manually using the following commands:
 
 **configure-openssl-cnf.sh - Comment out Default Group Configurations:**
 ```
@@ -197,6 +227,8 @@ The current set of utility scripts includes:
 ```
 
 > Notice: As the `configure-openssl-cnf.sh` script is intended mainly to be used by the automated testing scripts, please take caution when calling the script manually. This is due to how the script anticipates the state of the configuration file. If calling manually ensure to verify the openssl.cnf file for any double comments or other misconfigurations.
+
+
 
 ## Repository Structure
 The repository will contain default directories present when cloned and during operation will create various directories required for its functionality. Directories created by the scripts shown in the following directory structure will be marked with a "*".
@@ -220,7 +252,7 @@ pqc-eval-tools/
 │   └── test-scripts
 │
 └── test-data
-    ├── alg-lists
+    ├── alg-lists*
     ├── results*
     └── up-results*
 ```
@@ -235,17 +267,33 @@ pqc-eval-tools/
 
 - **test-data**: Contains various sub-directories for the data required to operate the automated testing scripts and is where the results directories will be generated and stored.
 
-  - **alg-lists**: Contains various text files which list the quantum algorithms used by the scripts within the project.
+  - **alg-lists**: Contains various text files which list the quantum algorithms used by the scripts within the project. These text files are dynamically created at setup and will contain the algorithms supported by the versions of the OQS libraries installed at runtime.
+
   - **results***: Contains the parsed results created by the Python parsing scripts.
-  - **up-results*** Contains the 
+
+  - **up-results*** Contains the outputted un-parsed results from the automated benchmarking scripts. The performance metrics stored in these files will not be ready for interpretation yet, and will need parsed using the Python parsing scripts provided by the project before they can be used.
 
 - **scripts**: Contains the various sub-directories which houses the testing, parsing, and utility scripts. 
   
-  - parsing-scripts: Contains scripts used for parsing the result data.
+  - parsing-scripts: Contains scripts used for parsing the un-parsed results data outputted to the `test-data/up-results` directory.
   
   - test-scripts: Contains scripts that are used for testing various components of the project.
 
-  - utility-scripts: Contains the utility scripts used by the user and the automated testing scripts. 
+  - utility-scripts: Contains the utility scripts used by the user and the automated testing scripts.
+
+## OQS Version Issue Handling
+The repository is currently setup to pull the latest versions of the OQS projects and maintain use of the listed OpenSSL version to ensure the latest available algorithms can be tested. Handling has been implemented to accommodate for any changes to the algorithms that are supported by the OQS libraries as newer versions are released. 
+
+**However, as the OQS libraries are still developing projects, if any major changes have occurred to their code bases and this project's scripts does not accommodate this, please report an issue to this repositories GitHub page.**
+
+The issue will be resolved ASAP and in the meantime, it is possible to change the URL used for the git clones in the `setup.sh` script so that the latest tested versions can be installed instead. These can found at the following lines in the main setup script at the projects root:
+
+- **Liboqs Setup** - Line 308
+- **OQS-Provider Setup** - Line 369
+
+By reporting this issue, you would be helping ensure that the tool is fully functioning and able to provide the most up to date PQC performance data for yourself and other researchers who may be utilising this benchmarking suite. Reporting any issues with the latest versions of the OQS libraries will be greatly appreciated :)
+
+> Notice: Future versions of this repository will add functionality for providing this temporary fix option to the user in the event of the latest version not functioning. Removing the need for them to manually change the git clone URLs to the latest tested versions. 
 
 ## Helpful Documentation Links
 - [liboqs Webpage](https://openquantumsafe.org/liboqs/)

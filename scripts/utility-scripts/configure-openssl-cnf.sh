@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#Copyright (c) 2024 Callum Turino
-#SPDX-License-Identifier: MIT
+# Copyright (c) 2024 Callum Turino
+# SPDX-License-Identifier: MIT
 
 # This is a utility script used to configure the openssl.cnf file for the OpenSSL library 
 # to allow for the generation of post-quantum cryptographic keys. The script is used to 

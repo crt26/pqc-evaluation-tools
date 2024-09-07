@@ -9,7 +9,6 @@ for the results.
 """
 
 #-----------------------------------------------------------------------------------------------------------
-# Script imports
 import pandas as pd
 import os
 import shutil
