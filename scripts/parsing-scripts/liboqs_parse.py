@@ -12,6 +12,7 @@ for the results.
 import pandas as pd
 import re
 import os
+import sys
 import shutil
 from results_averager import LiboqsResultAverager
 
@@ -20,22 +21,22 @@ alg_operations = {'kem_operations': ["keygen", "encaps", "decaps"], 'sig_operati
 kem_algs = []
 sig_algs = []
 dir_paths = {}
-root_dir = ""
 num_runs = 0
 
 #-----------------------------------------------------------------------------------------------------------
-def setup_parse_env() :
+def setup_parse_env(root_dir):
     """ Function for setting up the environment for the Liboqs parsing script. The function
         will set the various directory paths, read in the algorithm lists and set the root directories """
 
-    global root_dir, kem_algs, sig_algs, dir_paths
+    global kem_algs, sig_algs, dir_paths
 
-    # Setting main directory path variables
-    current_dir = os.getcwd()
-    root_dir = os.path.dirname(os.path.dirname(current_dir))
+    # Ensure root_dir path is correct before continuing
+    if not os.path.isfile(os.path.join(root_dir, ".pqc_eval_dir_marker.tmp")):
+        print("Project root directory path file not correct, the main parse_results.py file is not able to establish the correct path!!!")
+        sys.exit(1)
 
     # Setting the test results directory paths in central paths dictionary
-    dir_paths['root_dir'] = os.path.dirname(os.path.dirname(current_dir))
+    dir_paths['root_dir'] = root_dir
     dir_paths['results_dir'] = os.path.join(root_dir, "test-data", "results", "liboqs")
     dir_paths['up_results'] = os.path.join(root_dir, "test-data", "up-results", "liboqs")
 
@@ -395,7 +396,7 @@ def parse_liboqs(test_opts):
 
     # Setting up the script
     print(f"\nPreparing to Parse Liboqs Results:\n")
-    setup_parse_env()
+    setup_parse_env(test_opts[2])
 
     # Processing the results
     print("Parsing results... ")

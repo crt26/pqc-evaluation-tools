@@ -8,26 +8,57 @@
 # comment out the default groups in the configuration file to allow for the use of the scheme groups included with the OQS-Provider library.
 
 #-------------------------------------------------------------------------------------------------------------------------------
-# Declaring directory path variables
-root_dir=$(cd "$PWD"/../.. && pwd)
-libs_dir="$root_dir/lib"
-tmp_dir="$root_dir/tmp"
-test_data_dir="$root_dir/test-data"
-test_scripts_path="$root_dir/scripts/test-scripts"
+function setup_base_env() {
+    # Function for setting up the basic global variables for the test suite. This includes setting the root directory
+    # and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
+    # using this, determines the root directory of the project.
 
-# Declaring global library path files
-open_ssl_path="$libs_dir/openssl_3.2"
-liboqs_path="$libs_dir/liboqs"
-oqs_openssl_path="$libs_dir/oqs-openssl"
+    # Determine directory that the script is being run from
+    script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-# Exporting openssl lib path
-if [[ -d "$open_ssl_path/lib64" ]]; then
-    openssl_lib_path="$open_ssl_path/lib64"
-else
-    openssl_lib_path="$open_ssl_path/lib"
-fi
+    # Try and find the .dir_marker.tmp file to determine the root directory
+    current_dir="$script_dir"
 
-export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
+    while true; do
+
+        # Check if the .pqc_eval_dir_marker.tmp file is present
+        if [ -f "$current_dir/.pqc_eval_dir_marker.tmp" ]; then
+            root_dir="$current_dir"  # Set root_dir to the directory, not including the file name
+            break
+        fi
+
+        # Move up a directory and check again
+        current_dir=$(dirname "$current_dir")
+
+        # If the root directory is reached and the file is not found, exit the script
+        if [ "$current_dir" == "/" ]; then
+            echo -e "Root directory path file not present, please ensure the path is correct and try again."
+            exit 1
+        fi
+
+    done
+
+    # Declaring main dir path variables based on root dir
+    libs_dir="$root_dir/lib"
+    tmp_dir="$root_dir/tmp"
+    test_data_dir="$root_dir/test-data"
+    test_scripts_path="$root_dir/scripts/test-scripts"
+
+    # Declaring global library path files
+    open_ssl_path="$libs_dir/openssl_3.2"
+    liboqs_path="$libs_dir/liboqs"
+    oqs_openssl_path="$libs_dir/oqs-openssl"
+
+    # Exporting openssl lib path
+    if [[ -d "$open_ssl_path/lib64" ]]; then
+        openssl_lib_path="$open_ssl_path/lib64"
+    else
+        openssl_lib_path="$open_ssl_path/lib"
+    fi
+
+    export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
+
+}
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function configure_conf_statements() {
@@ -60,6 +91,9 @@ function configure_conf_statements() {
 #-------------------------------------------------------------------------------------------------------------------------------
 function main() {
     # Main function for controlling the utility script
+
+    # Setting up the base environment for the test suite
+    setup_base_env
 
     # Check if the correct number of arguments is passed
     if [ "$#" -ne 1 ]; then

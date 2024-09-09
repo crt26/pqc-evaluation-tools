@@ -20,29 +20,48 @@ import subprocess
 import sys
 
 # Set the root directory path variable
-current_dir = os.getcwd()
-root_dir = os.path.dirname(os.path.dirname(current_dir))
+root_dir = ""
 
 # Set the path to the liboqs build directory and the openssl path
-liboqs_build_dir = os.path.join(root_dir, "lib", "liboqs", "build", "tests")
-openssl_path = os.path.join(root_dir, "lib", "openssl_3.2")
+liboqs_build_dir = ""
+openssl_path = ""
 openssl_lib_dir = ""
 
 #-----------------------------------------------------------------------------------------------------------
-def write_to_file(alg_list, file_name):
-    """ Helper function to write the algorithms to a specified text file. The function 
-        takes the algorithm list and filename as arguments """
+def setup_base_env():
+    """ Function for setting up the basic global variables for the test suite. This includes setting the root directory
+        and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
+        using this, determines the root directory of the project """
 
-    # Write the algorithms to the specified text file
-    with open(file_name, "w") as f:
-        for alg in alg_list:
-            f.write(f"{alg}\n")
+    global root_dir, liboqs_build_dir, openssl_path, openssl_lib_dir
 
-#-----------------------------------------------------------------------------------------------------------
-def setup_env():
-    """ Function to set up the environment variables required for the script """
+    # Get the script dir location, set current directory, and set the marker filename
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    current_dir = script_dir
+    marker_filename = ".pqc_eval_dir_marker.tmp"
 
-    global openssl_lib_dir
+    # Loop until the project's root directory is found or the system root directory is reached
+    while True:
+
+        # Check if the marker file is present in the current directory and break if found
+        marker_path = os.path.join(current_dir, marker_filename)
+
+        if os.path.isfile(marker_path):
+            root_dir = current_dir
+            break
+
+        # Move up one directory and check again for 
+        current_dir = os.path.dirname(current_dir)
+
+        # If the root directory is reached and the file is not found, exit the script
+        if current_dir == "/":
+            print("Root directory path file not present, please ensure the path is correct and try again.")
+            sys.exit(1)
+
+    # Set the path to the liboqs build directory and the openssl path
+    liboqs_build_dir = os.path.join(root_dir, "lib", "liboqs", "build", "tests")
+    openssl_path = os.path.join(root_dir, "lib", "openssl_3.2")
+    openssl_lib_dir = ""
 
     # Check which OpenSSL lib directory to use depending on the system
     if os.path.isdir(os.path.join(openssl_path, "lib64")):
@@ -64,6 +83,16 @@ def setup_env():
             os.remove(os.path.join(alg_list_dir, file))
     else:
         os.mkdir(alg_list_dir)
+
+#-----------------------------------------------------------------------------------------------------------
+def write_to_file(alg_list, file_name):
+    """ Helper function to write the algorithms to a specified text file. The function 
+        takes the algorithm list and filename as arguments """
+
+    # Write the algorithms to the specified text file
+    with open(file_name, "w") as f:
+        for alg in alg_list:
+            f.write(f"{alg}\n")
 
 #-----------------------------------------------------------------------------------------------------------
 def liboqs_extract_algs(output_str):
@@ -217,8 +246,8 @@ def main():
     # Ensure a valid argument was passed to the utility script
     if len(sys.argv) == 2:
 
-        # Set up the environment variables
-        setup_env()
+        # Set up the base environment for the utility script
+        setup_base_env()
 
         # Determine which algorithm lists are required based on the argument passed and create them
         if sys.argv[1] == "1":

@@ -9,33 +9,64 @@
 # This script consists of three main tests, the PQC TLS handshake tests, Hybrid-PQC TLS handshake tests, and the Classic TLS handshake tests.
 
 #-------------------------------------------------------------------------------------------------------------------------------
-# Declaring directory path variables
-root_dir=$(cd "$PWD"/../.. && pwd)
-libs_dir="$root_dir/lib"
-tmp_dir="$root_dir/tmp"
-test_data_dir="$root_dir/test-data"
-test_scripts_path="$root_dir/scripts/test-scripts"
-util_scripts="$root_dir/scripts/utility-scripts"
+function setup_base_env() {
+    # Function for setting up the basic global variables for the test suite. This includes setting the root directory
+    # and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
+    # using this, determines the root directory of the project.
 
-# Declaring global library path files
-open_ssl_path="$libs_dir/openssl_3.2"
-oqs_openssl_path="$libs_dir/oqs-openssl"
-provider_path="$libs_dir/oqs-openssl/lib"
+    # Determine directory that the script is being run from
+    script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-# Exporting openssl lib path
-if [[ -d "$open_ssl_path/lib64" ]]; then
-    openssl_lib_path="$open_ssl_path/lib64"
-else
-    openssl_lib_path="$open_ssl_path/lib"
-fi
+    # Try and find the .dir_marker.tmp file to determine the root directory
+    current_dir="$script_dir"
 
-export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
+    while true; do
 
-# Declaring static algorithm arrays and alg-list filepaths
-kem_alg_file="$test_data_dir/alg-lists/ssl-kem-algs.txt"
-sig_alg_file="$test_data_dir/alg-lists/ssl-sig-algs.txt"
-hybrid_kem_alg_file="$test_data_dir/alg-lists/ssl-hybr-kem-algs.txt"
-hybrid_sig_alg_file="$test_data_dir/alg-lists/ssl-hybr-sig-algs.txt"
+        # Check if the .pqc_eval_dir_marker.tmp file is present
+        if [ -f "$current_dir/.pqc_eval_dir_marker.tmp" ]; then
+            root_dir="$current_dir"  # Set root_dir to the directory, not including the file name
+            break
+        fi
+
+        # Move up a directory and check again
+        current_dir=$(dirname "$current_dir")
+
+        # If the root directory is reached and the file is not found, exit the script
+        if [ "$current_dir" == "/" ]; then
+            echo -e "Root directory path file not present, please ensure the path is correct and try again."
+            exit 1
+        fi
+
+    done
+
+    # Declaring main dir path variables based on root dir
+    libs_dir="$root_dir/lib"
+    tmp_dir="$root_dir/tmp"
+    test_data_dir="$root_dir/test-data"
+    test_scripts_path="$root_dir/scripts/test-scripts"
+    util_scripts="$root_dir/scripts/utility-scripts"
+
+    # Declaring global library path files
+    open_ssl_path="$libs_dir/openssl_3.2"
+    oqs_openssl_path="$libs_dir/oqs-openssl"
+    provider_path="$libs_dir/oqs-openssl/lib"
+
+    # Exporting openssl lib path
+    if [[ -d "$open_ssl_path/lib64" ]]; then
+        openssl_lib_path="$open_ssl_path/lib64"
+    else
+        openssl_lib_path="$open_ssl_path/lib"
+    fi
+
+    export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
+
+    # Declaring static algorithm arrays and alg-list filepaths
+    kem_alg_file="$test_data_dir/alg-lists/ssl-kem-algs.txt"
+    sig_alg_file="$test_data_dir/alg-lists/ssl-sig-algs.txt"
+    hybrid_kem_alg_file="$test_data_dir/alg-lists/ssl-hybr-kem-algs.txt"
+    hybrid_sig_alg_file="$test_data_dir/alg-lists/ssl-hybr-sig-algs.txt"
+
+}
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function set_test_env() {
@@ -81,6 +112,9 @@ function set_test_env() {
 #-------------------------------------------------------------------------------------------------------------------------------
 function main() {
     # Main function which controls testing scripts which are called for TLS speed performance test
+
+    # Setting up the base environment for the test suite
+    setup_base_env
 
     # Configure the testing environment
     set_test_env

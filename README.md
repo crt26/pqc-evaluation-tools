@@ -22,7 +22,7 @@ This is the **development branch**, it may not be in a fully functioning state a
 - [x] Integrate Hybrid algorithmic testing to OQS-OpenSSL-Provider scripts
 - [x] Integrate Hybrid test handling in parsing scripts
 - [x] Add functionality for automatically getting supported algorithms for both Liboqs and OQS-Provider to improve scalability. 
-- [ ] Resolve issue with scripts being required to be executed from only their stored directory
+- [x] Resolve issue with scripts being required to be executed from only their stored directory
 - [ ] Resolve issues with testing on ARMv8 devices [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761)
 
 - [ ] Add better handling for differentiating between different ARM devices in setup script. 
@@ -35,6 +35,7 @@ This is the **development branch**, it may not be in a fully functioning state a
 - [Installation Instructions](#installation-instructions)
   - [Standard Setup](#standard-setup)
   - [Safe Setup](#safe-setup)
+  - [Ensuring Root Dir Path Marker is present](#ensuring-root-dir-path-marker-is-present)
 - [Automated Testing Tools](#automated-testing-tools)
   - [Tools Description](#tools-description)
   - [Liboqs Performance Testing](#liboqs-performance-testing)
@@ -46,7 +47,9 @@ This is the **development branch**, it may not be in a fully functioning state a
   - [Parsed Results Output](#parsed-results-output)
   - [Graph Generation](#graph-generation)
 - [Utility Scripts](#utility-scripts)
-- [Repository Structure](#repository-structure)
+- [Repository Directory Structure](#repository-directory-structure)
+  - [Overview](#overview-1)
+  - [Layout and Descriptions](#layout-and-descriptions)
 - [Helpful Documentation Links](#helpful-documentation-links)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
@@ -64,7 +67,6 @@ At the current moment, the repository provides automation in PQC performance tes
 
 The testing scripts allow for the evaluation of all algorithms supported by Liboqs version 0.10.0 alongside the evaluation of both PQC only and PQC-Hybrid schemes in TLS exchanges to allow for an extensive assessment of the performance of PQC solutions on the system the repository is ran on. 
 
-> Notice: At the current moment, due to how directory paths variables are handled by the scripts in the project, all scripts must be executed from the directory that stored in. This issue will be addressed in following version of the project.
 
 ## Supported Hardware and Software
 
@@ -94,6 +96,10 @@ The issue will be resolved ASAP and in the meantime, it is possible to change th
 By reporting this issue, you would be helping ensure that the tool is fully functioning and able to provide the most up to date PQC performance data for yourself and other researchers who may be utilising this benchmarking suite. Reporting any issues with the latest versions of the OQS libraries will be greatly appreciated :)
 
 ## Installation Instructions
+To install and configure the benchmarking suite there are two main options, Standard Setup and Safe Setup. This is to allow for the usage of up to date dependency libraries whilst still providing a fallback to the last tested versions of the dependencies in the event of a drastic change to their code base.
+
+**Furthermore, it is vital that when performing either setup option that this is done from within the projects root directory.** This is to allow automated setup script to determine the absolute path for the projects directory on the system, which is vital for the other automation scripts in the project. 
+
 
 ### Standard Setup
 Clone the current stable version:
@@ -128,10 +134,19 @@ The setup script will also handle the building of [OpenSSL 3.2.1](https://www.op
 Once all of the relevant options have been selected, the setup script will download, configure and build each of the libraries. Alongside, optimizing the builds for the current systems by automatically passing the relevant build parameters.
 
 ### Safe Setup
-If there are issues with this benchmarking suite when using the latest versions of the OQS libraries available, it is possible to perform the setup using the last tested versions of these dependencies. The instructions for installation remain the same, however, when calling the setup.sh script, the `--safe-setup` argument can be passed. This tells the setup script to use the last tested commits to the OQS project repositories and can be performed using the following command:
+If there are issues with this benchmarking suite when using the latest versions of the OQS libraries available, it is possible to perform the setup using the last tested versions of these dependencies. The instructions for installation remain the same, however, when calling the setup.sh script, the `--safe-setup` argument can be passed. This tells the setup script to use the last tested commits to the OQS project repositories and can be performed using the following commands:
 
 ```
+git clone -b main https://github.com/crt26/pqc-eval-tools.git
+cd pqc-eval-tools
 ./setup.sh --safe-setup
+```
+
+### Ensuring Root Dir Path Marker is present
+**PLEASE NOTE:** After setup, a hidden file will also be generated at the projects root called `.pqc_eval_dir_marker.tmp`. Please do not remove this file as it is used by the other scripts to determine the path to the projects root. This file will be removed when uninstalling all libraries using the `cleaner.sh` utility script. If the file is removed, it can be generated manually or by rerunning the main setup script. To manually regnerate the file move into the projects root directory and execute the following command:
+
+```
+touch .pqc_eval_dir_marker.tmp
 ```
 
 ## Automated Testing Tools
@@ -245,11 +260,13 @@ This script can change the configurations added to the OpenSSL 3.2.1 configurati
 
 
 
-## Repository Structure
-The repository will contain default directories present when cloned and during operation will create various directories required for its functionality. Directories created by the scripts shown in the following directory structure will be marked with a "*".
+## Repository Directory Structure
 
+### Overview
+The repository will contain default directories and files that are present when cloned and during operation will create various directories required for its functionality. In the following diagram and descriptions, directories and files that are created by the scripts shown are marked with a "*" next to their name wherever they appear in this section.
 
-The pqc-eval-tools repository is organized as follows:
+### Layout and Descriptions
+The pqc-eval-tools repository directories are organised as follows:
 
 ```
 pqc-eval-tools/

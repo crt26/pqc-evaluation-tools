@@ -8,49 +8,80 @@
 # This script consists of three main tests, the PQC TLS handshake tests, Hybrid-PQC TLS handshake tests, and the Classic TLS handshake tests. 
 
 #-------------------------------------------------------------------------------------------------------------------------------
-# Declaring directory path variables
-root_dir=$(cd "$PWD"/../.. && pwd)
-libs_dir="$root_dir/lib"
-tmp_dir="$root_dir/tmp"
-test_data_dir="$root_dir/test-data"
-test_scripts_path="$root_dir/scripts/test-scripts"
-util_scripts="$root_dir/scripts/utility-scripts"
+function setup_base_env() {
+    # Function for setting up the basic global variables for the test suite. This includes setting the root directory
+    # and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
+    # using this, determines the root directory of the project.
 
-# Declaring global library path files
-open_ssl_path="$libs_dir/openssl_3.2"
-liboqs_path="$libs_dir/liboqs"
-oqs_openssl_path="$libs_dir/oqs-openssl"
-provider_path="$libs_dir/oqs-openssl/lib"
+    # Determine directory that the script is being run from
+    script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-# Declaring key storage dir paths
-key_storage_path="$test_data_dir/keys"
-pqc_cert_dir="$key_storage_path/pqc"
-classic_cert_dir="$key_storage_path/classic"
-hybrid_cert_dir="$key_storage_path/hybrid"
+    # Try and find the .dir_marker.tmp file to determine the root directory
+    current_dir="$script_dir"
 
-# Declaring global flags
-test_type=0 #0=pqc, 1=classic, 2=hybrid
+    while true; do
 
-# Exporting openssl lib path
-if [[ -d "$open_ssl_path/lib64" ]]; then
-    openssl_lib_path="$open_ssl_path/lib64"
-else
-    openssl_lib_path="$open_ssl_path/lib"
-fi
+        # Check if the .pqc_eval_dir_marker.tmp file is present
+        if [ -f "$current_dir/.pqc_eval_dir_marker.tmp" ]; then
+            root_dir="$current_dir"  # Set root_dir to the directory, not including the file name
+            break
+        fi
 
-export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
+        # Move up a directory and check again
+        current_dir=$(dirname "$current_dir")
 
-# Declaring current group var that will be passed to DEFAULT_GROUP env var when changing test type
-current_group=""
+        # If the root directory is reached and the file is not found, exit the script
+        if [ "$current_dir" == "/" ]; then
+            echo -e "Root directory path file not present, please ensure the path is correct and try again."
+            exit 1
+        fi
 
-# Declaring static algorithm arrays and alg-list filepaths
-kem_alg_file="$test_data_dir/alg-lists/ssl-kem-algs.txt"
-sig_alg_file="$test_data_dir/alg-lists/ssl-sig-algs.txt"
-hybrid_kem_alg_file="$test_data_dir/alg-lists/ssl-hybr-kem-algs.txt"
-hybrid_sig_alg_file="$test_data_dir/alg-lists/ssl-hybr-sig-algs.txt"
+    done
 
-classic_algs=("RSA_2048" "RSA_3072" "RSA_4096" "prime256v1" "secp384r1" "secp521r1")
-ciphers=("TLS_AES_256_GCM_SHA384" "TLS_CHACHA20_POLY1305_SHA256" "TLS_AES_128_GCM_SHA256")
+    # Declaring main dir path variables based on root dir
+    libs_dir="$root_dir/lib"
+    tmp_dir="$root_dir/tmp"
+    test_data_dir="$root_dir/test-data"
+    test_scripts_path="$root_dir/scripts/test-scripts"
+    util_scripts="$root_dir/scripts/utility-scripts"
+
+    # Declaring global library path files
+    open_ssl_path="$libs_dir/openssl_3.2"
+    liboqs_path="$libs_dir/liboqs"
+    oqs_openssl_path="$libs_dir/oqs-openssl"
+    provider_path="$libs_dir/oqs-openssl/lib"
+
+    # Declaring key storage dir paths
+    key_storage_path="$test_data_dir/keys"
+    pqc_cert_dir="$key_storage_path/pqc"
+    classic_cert_dir="$key_storage_path/classic"
+    hybrid_cert_dir="$key_storage_path/hybrid"
+
+    # Declaring global flags
+    test_type=0 #0=pqc, 1=classic, 2=hybrid
+
+    # Exporting openssl lib path
+    if [[ -d "$open_ssl_path/lib64" ]]; then
+        openssl_lib_path="$open_ssl_path/lib64"
+    else
+        openssl_lib_path="$open_ssl_path/lib"
+    fi
+
+    export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
+
+    # Declaring current group var that will be passed to DEFAULT_GROUP env var when changing test type
+    current_group=""
+
+    # Declaring static algorithm arrays and alg-list filepaths
+    kem_alg_file="$test_data_dir/alg-lists/ssl-kem-algs.txt"
+    sig_alg_file="$test_data_dir/alg-lists/ssl-sig-algs.txt"
+    hybrid_kem_alg_file="$test_data_dir/alg-lists/ssl-hybr-kem-algs.txt"
+    hybrid_sig_alg_file="$test_data_dir/alg-lists/ssl-hybr-sig-algs.txt"
+
+    classic_algs=("RSA_2048" "RSA_3072" "RSA_4096" "prime256v1" "secp384r1" "secp521r1")
+    ciphers=("TLS_AES_256_GCM_SHA384" "TLS_CHACHA20_POLY1305_SHA256" "TLS_AES_128_GCM_SHA256")
+
+}
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function set_test_env() {
@@ -377,6 +408,9 @@ function main() {
     # Main function which controls the server-side functionality of the TLS performance testing scripts
     # The global variables for the algorithm arrays and file path conventions are set using the specified
     # test type value: 0=pqc, 1=classic, 2=hybrid
+
+    # Setting up the base environment for the test suite
+    setup_base_env
 
     # Import algorithms and clear terminal
     get_algs

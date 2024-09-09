@@ -11,6 +11,7 @@ for the results.
 #-----------------------------------------------------------------------------------------------------------
 import pandas as pd
 import os
+import sys
 import shutil
 from results_averager import OqsOpensslResultAverager
 
@@ -23,16 +24,20 @@ speed_sig_algs = []
 speed_kem_algs = []
 speed_headers = []
 col_headers = {}
-root_dir = ""
 num_runs = 0
 
 #-----------------------------------------------------------------------------------------------------------
-def setup_parse_env() :
+def setup_parse_env(root_dir):
     """ Function for setting up the environment for the OQS-Provider TLS parsing script. The function
         will set the various directory paths, read in the algorithm lists, set the root directories 
         and set the column headers for the CSV files that will be outputted """
 
-    global root_dir, dir_paths, col_headers, algs_dict, pqc_type_vars, speed_type_vars, speed_headers
+    global dir_paths, col_headers, algs_dict, pqc_type_vars, speed_type_vars, speed_headers
+
+    # Ensure root_dir path is correct before continuing
+    if not os.path.isfile(os.path.join(root_dir, ".pqc_eval_dir_marker.tmp")):
+        print("Project root directory path file not correct, the main parse_results.py file is not able to establish the correct path!!!")
+        sys.exit(1)
 
     # Note: (at some point consider making these vars into a json file)
 
@@ -70,12 +75,8 @@ def setup_parse_env() :
         ["Algorithm", "Keygen", "Signs", "Verify", "Keygen/s", "sign/s", "verify/s"]
     ]
 
-    # Setting main path variables
-    current_dir = os.getcwd()
-    root_dir = os.path.dirname(os.path.dirname(current_dir))
-
     # Setting the test results directory paths in central paths dictionary
-    dir_paths['root_dir'] = os.path.dirname(os.path.dirname(current_dir))
+    dir_paths['root_dir'] = root_dir
     dir_paths['results_dir'] = os.path.join(root_dir, "test-data", "results", "oqs-openssl")
     dir_paths['up_results'] = os.path.join(root_dir, "test-data", "up-results", "oqs-openssl")
 
@@ -513,7 +514,7 @@ def parse_openssl(test_opts):
 
     # Setting up script variables
     print(f"\nPreparing to Parse OQS-OpenSSL Results:\n")
-    setup_parse_env()
+    setup_parse_env(test_opts[2])
 
     # Processing the OQS-OpenSSL results
     print("Parsing results... ")

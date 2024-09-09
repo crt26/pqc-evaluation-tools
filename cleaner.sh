@@ -8,23 +8,54 @@
 # When uninstalling, the script will remove the liboqs, OQS-Provider, and OpenSSL 3.2.1 libraries from the system. When clearing the old results and keys,
 # the script will remove the old test results and generated keys directories from the test-data directory.
 
-#------------------------------------------------------------------------------
-# Declaring global main dir path variables
-root_dir=$(pwd)
-dependency_dir="$root_dir/dependency-libs"
-libs_dir="$root_dir/lib"
-tmp_dir="$root_dir/tmp"
-test_data_dir="$root_dir/test-data"
+#-------------------------------------------------------------------------------------------------------------------------------
+function setup_base_env() {
+    # Function for setting up the basic global variables for the test suite. This includes setting the root directory
+    # and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
+    # using this, determines the root directory of the project.
 
-# Declaring global library path files
-open_ssl_path="$libs_dir/openssl_3.2"
-liboqs_path="$libs_dir/liboqs"
-oqs_openssl_path="$libs_dir/oqs-openssl"
+    # Determine directory that the script is being run from
+    script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-# Declaring global source-code path files
-liboqs_source="$tmp_dir/liboqs-source"
-oqs_openssl_source="$tmp_dir/oqs-openssl-source"
-openssl_source="$tmp_dir/openssl-3.2.1"
+    # Try and find the .dir_marker.tmp file to determine the root directory
+    current_dir="$script_dir"
+
+    while true; do
+
+        # Check if the .pqc_eval_dir_marker.tmp file is present
+        if [ -f "$current_dir/.pqc_eval_dir_marker.tmp" ]; then
+            root_dir="$current_dir"  # Set root_dir to the directory, not including the file name
+            break
+        fi
+
+        # Move up a directory and check again
+        current_dir=$(dirname "$current_dir")
+
+        # If the root directory is reached and the file is not found, exit the script
+        if [ "$current_dir" == "/" ]; then
+            echo -e "Root directory path file not present, please ensure the path is correct and try again."
+            exit 1
+        fi
+
+    done
+
+    # Declaring main dir path variables based on root dir
+    dependency_dir="$root_dir/dependency-libs"
+    libs_dir="$root_dir/lib"
+    tmp_dir="$root_dir/tmp"
+    test_data_dir="$root_dir/test-data"
+
+    # Declaring global library path files
+    open_ssl_path="$libs_dir/openssl_3.2"
+    liboqs_path="$libs_dir/liboqs"
+    oqs_openssl_path="$libs_dir/oqs-openssl"
+
+    # Declaring global source-code path files
+    liboqs_source="$tmp_dir/liboqs-source"
+    oqs_openssl_source="$tmp_dir/oqs-openssl-source"
+    openssl_source="$tmp_dir/openssl-3.2.1"
+
+}
 
 #------------------------------------------------------------------------------
 function select_uninstall_mode() {
@@ -70,6 +101,7 @@ function select_uninstall_mode() {
             4)
                 # Uninstall all libs
                 rm -rf "$libs_dir" && rm -rf "$tmp_dir" && rm -rf "$dependency_dir"
+                rm -rf "$root_dir/.pqc_eval_dir_marker.tmp"
                 echo -e "\nAll Libraries Uninstalled"
                 break;;
 
@@ -118,7 +150,6 @@ function remove_old_results() {
     rm -rf "$test_data_dir/up-results"
     rm -rf "$test_data_dir/keys"
     rm -rf "$tmp_dir/*"
-
     echo -e "\nAll results and generated keys cleared\n"
 
 }
@@ -127,6 +158,9 @@ function remove_old_results() {
 function main() {
     # Main function for controlling the uninstall utility script
 
+    # Setting up the base environment for the test suite
+    setup_base_env
+    
     # Outputting script title to the terminal
     echo "#################################"
     echo "Project Cleaner Utility Script"

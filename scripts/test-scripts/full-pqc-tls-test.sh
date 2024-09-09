@@ -10,34 +10,65 @@
 # If executing both server and client on the same machine, this is not needed as the client can access the keys directly.
 
 #-------------------------------------------------------------------------------------------------------------------------------
-# Declaring directory path variables
-root_dir=$(cd "$PWD"/../.. && pwd)
-libs_dir="$root_dir/lib"
-tmp_dir="$root_dir/tmp"
-test_data_dir="$root_dir/test-data"
-test_scripts_path="$root_dir/scripts/test-scripts"
-util_scripts="$root_dir/scripts/utility-scripts"
+function setup_base_env() {
+    # Function for setting up the basic global variables for the test suite. This includes setting the root directory
+    # and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
+    # using this, determines the root directory of the project.
 
-# Declaring global library path files
-open_ssl_path="$libs_dir/openssl_3.2"
-liboqs_path="$libs_dir/liboqs"
-oqs_openssl_path="$libs_dir/oqs-openssl"
+    # Determine directory that the script is being run from
+    script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-# Exporting openssl lib path
-if [[ -d "$open_ssl_path/lib64" ]]; then
-    openssl_lib_path="$open_ssl_path/lib64"
-else
-    openssl_lib_path="$open_ssl_path/lib"
-fi
+    # Try and find the .dir_marker.tmp file to determine the root directory
+    current_dir="$script_dir"
 
-export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
+    while true; do
 
-# Declaring option variables
-machine_type=""
-MACHINE_NUM="1"
+        # Check if the .pqc_eval_dir_marker.tmp file is present
+        if [ -f "$current_dir/.pqc_eval_dir_marker.tmp" ]; then
+            root_dir="$current_dir"  # Set root_dir to the directory, not including the file name
+            break
+        fi
+
+        # Move up a directory and check again
+        current_dir=$(dirname "$current_dir")
+
+        # If the root directory is reached and the file is not found, exit the script
+        if [ "$current_dir" == "/" ]; then
+            echo -e "Root directory path file not present, please ensure the path is correct and try again."
+            exit 1
+        fi
+
+    done
+
+    # Declaring main dir path variables based on root dir
+    libs_dir="$root_dir/lib"
+    tmp_dir="$root_dir/tmp"
+    test_data_dir="$root_dir/test-data"
+    test_scripts_path="$root_dir/scripts/test-scripts"
+    util_scripts="$root_dir/scripts/utility-scripts"
+
+    # Declaring global library path files
+    open_ssl_path="$libs_dir/openssl_3.2"
+    liboqs_path="$libs_dir/liboqs"
+    oqs_openssl_path="$libs_dir/oqs-openssl"
+
+    # Exporting openssl lib path
+    if [[ -d "$open_ssl_path/lib64" ]]; then
+        openssl_lib_path="$open_ssl_path/lib64"
+    else
+        openssl_lib_path="$open_ssl_path/lib"
+    fi
+
+    export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
+
+    # Declaring option variables
+    machine_type=""
+    MACHINE_NUM="1"
+
+}
 
 #-------------------------------------------------------------------------------------------------------------------------------
-function set_paths() {
+function set_tls_paths() {
     # Function for setting the results paths based on the machine number assigned 
     # to the test and exporting the paths to the environment
 
@@ -149,7 +180,7 @@ function handle_machine_id_clash() {
                 get_machine_num
 
                 # Setting results path based on assigned machine number for results
-                set_paths
+                set_tls_paths
 
                 # Ensuring the new ID does not have results stored
                 if [ ! -d "$MACHINE_RESULTS_PATH" ]; then
@@ -171,7 +202,7 @@ function configure_results_dir() {
     # Function for configuring the results directories for the test results
 
     # Setting results paths based on machine ID
-    set_paths
+    set_tls_paths
 
     # Creating unparsed-results directories for machine ID and handling old results if present
     if [ -d "$test_data_dir/up-results" ]; then
@@ -463,6 +494,9 @@ function run_tests() {
 #-------------------------------------------------------------------------------------------------------------------------------
 function main() {
     # Main function for controlling OQS-Provider TLS performance testing
+
+    # Setting up the base environment for the test suite
+    setup_base_env
 
     # Outputting greeting message to the terminal
     echo -e "PQC OQS-Provider Test Suite (OpenSSL_3.2.1)"

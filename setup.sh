@@ -113,6 +113,9 @@ function configure_dirs() {
 
     done
 
+    # Create the hidden pqc_eval_dir_marker.tmp file that is used by the test scripts to determine the root directory path
+    touch "$root_dir/.pqc_eval_dir_marker.tmp"
+
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------

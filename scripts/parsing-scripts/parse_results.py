@@ -11,9 +11,40 @@ alongside taking in the test parameters used during the benchmarking to output f
 #-----------------------------------------------------------------------------------------------------------
 from liboqs_parse import parse_liboqs
 from oqs_openssl_parse import parse_openssl
+import os
+import sys
 
 #-----------------------------------------------------------------------------------------------------------
-def get_test_opts():
+def setup_base_env():
+    """ Function for setting up the basic global variables for the test suite. This includes setting the root directory
+        and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
+        using this, determines the root directory of the project """
+
+    # Get the script dir location, set current directory, and set the marker filename
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    current_dir = script_dir
+    marker_filename = ".pqc_eval_dir_marker.tmp"
+
+    # Loop until the project's root directory is found or the system root directory is reached
+    while True:
+
+        # Check if the marker file is present in the current directory and break if found
+        marker_path = os.path.join(current_dir, marker_filename)
+
+        if os.path.isfile(marker_path):
+            root_dir = current_dir
+            return root_dir
+
+        # Move up one directory and check again for 
+        current_dir = os.path.dirname(current_dir)
+
+        # If the root directory is reached and the file is not found, exit the script
+        if current_dir == "/":
+            print("Root directory path file not present, please ensure the path is correct and try again.")
+            sys.exit(1)
+
+#-----------------------------------------------------------------------------------------------------------
+def get_test_opts(root_dir):
     """Function that will get the test parameters used in during
         the testing, which includes the number of runs and number of
         machines tested"""
@@ -34,12 +65,15 @@ def get_test_opts():
         except ValueError:
             print("Invalid Input - Please enter a number! - ")
     
-    test_opts = [machine_num, total_runs]
+    test_opts = [machine_num, total_runs, root_dir]
     return test_opts
 
 #-----------------------------------------------------------------------------------------------------------
 def main():
     """Main function which controls the parsing scripts for Liboqs and OQS-Provider TLS testing results"""
+
+    # Setting up the base environment for the script
+    root_dir = setup_base_env()
 
     # Outputting greeting message
     print(f"PQC-EVal-Tools Results Parsing Tool\n\n")
@@ -64,7 +98,7 @@ def main():
 
             # Getting test options used for the benchmarking
             print(f"Setting total liboqs machine results\n")
-            liboqs_test_opts = get_test_opts()
+            liboqs_test_opts = get_test_opts(root_dir)
 
             # Calling parsing script for liboqs results
             parse_liboqs(liboqs_test_opts)
@@ -77,7 +111,7 @@ def main():
 
             # Getting test options used for the benchmarking
             print(f"Setting total oqs-openssl machine results\n")
-            openssl_test_opts = get_test_opts()
+            openssl_test_opts = get_test_opts(root_dir)
 
             # Calling parsing script for oqs-provider TLS results
             parse_openssl(openssl_test_opts)
