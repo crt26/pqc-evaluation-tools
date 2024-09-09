@@ -13,31 +13,29 @@
 - [Useful Documentation](#useful-documentation)
 
 ## Overview
-This tool allows for the automatic testing of PQC TLS handshake performance and algorithmic efficiency when integrated within the OQS-OpenSSL library. It tests empty TLS handshakes using varying combinations of PQC algorithms for authentication and KEMs. Furthermore, the testing tools conduct speed tests which evaluate PQC algorithmic performance when integrated within the OpenSSL library using the liboqs library. The automated tools also perform benchmarking for classic cryptographic algorithms to provide a comparative baseline.
+This tool allows for the automatic testing of PQC TLS 1.3 handshake performance and algorithmic efficiency when integrated within the OpenSSL library through the OQS-Provider. It tests empty TLS handshakes using varying combinations of PQC and Hybrid-PQC algorithms for authentication and KEMs. Furthermore, the testing tools conduct speed tests which evaluate PQC algorithmic performance when integrated within the OpenSSL library using the Liboqs library. The automated tools also perform benchmarking for classic cryptographic algorithms to provide a comparative baseline.
 
-The tests can be conducted on either a single machine or across two machines connected via a physical network.
+The tests can be conducted on either a single machine or across two machines connected via a physical or virtual network.
 
 ### Supported Hardware <!-- omit from toc --> 
 The automated testing tool is currently only supported on the following devices:
 
-- x86 Debian Based Linux Machines
-- ARMv8 Raspberry Pis using a 64-bit Architecture
-
-> Notice: As this is a early release version of the testing suites, the supported hardware is currently limited. However, future versions will address this issue and allow for support on a wider range of architectures and operating systems.
+- x86 Linux Machines using a Debian based operating system
+- ARM Linux devices using a 64-bit Debian based Operating System
 
 ## Getting Started
 To begin testing the performance of PQC algorithms when integrated within TLS, there are various steps that must be completed and they differ depending on whether a single machine or two machines are being used. Please fully review this section before conducting the tests to ensure all configurations are correct.
 
-The scripts required for conducting the automated testing are stored in the `test-scripts` directory which can be found within the code's root directory.
+The scripts required for conducting the automated testing are stored in the `scripts/test-scripts` directory which can be found within the project's root directory.
 
 ### Generating Required Certificates and Private Keys
-Before beginning testing, it is necessary to first generate the required certificate and private key files needed for the TLS performance testing tools. This can be done by executing the following command from the `testing-scripts` directory:
+Before beginning testing, it is necessary to first generate the required server certificate and private key files needed for the TLS performance testing tools. This can be done by executing the following command from within the `scripts/testing-scripts` directory:
 
 ```
 ./oqsssl-generate-keys.sh
 ```
 
-This will generate the certificates and private keys and output them to the `keys` directory in the code's root directory. If testing performance over a physical network using two machines, the keys directory will need to be transferred to the second testing machine as well.
+This will generate the certificates and private keys and output them to the `test-data/keys` directory in the project's root directory. **If testing performance over a physical/virtual network using two machines, the keys directory will need to be transferred to the second testing machine as well.**
 
 ### Testing Tool Execution
 To start the automated testing tool, open a terminal in the directory containing the Full PQC TLS Test tool and run the following command:
@@ -46,9 +44,10 @@ To start the automated testing tool, open a terminal in the directory containing
 ./full-pqc-tls-test.sh
 ```
 
-Upon executing the script, the testing tool will prompt you to enter parameters for the test. Depending on the testing scenario, either using a single machine or separate server and client machines, different setup techniques and options will be required. 
-
 **Please refer to the Testing Options section before beginning testing to ensure all configurations are correct**
+
+Upon executing the script, the testing tool will prompt you to enter the parameters for the test. Depending on the testing scenario, either using a single machine or separate server and client machines, different setup techniques and options will be required. 
+
 
 ### Testing Options
 Before discussing the execution of the testing script, a list of the testing parameters used are detailed below, to provide guidance on the information needed before performing the tests:
@@ -104,13 +103,12 @@ When utilising two separate machines for testing, one machine will be set up as 
 4. When asked for the other machine's IP, provide the IP address of the server machine.
 
 ## Outputted Results
-The results from the Full PQC TLS Test will be stored in the `up-results/openssl` directory, which can be found within the code's root directory. The results include handshake and speed test results for both PQC and classic ciphersuites. This directory is used to store all of the unparsed results from the automated testing tools.
+The results from the Full PQC TLS Test will be stored in the `test-data/up-results/ops-openssl/machine-x` directory, which can be found within the code's root directory. The results include handshake and speed test results for both PQC and classic ciphersuites. This directory is used to store all of the unparsed results from the automated testing tools.
 
 **Please note that when using more than one machine for testing, the results will only be stored on the client machine, not the server machine.**
 
 However, the data stored is not yet ready for interpretation or graph generation. To parse the data into a format that can be used for further analysis please refer to the [parsing results](../../README.md) section within the readme file.
 
->IMPORTANT NOTE - Activating the automated tools will delete all results currently stored in the up-results directory. To retain previous results, these should be moved to another location prior to re-running the automated test tool.
 
 ## Included Testing Scripts
 The Full PQC TLS Test tool uses several scripts to perform the TLS handshake tests. These include:
@@ -135,10 +133,10 @@ This script generates the necessary PQC and classical certificates and  private 
 These scripts together enable the execution of the Full PQC TLS Test, with each one handling a specific aspect of the process. They are designed to work together seamlessly, with different scripts signalling each other as needed to coordinate the process.
 
 ## Useful Documentation
-- [OQS-OpenSSL Webpage](https://openquantumsafe.org/applications/tls.html#oqs-openssl)
-- [OQS-OpenSSL GitHub Page](https://github.com/open-quantum-safe/openssl)
-- [Latest OQS-OpenSSL Release Notes](https://github.com/open-quantum-safe/openssl/releases/tag/OQS-OpenSSL-1_1_1-stable-snapshot-2023-07)
+- [OQS-Provider Webpage](https://openquantumsafe.org/applications/tls.html#oqs-openssl-provider)
+- [OQS-Provider GitHub Page](https://github.com/open-quantum-safe/oqs-provider)
+- [Latest OQS-Provider Release Notes](https://github.com/open-quantum-safe/oqs-provider/blob/main/RELEASE.md)
 - [OQS Benchmarking Webpage](https://openquantumsafe.org/benchmarking/)
 - [OQS Profiling Project](https://openquantumsafe.org/benchmarking/)
-- [OpenSSL(1.1.1) Documentation]()
+- [OpenSSL(3.2.1) Documentation](https://www.openssl.org/docs/man3.2/index.html)
 

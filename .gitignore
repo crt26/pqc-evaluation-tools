@@ -5,3 +5,12 @@
 /up-results/
 /tmp/
 /.vscode
+/lib
+/test-data/keys
+/test-data/up-results
+/test-data/results
+/temp-storage/
+/scripts/parsing-scripts/__pycache__
+/test-data/
+/still-to-do.txt
+/.pqc_eval_dir_marker.tmp
