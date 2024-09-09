@@ -10,18 +10,17 @@
 
 
 ## Overview
-This guide will provide detailed instructions on the usage of the automated PQC performance tool. This tool allows for the automatic gathering of PQC performance data and can it can be customised to use varying testing parameters. The tool uses the Open Quantum Safe Liboqs library benchmarking tools to gather performance metrics and output them into CSV files which can then be parsed by Python scripts for proper interpretation.
+This guide will provide detailed instructions on the usage of the automated PQC computational performance tool. This tool allows for the automatic gathering of PQC performance data and can it can be customised to use varying testing parameters. The tool uses the Open Quantum Safe Liboqs library benchmarking tools to gather performance metrics and output them into CSV files which can then be parsed by Python scripts for proper interpretation.
 
 ### Supported Hardware <!-- omit from toc --> 
 The automated testing tool is currently only supported on the following devices:
 
-- x86 Debian Based Linux Machines
-- ARMv8 Raspberry Pis using a 64-bit Architecture
+- x86 Linux Machines using a Debian based operating system
+- ARM Linux devices using a 64-bit Debian based Operating System
 
-> Notice: As this is a early release version of the testing suites, the supported hardware is currently limited. However, future versions will address this issue and allow for support on a wider range of architectures and operating systems.
 
 ## Getting Started
-The automated test script for can be found within the `scripts/testing-scripts` directory. The tool can be activated using the following commands from the **codes root directory**:
+The automated test script can be found within the `scripts/testing-scripts` directory. The tool can be activated using the following commands:
 
 ```
 cd scripts/testing-scripts

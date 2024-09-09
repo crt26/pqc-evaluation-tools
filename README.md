@@ -1,41 +1,40 @@
 # PQC Evaluation Tools <!-- omit from toc --> 
+**Version 0.2.0**
 
-## Notice: <!-- omit from toc --> 
-This is the **development branch**, it may not be in a fully functioning state and documentation may still need updated. The checkboxes below indicates whether the current development version is in a basic functioning state and if the documentation is accurate for its current functionality. Regardless please keep this in mind and use the main branch if possible, thank you.
+## Repository Overview <!-- omit from toc -->  
 
-- [x] Functioning State*
-- [x] Up to date documentation
+### Project Description
+Post-Quantum Cryptography (PQC) is an expanding field which aims to address the security concerns that quantum computers will bring to current cryptographic technologies. Numerous PQC schemes have been proposed to help combat this concern, with each offering differing solutions. 
 
-> *Dev branch Notice: Current functioning state works for both x86 and ARM machines. However, on ARM devices, memory profiling for Falcon algorithm variations is non-functioning. Please refer to [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761) for more details. Work is underway to resolve this issue but for now the repository has methods in place to account for this. Automated testing and parsing scripts can still be used to gather performance metrics for all other algorithms on ARM systems. 
+The goal of this repository is to provide tools that will simplify the process for the gathering and parsing of PQC computational and networking performance data. It includes scripts that will automate the building process, the testing process, and the result parsing process. The final output from these tools is CSV files, containing performance metrics alongside metric averages that can be further used for graph generation.
 
-## Current Development Branch Tasks <!-- omit from toc --> 
-- [x] Update [alg-lists](alg-lists) files to include the latest version of supported algorithms in Liboqs and OQS-OpenSSL-Provider
-- [x] Update [oqsssl-generate-keys](scripts/test-scripts/oqsssl-generate-keys.sh) to use current supported algorithms and steps for new OQS-OpenSSL-Provider PQC key generation
-- [x] Update [oqsssl-generate-keys](scripts/test-scripts/oqsssl-generate-keys.sh) storage method for generated keys to better suit new directory structure
-- [x] Update and refine all automated testing scripts for Liboqs machine-only algorithm performance testing into one script ([full-liboqs-test](scripts/test-scripts/full-liboqs-test.sh)) to use current supported algorithms and new repository directory structure
-- [x] Update [oqsssl-generate-keys.sh](scripts/test-scripts/oqsssl-generate-keys.sh) to use current supported algorithms in Liboqs and OQS-OpenSSL-Provider and key generation methods in OpenSSL-3.2.1
-- [x] Determine possibility of using s_time tls performance testing tool with OQS-Provider and if not possible create new/modify automated testing scripts using s_server and s_client tools to gather tls performance metrics (parsing scripts will need to be modified to handle this)
-- [x] Update [setup.sh](setup.sh) and [oqsssl-generate-keys](scripts/test-scripts/oqsssl-generate-keys.sh) to handle changes to the openssl.conf file during and after setup, as the final conf file for testing will have changes that interfere with the key generation process. A dynamic change to the openssl.conf file will be required for both tasks.
-- [x] Update [full-pqc-tls-test.sh](scripts/test-scripts/full-pqc-tls-test.sh) to account for changes in directory structure and OQS-OpenSSL-Provider tools
-- [x] Update all automated testing scripts to use a more refined and efficient method for storing result data compared to current up-results method
-- [x] Update documentation to reflect changes to repository functionality and structure
-- [x] Integrate Hybrid algorithmic testing to OQS-OpenSSL-Provider scripts
-- [x] Integrate Hybrid test handling in parsing scripts
-- [x] Add functionality for automatically getting supported algorithms for both Liboqs and OQS-Provider to improve scalability. 
-- [x] Resolve issue with scripts being required to be executed from only their stored directory
-- [ ] Resolve issues with testing on ARMv8 devices [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761)
+Currently the repository provides automation for PQC performance testing by integrating the PQC libraries created by the [Open Quantum Safe](https://openquantumsafe.org/) project, specifically their **Liboqs** and **OQS-Provider** libraries. This includes automation for gathering computational performance data using the Liboqs library and TLS with PQC integration networking performance data using the OQS-Provider library. Furthermore, an additional benefit this project provides is an automated and robust way in which to gather network performance testing using physical networks, where testing is coordinated between the physical server and client machines.
 
-- [ ] Add better handling for differentiating between different ARM devices in setup script. 
-- [ ] Improve script exception handling. 
-- [ ] Prepare for merge to main branch with newer version
+
+### Supported Automation Functionality
+The project provides automation for:
+
+- Compiling and configuration of the OQS, ARM PMU, and OpenSSL dependency libraries.
+
+- Gathering PQC computational performance data, including **CPU** and **memory usage** metrics using the **Liboqs** library.
+
+- Gathering Networking performance data for the integration of PQC schemes in the **TLS 1.3**  protocol by utilising the **OpenSSL 3.2.1** and **OQS-Provider** libraries.
+
+- Coordinated testing of PQC TLS handshakes using either the loopback interface or a physical network connection between a server and client device.
+
+- Parsing of the PQC performance data, where data from multiple machines can be parsed, averaged, and then compared against each other.
+
+
+### Future Goals
+Going forward, this project aims to incorporate other PQC libraries present in the field, alongside performance testing of other cryptographic systems such as homomorphic encryption. Furthermore, future functionality will include the ability to provide a cross-platform method of evaluating these systems on multiple systems ranging from standard desktop devices to IoT devices.
+
 
 ## Contents <!-- omit from toc --> 
-- [Overview](#overview)
 - [Supported Hardware and Software](#supported-hardware-and-software)
 - [Installation Instructions](#installation-instructions)
   - [Standard Setup](#standard-setup)
   - [Safe Setup](#safe-setup)
-  - [Ensuring Root Dir Path Marker is present](#ensuring-root-dir-path-marker-is-present)
+  - [Ensuring Root Dir Path Marker is Present](#ensuring-root-dir-path-marker-is-present)
 - [Automated Testing Tools](#automated-testing-tools)
   - [Tools Description](#tools-description)
   - [Liboqs Performance Testing](#liboqs-performance-testing)
@@ -48,24 +47,11 @@ This is the **development branch**, it may not be in a fully functioning state a
   - [Graph Generation](#graph-generation)
 - [Utility Scripts](#utility-scripts)
 - [Repository Directory Structure](#repository-directory-structure)
-  - [Overview](#overview-1)
+  - [Overview](#overview)
   - [Layout and Descriptions](#layout-and-descriptions)
 - [Helpful Documentation Links](#helpful-documentation-links)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
-
-
-## Overview
-
-**Version 0.2.0**
-
-Post-Quantum Cryptography (PQC) is an expanding field which aims to address the security concerns that quantum computers will bring to current cryptographic technologies. Numerous PQC schemes have been proposed to help combat this concern, with each offering differing solutions. 
-
-This repository provides tools that will simplify the process for the gathering and parsing of PQC computational performance data. It includes scripts that will automate the building process, the testing process, and the result parsing process. The final output from these tools is CSV files, containing performance metrics alongside metric averages that can be further used for graph generation. For more information on the tools, please refer to the [Repository Structure](#repository-structure) section.
-
-At the current moment, the repository provides automation in PQC performance testing by integrating tools created by the [Open Quantum Safe](https://openquantumsafe.org/) project using their **Liboqs** and **OQS-Provider libraries** into performance evaluation scripts. Furthermore, it provides an automated and robust way in which to gather network performance testing using physical networks. Going forward, this project aims to incorporate other PQC libraries present in the field, alongside performance testing of other cryptographic systems such as homomorphic encryption. The project aims to provide a cross-platform method of evaluating these systems on multiple systems ranging from standard desktop devices to IoT devices.
-
-The testing scripts allow for the evaluation of all algorithms supported by Liboqs version 0.10.0 alongside the evaluation of both PQC only and PQC-Hybrid schemes in TLS exchanges to allow for an extensive assessment of the performance of PQC solutions on the system the repository is ran on. 
 
 
 ## Supported Hardware and Software
@@ -73,21 +59,19 @@ The testing scripts allow for the evaluation of all algorithms supported by Libo
 ### Compatible Hardware and Operating Systems <!-- omit from toc --> 
 The automated testing tool is currently only supported on the following devices:
 
-- x86 Linux Machines using Debian based distros
-- ARM Linux devices using a 64-bit Operating System
-
-> Notice: Current functioning state works for both x86 and ARM machines. However, on ARM devices, memory profiling for Falcon algorithm variations is non-functioning. Please refer to [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761) for more details. Work is underway to resolve this issue but for now the repository has methods in place to account for this. Automated testing and parsing scripts can still be used to gather performance metrics for all other algorithms on ARM systems.
+- x86 Linux Machines using a Debian based operating system
+- ARM Linux devices using a 64-bit Debian based Operating System
 
 ### Tested Dependency Software <!-- omit from toc --> 
 This version of the repository has been fully tested using the following versions of the dependency libraries:
 
-- Liboqs Version 0.10.0
+- Liboqs Version 0.10.1
 
 - OQS Provider Version 0.6.1
 
 - OpenSSL Version 3.2.1
 
-The repository is currently setup to pull the latest versions of the OQS projects and maintain use of the listed OpenSSL version to ensure the latest available algorithms can be tested. Handling has been implemented to accommodate for any changes to the algorithms that are supported by the OQS libraries as newer versions are released. 
+The repository is currently setup to pull the most up to date versions of the OQS projects and maintain use of the listed OpenSSL version above. This is to ensure the latest available algorithms can be tested and evaluated. Handling has been implemented to accommodate for any changes to the algorithms that are supported by the OQS libraries as newer versions are released.
 
 **However, as the OQS libraries are still developing projects, if any major changes have occurred to their code bases and this project's scripts does not accommodate this, please report an issue to this repositories GitHub page.**
 
@@ -95,11 +79,10 @@ The issue will be resolved ASAP and in the meantime, it is possible to change th
 
 By reporting this issue, you would be helping ensure that the tool is fully functioning and able to provide the most up to date PQC performance data for yourself and other researchers who may be utilising this benchmarking suite. Reporting any issues with the latest versions of the OQS libraries will be greatly appreciated :)
 
+> Notice: Current functioning state works for both x86 and ARM machines. However, on ARM devices, memory profiling for Falcon algorithm variations is non-functioning. Please refer to [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761) for more details. Work is underway to resolve this issue but for now the repository has methods in place to account for this. Automated testing and parsing scripts can still be used to gather performance metrics for all other algorithms on ARM systems.
+
 ## Installation Instructions
 To install and configure the benchmarking suite there are two main options, Standard Setup and Safe Setup. This is to allow for the usage of up to date dependency libraries whilst still providing a fallback to the last tested versions of the dependencies in the event of a drastic change to their code base.
-
-**Furthermore, it is vital that when performing either setup option that this is done from within the projects root directory.** This is to allow automated setup script to determine the absolute path for the projects directory on the system, which is vital for the other automation scripts in the project. 
-
 
 ### Standard Setup
 Clone the current stable version:
@@ -142,8 +125,17 @@ cd pqc-eval-tools
 ./setup.sh --safe-setup
 ```
 
-### Ensuring Root Dir Path Marker is present
-**PLEASE NOTE:** After setup, a hidden file will also be generated at the projects root called `.pqc_eval_dir_marker.tmp`. Please do not remove this file as it is used by the other scripts to determine the path to the projects root. This file will be removed when uninstalling all libraries using the `cleaner.sh` utility script. If the file is removed, it can be generated manually or by rerunning the main setup script. To manually regnerate the file move into the projects root directory and execute the following command:
+### Ensuring Root Dir Path Marker is Present
+It is vital that when performing either setup option that this is done from within the projects root directory. This is because during the automated setup, a hidden temp file will be generated at the projects root called `.pqc_eval_dir_marker.tmp`. This used by  the other automation scripts to determine where the projects root directory is which is vital for their operation. 
+
+Please do not remove this file whilst the project is in a configured state. This file will be removed when uninstalling all libraries using the `cleaner.sh` utility script. If the file is removed outwith that utility script, it can be regenerated manually or by rerunning the main setup script. 
+
+To verify the presence of the marker file, the following command can be performed to list the full contents of the directory including hidden files:
+```
+ls -la
+```
+
+To manually regenerate the file, move into the projects root directory and execute the following command:
 
 ```
 touch .pqc_eval_dir_marker.tmp
@@ -155,13 +147,13 @@ touch .pqc_eval_dir_marker.tmp
 There are two sets of automated testing that can be done using these tools:
 
 - PQC performance benchmarking using Liboqs
-- PQC integration into TLS performance benchmarking using OQS-Provider
+- PQC integration into TLS 1.3 performance benchmarking using OQS-Provider
 
 The testing tools can be found within the `scripts/test-scripts` directory and are fully automated. The tools allow multiple machines to be tested, with results being assigned a number set at the beginning of the test. The testing scripts are as follows:
 
 ### Liboqs Performance Testing
 
-This script automates the CPU and memory performance benchmarking of various PQC algorithms included in the liboqs library. It generates and records comprehensive metrics which can help in analysing the performance of these algorithms. 
+This script automates the CPU and memory performance benchmarking of various PQC algorithms included in the Liboqs library. It generates and records comprehensive metrics which can help in analysing the performance of these algorithms. 
 
 The test script can be executed using the following command:
 ```
@@ -170,13 +162,13 @@ The test script can be executed using the following command:
 
 #### Detailed usage instructions can be found using the following link:
 
-[liboqs Performance Automated Testing Instructions](docs/testing-tools-documentation/liboqs-performance-testing.md)
+[Liboqs Performance Automated Testing Instructions](docs/testing-tools-documentation/liboqs-performance-testing.md)
 
 ### OQS-Provider Performance Testing
 
-This script is focused on benchmarking the performance of PQC and PQC-Hybrid algorithms when integrated within the OpenSSL (3.2.1) library via the OQS-Provider. The script firstly can test the computational efficiency of the PQC algorithms when integrated into the OpenSSL library. Alongside, how PQC/PQC-Hybrid algorithms perform when integrated into the TLS protocol by measuring empty TLS handshake performance. Furthermore, metrics for how classic algorithms perform when conducting the TLS handshake to gather data which can be used as a baseline to compare the PQC metrics against.   
+This script is focused on benchmarking the performance of PQC and Hybrid-PQC algorithms when integrated within the OpenSSL (3.2.1) library via the OQS-Provider. The script firstly can test the computational efficiency of the PQC algorithms when integrated into the OpenSSL library. Alongside, how PQC/Hybrid-PQC algorithms perform when integrated into the TLS protocol by measuring empty TLS handshake performance. Furthermore, metrics for how classic algorithms perform when conducting the TLS handshake which can be used as a baseline to compare the PQC metrics against.  
 
-The testing tool allows for tests to be conducted on a single machine or using two machine connected via a physical network. It should be noted that when using two physical machines the complexity of setup increases. However, regardless of which scenario, the process requires more additional steps then the liboqs testing.
+The testing tool allows for tests to be conducted on a single machine or using two machines connected via a physical network. It should be noted that when using two physical machines the complexity of setup increases. However, regardless of which scenario, the process requires more additional steps then the Liboqs testing.
 
 #### Detailed usage instructions can be found using the following link:
 
@@ -184,7 +176,7 @@ The testing tool allows for tests to be conducted on a single machine or using t
 
 
 ### Testing Output Files
-After selecting the desired testing script, the performance benchmarks will be performed and the unparsed results will be stored in the newly created ``test-data/up-results`` directory. Liboqs unparsed results will be stored in the `test-data/up-results/liboqs/machine-x`* directory. The PQC TLS test results will be stored in the `test-data/up-results/oqs-openssl/machine-x`* directory.
+After selecting the desired testing script, the performance benchmarks will be performed and the unparsed results will be stored in the newly created ``test-data/up-results`` directory. Liboqs unparsed results will be stored in the `test-data/up-results/liboqs/machine-x`* directory. The PQC TLS 1.3 test results will be stored in the `test-data/up-results/oqs-openssl/machine-x`* directory.
 
 **The Machine-ID number assigned to the test*
 
@@ -195,7 +187,7 @@ After selecting the desired testing script, the performance benchmarks will be p
 
 The results from the automated tests can be transformed into workable CSV files using the `parse_results.py` script located in the `scripts/parsing-scripts` directory. Options are provided to parse the liboqs results, the OQS-Provider results, or both.
 
-The script requires the test parameters used during the benchmarking, including the number of runs and number of machines tested, if multiple machine results have been stored within the `test-data/up-results` directory. Please make sure all up-results are present in this directory that you wish to be parsed before executing the `parse_results.py` script.
+The script requires the test parameters used during the benchmarking, including the number of runs and number of machines tested, (if multiple machine results have been copied to the `test-data/up-results` directory). Please make sure all up-results are present in this directory that you wish to be parsed before executing the `parse_results.py` script.
 
 
 ### Parsing Script Usage
@@ -208,7 +200,7 @@ python3 parse_results.py
 
 
 ### Parsed Results Output
-At the end of the process, the results will be stored within the newly created **results** directory which can be found in the results folder at `test-data/results`. Averages for the results will also be calculated during the parsing process and the average files for the respective test type can be found within the same results directory.
+At the end of the process, the results will be stored within the newly created **results** directory which can be found in the results folder in `test-data/results`. Averages for the results will also be calculated during the parsing process and the average files for the respective test type can be found within the same results directory.
 
 ### Graph Generation
 The results files outputted from the parsing scripts can be used with Microsoft Excel, Python, R-Studio etc. for the creation of graphs, helpful links for data visualisation can be found below:
@@ -220,15 +212,15 @@ The results files outputted from the parsing scripts can be used with Microsoft 
 
 
 ## Utility Scripts
-The utility scripts provided may be useful when developing or testing using the various scripts contained in the repository or when setting up performance testing environments. More refined and encompassing utility scripts will be added as the project progresses. All utility scripts bar the `uninstall.sh` script can be found in the `scripts/utility-scripts` directory. The only exception to the is the `cleaner.sh` script which is stored at the projects root for easy access and uninstalling.
+The utility scripts provided may be useful when developing or testing the various scripts contained in the repository or when setting up performance testing environments. More refined and encompassing utility scripts will be added as the project progresses. All utility scripts bar the `cleaner.sh` script can be found in the `scripts/utility-scripts` directory. The `cleaner.sh` script is instead stored at the projects root for ease of access.
 
 The current set of utility scripts includes:
 
 ### cleaner.sh <!-- omit from toc --> 
-This is a utility script for cleaning the various project files produced from the compiling and benchmarking operations. The script provides functionality for either uninstalling the OQS-OpenSSL libraries from the system, clearing the old results and generated TLS keys, or both. When selecting the uninstalling option, the script will remove the liboqs, OQS-Provider, and OpenSSL 3.2.1 libraries from the system. When selecting the clearing the old results and keys option, the script will remove the old test results and generated keys directories from the test-data directory.
+This is a utility script for cleaning the various project files produced from the compiling and benchmarking operations. The script provides functionality for either uninstalling the OQS and other dependency libraries from the system, clearing the old results and generated TLS keys, or both.
 
 ### get_algorithms.py <!-- omit from toc --> 
-This is a Python utility script which is used to dynamically determine the algorithms which are supported by the version of Liboqs and OQS-Provider libraries installed. These are then outputted accordingly to the `test-data/alg-lists` text files for the different algorithm and test types. The main usage of the script is to be called from the `setup.sh` script where it is passed an argument which dictates which install type is being performed in the setup process. There is also the option to call the `get_algorithms.py` manually to create the algorithm list files if required. However, this script must be ran from the `scripts/utility-scripts` directory. 
+This is a Python utility script which is used to dynamically determine the algorithms which are supported by the version of Liboqs and OQS-Provider libraries installed. These are then outputted accordingly to the `test-data/alg-lists` text files for the different algorithm and test types. The main usage of the script is to be called from the `setup.sh` script where it is passed an argument which dictates which install type is being performed in the setup process. There is also the option to call the `get_algorithms.py` manually to create the algorithm list files if required.
 
 Based on the the install type that has been selected in the main setup script, the following integer arguments can be supplied to the utility script:
 
@@ -263,7 +255,7 @@ This script can change the configurations added to the OpenSSL 3.2.1 configurati
 ## Repository Directory Structure
 
 ### Overview
-The repository will contain default directories and files that are present when cloned and during operation will create various directories required for its functionality. In the following diagram and descriptions, directories and files that are created by the scripts shown are marked with a "*" next to their name wherever they appear in this section.
+The repository will contain default directories and files that are present when cloned and during operation will create various directories required for its functionality. In the following diagram and descriptions, directories and files that are created by the scripts are marked with a "*" next to their name wherever they appear in this section.
 
 ### Layout and Descriptions
 The pqc-eval-tools repository directories are organised as follows:
@@ -272,6 +264,7 @@ The pqc-eval-tools repository directories are organised as follows:
 pqc-eval-tools/
 │
 ├── docs
+│   └── result-info
 │   └── testing-tools-documentation
 │
 ├── lib*

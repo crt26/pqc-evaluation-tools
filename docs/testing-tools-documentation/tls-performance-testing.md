@@ -13,22 +13,20 @@
 - [Useful Documentation](#useful-documentation)
 
 ## Overview
-This tool allows for the automatic testing of PQC TLS handshake performance and algorithmic efficiency when integrated within the OpenSSL library through the OQS-Provider. It tests empty TLS handshakes using varying combinations of PQC algorithms for authentication and KEMs. Furthermore, the testing tools conduct speed tests which evaluate PQC algorithmic performance when integrated within the OpenSSL library using the Liboqs library. The automated tools also perform benchmarking for classic cryptographic algorithms to provide a comparative baseline.
+This tool allows for the automatic testing of PQC TLS 1.3 handshake performance and algorithmic efficiency when integrated within the OpenSSL library through the OQS-Provider. It tests empty TLS handshakes using varying combinations of PQC and Hybrid-PQC algorithms for authentication and KEMs. Furthermore, the testing tools conduct speed tests which evaluate PQC algorithmic performance when integrated within the OpenSSL library using the Liboqs library. The automated tools also perform benchmarking for classic cryptographic algorithms to provide a comparative baseline.
 
 The tests can be conducted on either a single machine or across two machines connected via a physical or virtual network.
 
 ### Supported Hardware <!-- omit from toc --> 
 The automated testing tool is currently only supported on the following devices:
 
-- x86 Debian Based Linux Machines
-- ARMv8 Raspberry Pis using a 64-bit Architecture
-
-> Notice: As this is a early release version of the testing suites, the supported hardware is currently limited. However, future versions will address this issue and allow for support on a wider range of architectures and operating systems.
+- x86 Linux Machines using a Debian based operating system
+- ARM Linux devices using a 64-bit Debian based Operating System
 
 ## Getting Started
 To begin testing the performance of PQC algorithms when integrated within TLS, there are various steps that must be completed and they differ depending on whether a single machine or two machines are being used. Please fully review this section before conducting the tests to ensure all configurations are correct.
 
-The scripts required for conducting the automated testing are stored in the `scripts/test-scripts` directory which can be found within the code's root directory.
+The scripts required for conducting the automated testing are stored in the `scripts/test-scripts` directory which can be found within the project's root directory.
 
 ### Generating Required Certificates and Private Keys
 Before beginning testing, it is necessary to first generate the required server certificate and private key files needed for the TLS performance testing tools. This can be done by executing the following command from within the `scripts/testing-scripts` directory:
@@ -37,7 +35,7 @@ Before beginning testing, it is necessary to first generate the required server 
 ./oqsssl-generate-keys.sh
 ```
 
-This will generate the certificates and private keys and output them to the `test-data/keys` directory in the code's root directory. If testing performance over a physical network using two machines, the keys directory will need to be transferred to the second testing machine as well.
+This will generate the certificates and private keys and output them to the `test-data/keys` directory in the project's root directory. **If testing performance over a physical/virtual network using two machines, the keys directory will need to be transferred to the second testing machine as well.**
 
 ### Testing Tool Execution
 To start the automated testing tool, open a terminal in the directory containing the Full PQC TLS Test tool and run the following command:
@@ -46,9 +44,10 @@ To start the automated testing tool, open a terminal in the directory containing
 ./full-pqc-tls-test.sh
 ```
 
-Upon executing the script, the testing tool will prompt you to enter parameters for the test. Depending on the testing scenario, either using a single machine or separate server and client machines, different setup techniques and options will be required. 
-
 **Please refer to the Testing Options section before beginning testing to ensure all configurations are correct**
+
+Upon executing the script, the testing tool will prompt you to enter the parameters for the test. Depending on the testing scenario, either using a single machine or separate server and client machines, different setup techniques and options will be required. 
+
 
 ### Testing Options
 Before discussing the execution of the testing script, a list of the testing parameters used are detailed below, to provide guidance on the information needed before performing the tests:
