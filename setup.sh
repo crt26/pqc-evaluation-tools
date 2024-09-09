@@ -163,6 +163,39 @@ function dependency_install() {
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
+function handle_oqs_version() {
+    # Function for setting the version of the OQS libraries to be used in the setup process. This is to allow
+    # the user to set the version to the version last tested by the development team or to default to the latest version available. The 
+    # function will only be called if the "safe-setup" argument is passed with the setup script.
+
+    # Check to see if user has passed argument to script
+    local script_arg="$1"
+
+    if [ -n "$script_arg" ]; then
+    
+        # Check if the argument passed is valid and set the version of the OQS libraries to be used
+        if [ "$script_arg" == "--safe-setup" ]; then
+            echo -e "NOTICE: Safe-Setup selected, using the last tested versions of the OQS libraries\n"
+            use_tested_version=1
+    
+        else
+
+            # Outputting argument error and help message
+            echo -e "\nERROR: Argument Passed to setup script is invalid: $script_arg"
+            echo -e "If you are trying to use the last tested versions of the OQS libraries, please use the --safe-setup argument when calling the script\n"
+            exit 1
+
+        fi
+
+    else
+        # Configuring the setup script to use the latest version of the OQS libraries
+        use_tested_version=0
+
+    fi
+    
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
 function openssl_build() {
     # Function for building the required version of OpenSSL (3.2.1) for the testing tools
 
@@ -188,71 +221,55 @@ function openssl_build() {
         "Groups = \$ENV::DEFAULT_GROUPS"
     )
 
-    # Checking for correct version of OpenSSL and if missing installing
-    installed_version=$(openssl version | awk '{print $2}')
-    minimum_version="3.2.1"
+    # Check if previous openssl build is present and build if not
+    if [ ! -d "$open_ssl_path" ]; then
 
-    # Compare the versions and install new version if required
-    if [[ "$(printf '%s\n' "$installed_version" "$minimum_version" | sort -V | head -n1)" = "$minimum_version" ]]; then
-        use_system_openssl=1
-        open_ssl_path="/usr/bin/openssl"
+        # Outputting current task to terminal
+        echo -e "\n######################################"
+        echo "Downloading and Building OpenSSL-3.2.1"
+        echo -e "######################################\n"
 
-    else
+        # Getting required version of openssl and extracting
+        wget -O "$tmp_dir/openssl-3.2.1.tar.gz" https://www.openssl.org/source/openssl-3.2.1.tar.gz
+        tar -xf "$tmp_dir/openssl-3.2.1.tar.gz" -C $tmp_dir
+        rm "$tmp_dir/openssl-3.2.1.tar.gz"
 
-        # Set default flag for using system openssl
-        use_system_openssl=0
+        # Building required version of OpenSSL in testing-repo directory only
+        echo "Building OpenSSL Library"
+        cd $openssl_source
+        ./config --prefix="$open_ssl_path" --openssldir="$open_ssl_path" shared >/dev/null
+        make -j $threads >/dev/null
+        make -j $threads install >/dev/null
+        cd $root_dir
+        echo -e "OpenSSL build complete"
 
-        # Check if previous openssl build is present and build if not
-        if [ ! -d "$open_ssl_path" ]; then
-
-            # Outputting current task to terminal
-            echo -e "\n######################################"
-            echo "Downloading and Building OpenSSL-3.2.1"
-            echo -e "######################################\n"
-
-            # Getting required version of openssl and extracting
-            wget -O "$tmp_dir/openssl-3.2.1.tar.gz" https://www.openssl.org/source/openssl-3.2.1.tar.gz
-            tar -xf "$tmp_dir/openssl-3.2.1.tar.gz" -C $tmp_dir
-            rm "$tmp_dir/openssl-3.2.1.tar.gz"
-
-            # Building required version of OpenSSL in testing-repo directory only
-            echo "Building OpenSSL Library"
-            cd $openssl_source
-            ./config --prefix="$open_ssl_path" --openssldir="$open_ssl_path" shared >/dev/null
-            make -j $threads >/dev/null
-            make -j $threads install >/dev/null
-            cd $root_dir
-            echo -e "OpenSSL build complete"
-
-            # Check lib dir name before exporting temp path 
-            if [[ -d "$open_ssl_path/lib64" ]]; then
-                openssl_lib_path="$open_ssl_path/lib64"
-            else
-                openssl_lib_path="$open_ssl_path/lib"
-            fi
-
-            # Exporting openssl lib path for check
-            export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
-
-            # Testing if the new version has correctly installed
-            test_output=$("$open_ssl_path/bin/openssl" version)
-
-            if [[ "$test_output" != "OpenSSL 3.2.1 30 Jan 2024 (Library: OpenSSL 3.2.1 30 Jan 2024)" ]]; then
-                echo -e "\n\n!!!Error installing openssl, please verify install process"
-                exit 1
-            fi
-
-            # Modify OpenSSL conf file to include oqs-openssl as a provider
-            cd $open_ssl_path && rm -f openssl.conf && cp "$root_dir/modded-lib-files/openssl.cnf" "$open_ssl_path/"
-
-            for conf_change in "${conf_changes[@]}"; do
-                echo $conf_change >> "$open_ssl_path/openssl.cnf"
-            done
-
+        # Check lib dir name before exporting temp path 
+        if [[ -d "$open_ssl_path/lib64" ]]; then
+            openssl_lib_path="$open_ssl_path/lib64"
         else
-            echo "openssl build present, skipping build"
+            openssl_lib_path="$open_ssl_path/lib"
         fi
 
+        # Exporting openssl lib path for check
+        export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
+
+        # Testing if the new version has correctly installed
+        test_output=$("$open_ssl_path/bin/openssl" version)
+
+        if [[ "$test_output" != "OpenSSL 3.2.1 30 Jan 2024 (Library: OpenSSL 3.2.1 30 Jan 2024)" ]]; then
+            echo -e "\n\nERROR: installing required OpenSSL version failed, please verify install process"
+            exit 1
+        fi
+
+        # Modify OpenSSL conf file to include oqs-openssl as a provider
+        cd $open_ssl_path && rm -f openssl.conf && cp "$root_dir/modded-lib-files/openssl.cnf" "$open_ssl_path/"
+
+        for conf_change in "${conf_changes[@]}"; do
+            echo $conf_change >> "$open_ssl_path/openssl.cnf"
+        done
+
+    else
+        echo "openssl build present, skipping build"
     fi
 
 }
@@ -304,9 +321,20 @@ function liboqs_build() {
         echo "Downloading and Installing Liboqs"
         echo -e "#################################\n"
 
-        # Cloning liboqs library repos
-        git clone https://github.com/open-quantum-safe/liboqs.git $liboqs_source
+        # Cloning liboqs library repos based on version selected
+        if [ "$use_tested_version" -eq 1 ]; then
 
+            # Clone Liboqs and checkout to the latest tested version
+            git clone https://github.com/open-quantum-safe/liboqs.git $liboqs_source
+            cd $liboqs_source && git checkout "d93a431aaf9ac929f267901509e968a5727c053c"
+            cd $root_dir
+
+        else
+            # Clone latest Liboqs version
+            git clone https://github.com/open-quantum-safe/liboqs.git $liboqs_source
+        
+        fi
+        
         # Setting build options based on current system
         if [ "$(uname -m)" = "x86_64" ] && [ "$(uname -s)" = "Linux" ]; then
 
@@ -334,7 +362,7 @@ function liboqs_build() {
             
         else
             # Unsupported system error 
-            echo -e "Unsupported System Detected - Manual Build Required!\n"
+            echo -e "ERROR: Unsupported System Detected - Manual Build Required!\n"
             exit 1
         fi
 
@@ -366,7 +394,20 @@ function oqs_provider_build() {
     echo -e "\n#######################################"
     echo "Downloading and Installing OQS-Provider"
     echo -e "#######################################\n"
-    git clone https://github.com/open-quantum-safe/oqs-provider.git $oqs_openssl_source >> /dev/null
+
+    # Cloning OQS-Provider library repos based on version selected
+    if [ "$use_tested_version" -eq 1 ]; then
+
+        # Clone OQS-Provider and checkout to the latest tested version
+        git clone https://github.com/open-quantum-safe/oqs-provider.git $oqs_openssl_source >> /dev/null
+        cd $oqs_openssl_source && git checkout "2cdbc17e149cc7fda3fdd8c355a49581625acbad"
+        cd $root_dir
+
+    else
+        # Clone latest OQS-Provider version
+        git clone https://github.com/open-quantum-safe/oqs-provider.git $oqs_openssl_source >> /dev/null
+    
+    fi
 
     # Enabling all disabled signature algorithms before building
     export LIBOQS_SRC_DIR="$liboqs_source"
@@ -389,6 +430,9 @@ function oqs_provider_build() {
 #-------------------------------------------------------------------------------------------------------------------------------
 function main() {
     # Function for building the specified test suite
+
+    # Determine which versions of the OQS libraries are to be used
+    handle_oqs_version "$1"
 
     # Getting setup options from user
     while true; do
@@ -504,7 +548,7 @@ function main() {
 
     # Outputting there was an issue with the python utility script that creates the alg-list files
     if [ "$py_exit_status" -ne 0 ]; then
-        echo -e "\n!!!Error creating algorithm list files, please verify both setup and python scripts and rerun setup!!!"
+        echo -e "\nERROR: creating algorithm list files failed, please verify both setup and python scripts and rerun setup!!!"
         echo -e "If the issue persists, you may want to consider re-cloning the repo and rerunning the setup script\n"
     
     elif [ -z "$py_exit_status" ]; then
@@ -515,4 +559,4 @@ function main() {
     echo -e "\n\nSetup complete, completed builds can be found in the builds directory"
 
 }
-main
+main "$@"

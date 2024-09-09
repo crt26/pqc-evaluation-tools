@@ -33,6 +33,8 @@ This is the **development branch**, it may not be in a fully functioning state a
 - [Overview](#overview)
 - [Supported Hardware and Software](#supported-hardware-and-software)
 - [Installation Instructions](#installation-instructions)
+  - [Standard Setup](#standard-setup)
+  - [Safe Setup](#safe-setup)
 - [Automated Testing Tools](#automated-testing-tools)
   - [Tools Description](#tools-description)
   - [Liboqs Performance Testing](#liboqs-performance-testing)
@@ -45,7 +47,6 @@ This is the **development branch**, it may not be in a fully functioning state a
   - [Graph Generation](#graph-generation)
 - [Utility Scripts](#utility-scripts)
 - [Repository Structure](#repository-structure)
-- [OQS Version Issue Handling](#oqs-version-issue-handling)
 - [Helpful Documentation Links](#helpful-documentation-links)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
@@ -84,10 +85,17 @@ This version of the repository has been fully tested using the following version
 
 - OpenSSL Version 3.2.1
 
-The automated setup scripts are designed to pull the latest versions of the OQS libraries and dynamically handle algorithm changes in order to provide performance analysis for the currently supported PQC algorithms. If there are any issues with the latest dependency versions, details on how to handle this can be found in the [OQS Version Issue Handling](#oqs-version-issue-handling) section.
+The repository is currently setup to pull the latest versions of the OQS projects and maintain use of the listed OpenSSL version to ensure the latest available algorithms can be tested. Handling has been implemented to accommodate for any changes to the algorithms that are supported by the OQS libraries as newer versions are released. 
+
+**However, as the OQS libraries are still developing projects, if any major changes have occurred to their code bases and this project's scripts does not accommodate this, please report an issue to this repositories GitHub page.**
+
+The issue will be resolved ASAP and in the meantime, it is possible to change the versions of the OQS libraries used by the benchmarking suite. This is detailed further in the [Installation Instructions](#safe-setup-configuration) section.
+
+By reporting this issue, you would be helping ensure that the tool is fully functioning and able to provide the most up to date PQC performance data for yourself and other researchers who may be utilising this benchmarking suite. Reporting any issues with the latest versions of the OQS libraries will be greatly appreciated :)
 
 ## Installation Instructions
 
+### Standard Setup
 Clone the current stable version:
 ```
 git clone -b main https://github.com/crt26/pqc-eval-tools.git
@@ -118,6 +126,13 @@ When executing the setup script, you will be presented with three options:
 The setup script will also handle the building of [OpenSSL 3.2.1](https://www.openssl.org/source/) within the pqc-eval-tools lib directory as this is required to utilise the OpenSSL provider functionality provided by OQS-Provider. This will be a separate build from the systems default OpenSSL installation and will not replace or interfere with those binaries.
 
 Once all of the relevant options have been selected, the setup script will download, configure and build each of the libraries. Alongside, optimizing the builds for the current systems by automatically passing the relevant build parameters.
+
+### Safe Setup
+If there are issues with this benchmarking suite when using the latest versions of the OQS libraries available, it is possible to perform the setup using the last tested versions of these dependencies. The instructions for installation remain the same, however, when calling the setup.sh script, the `--safe-setup` argument can be passed. This tells the setup script to use the last tested commits to the OQS project repositories and can be performed using the following command:
+
+```
+./setup.sh --safe-setup
+```
 
 ## Automated Testing Tools
 
@@ -280,20 +295,6 @@ pqc-eval-tools/
   - test-scripts: Contains scripts that are used for testing various components of the project.
 
   - utility-scripts: Contains the utility scripts used by the user and the automated testing scripts.
-
-## OQS Version Issue Handling
-The repository is currently setup to pull the latest versions of the OQS projects and maintain use of the listed OpenSSL version to ensure the latest available algorithms can be tested. Handling has been implemented to accommodate for any changes to the algorithms that are supported by the OQS libraries as newer versions are released. 
-
-**However, as the OQS libraries are still developing projects, if any major changes have occurred to their code bases and this project's scripts does not accommodate this, please report an issue to this repositories GitHub page.**
-
-The issue will be resolved ASAP and in the meantime, it is possible to change the URL used for the git clones in the `setup.sh` script so that the latest tested versions can be installed instead. These can found at the following lines in the main setup script at the projects root:
-
-- **Liboqs Setup** - Line 308
-- **OQS-Provider Setup** - Line 369
-
-By reporting this issue, you would be helping ensure that the tool is fully functioning and able to provide the most up to date PQC performance data for yourself and other researchers who may be utilising this benchmarking suite. Reporting any issues with the latest versions of the OQS libraries will be greatly appreciated :)
-
-> Notice: Future versions of this repository will add functionality for providing this temporary fix option to the user in the event of the latest version not functioning. Removing the need for them to manually change the git clone URLs to the latest tested versions. 
 
 ## Helpful Documentation Links
 - [liboqs Webpage](https://openquantumsafe.org/liboqs/)
