@@ -1,9 +1,11 @@
-# Release v0.2.0
-Welcome to the version 0.2.0 release of the pqc-evaluation-tools project!
+# Release v0.2.1
+Welcome to the version 0.2.1 release of the pqc-evaluation-tools project!
 
 ## Release Description 
 ### Overview
-This release updates the pqc-evaluation-tools benchmark suite to utilise the most recent versions of the OQS project's PQC implementations. Including, the latest algorithms supported by Liboqs, the use of the improved OQS-Provider library compared to the previous OQS-OpenSSL library, and support for the testing and parsing of Hybrid-PQC algorithms within TLS. This version also improves the general setup of the suite alongside various optimisations and condensing of automation script files.
+The version 0.2.0 release updated the pqc-evaluation-tools benchmark suite to utilise the most recent versions of the OQS project's PQC implementations. Including, the latest algorithms supported by Liboqs, the use of the improved OQS-Provider library compared to the previous OQS-OpenSSL library, and support for the testing and parsing of Hybrid-PQC algorithms within TLS. This version also improved the general setup of the suite alongside various optimisations and condensing of automation script files.
+
+This small update in version 0.2.1 included a minor fix that resolved an issue with the Python parsing script where trying to parse both Liboqs and OQS-Provider results caused an error. This bug was sadly overlooked, and is now addressed in this minor release.
 
 ### Features
 The project provides automation for:
@@ -19,6 +21,9 @@ The project provides automation for:
 - Parsing of the PQC performance data, where data from multiple machines can be parsed, averaged, and then compared against each other.
 
 ## Change Log
+As version 0.2.1 contains only one minor change to the code, to address a serious bug, the information on the changes in v0.2.0 compared to v0.1.0 are included here as well for reference. Future releases will return to a normal changelog format.
+
+### Version 0.2.0
 A list of the key changes in this release are as follows:
 
 - [Refactored Liboqs auto testing scripts into single script and set Liboqs build to use custom OpenSSL-3.2.1](https://github.com/crt26/pqc-evaluation-tools/commit/9463a97846855ad9cf8bf64883c6717586b3a489)
@@ -52,6 +57,9 @@ A full list of the changes made can viewed here:
 
 **Full Changelog**: https://github.com/crt26/pqc-evaluation-tools/compare/v0.1.0-alpha...v0.2.0
 
+### Version 0.2.1
+- [Resolved bug where parsing both liboqs and oqs-provider results failed](https://github.com/crt26/pqc-evaluation-tools/commit/a5ef98a0a1358b8b8367903b83c07aebef1e1ece)
+
 ## Known Issues
 
 - Manual copying of generated certificate and private key files for the TLS performance benchmarks required.
@@ -61,7 +69,7 @@ A full list of the changes made can viewed here:
 - Issue with gathering full memory usage metrics for the Falcon Algorithm on ARM devices.
 
 ## Important Notes
- - This is an early version of the project, functionality is limited to x86 Linux devices and Raspberry Pis. However, future updates will address this issue.
+ - This is an early version of the project, functionality is limited to debian based operating systems.
   
 - Activating the automated tools will delete all results currently stored in the up-results directory. To retain previous results, these should be moved to another location prior to re-running the automated test tool.
 
