@@ -124,10 +124,10 @@ def main():
 
             # Getting test options used for the benchmarking
             print(f"Setting total liboqs machine results\n")
-            liboqs_test_opts = get_test_opts()
+            liboqs_test_opts = get_test_opts(root_dir)
 
             print(f"\nSetting total oqs-openssl machine results\n")
-            openssl_test_opts = get_test_opts()
+            openssl_test_opts = get_test_opts(root_dir)
             
             # Parsing liboqs results
             parse_liboqs(liboqs_test_opts)
