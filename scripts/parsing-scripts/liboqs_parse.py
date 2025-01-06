@@ -132,7 +132,7 @@ def get_peak(mem_file, peak_metrics):
         peak = -1
         for line in lines:
             if line.startswith(" Detailed snapshots: ["):
-                match=re.search("\d+ \(peak\).*", line)
+                match=re.search(r"\d+ \(peak\).*", line)
                 if match:
                     peak = int(match.group(0).split()[0])      
             if (peak > 0):
