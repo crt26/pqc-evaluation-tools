@@ -1,5 +1,18 @@
 # PQC Evaluation Tools <!-- omit from toc --> 
-**Version 0.2.1**
+
+## Notice: <!-- omit from toc --> 
+This is the **development branch**, it may not be in a fully functioning state and documentation may still need updated. The checkboxes below indicates whether the current development version is in a basic functioning state and if the documentation is accurate for its current functionality. Regardless please keep this in mind and use the main branch if possible, thank you.
+
+- [x] Functioning State*
+- [ ] Up to date documentation
+
+<!-- > *Dev branch Notice: Current functioning state works for both x86 and ARM machines. However, on ARM devices, memory profiling for Falcon algorithm variations is non-functioning. Please refer to [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761) for more details. Work is underway to resolve this issue but for now the repository has methods in place to account for this. Automated testing and parsing scripts can still be used to gather performance metrics for all other algorithms on ARM systems.  -->
+
+## Main Development Branch Task Tracking
+For full details on the project's development and the current development task lists, please refer to the repositories Github Projects Page here:
+
+[PQC-Eval-Tools Project Page](https://github.com/users/crt26/projects/2)
+
 
 ## Repository Overview <!-- omit from toc -->  
 
@@ -30,6 +43,10 @@ Going forward, this project aims to incorporate other PQC libraries present in t
 
 
 ## Contents <!-- omit from toc --> 
+- [Main Development Branch Task Tracking](#main-development-branch-task-tracking)
+  - [Project Description](#project-description)
+  - [Supported Automation Functionality](#supported-automation-functionality)
+  - [Future Goals](#future-goals)
 - [Supported Hardware and Software](#supported-hardware-and-software)
 - [Installation Instructions](#installation-instructions)
   - [Standard Setup](#standard-setup)
