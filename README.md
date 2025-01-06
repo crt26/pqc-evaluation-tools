@@ -82,7 +82,7 @@ The automated testing tool is currently only supported on the following devices:
 ### Tested Dependency Software <!-- omit from toc --> 
 This version of the repository has been fully tested using the following versions of the dependency libraries:
 
-- Liboqs Version 0.10.1
+- Liboqs Version 0.12.0
 
 - OQS Provider Version 0.6.1
 
