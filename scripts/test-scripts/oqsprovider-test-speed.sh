@@ -61,10 +61,10 @@ function setup_base_env() {
     export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
 
     # Declaring static algorithm arrays and alg-list filepaths
-    kem_alg_file="$test_data_dir/alg-lists/ssl-kem-algs.txt"
-    sig_alg_file="$test_data_dir/alg-lists/ssl-sig-algs.txt"
-    hybrid_kem_alg_file="$test_data_dir/alg-lists/ssl-hybr-kem-algs.txt"
-    hybrid_sig_alg_file="$test_data_dir/alg-lists/ssl-hybr-sig-algs.txt"
+    kem_alg_file="$test_data_dir/alg-lists/tls-kem-algs.txt"
+    sig_alg_file="$test_data_dir/alg-lists/tls-sig-algs.txt"
+    hybrid_kem_alg_file="$test_data_dir/alg-lists/tls-hybr-kem-algs.txt"
+    hybrid_sig_alg_file="$test_data_dir/alg-lists/tls-hybr-sig-algs.txt"
 
 }
 
@@ -132,11 +132,11 @@ function main() {
     for run_num in $(seq 1 $NUM_RUN); do
 
         # Creating output names for current run
-        kem_output_filename="$PQC_SPEED/ssl-speed-kem-$run_num.txt"
-        sig_output_filename="$PQC_SPEED/ssl-speed-sig-$run_num.txt"
-        hybrid_kem_output_filename="$HYBRID_SPEED/ssl-speed-hybrid-kem-$run_num.txt"
-        hybrid_sig_output_filename="$HYBRID_SPEED/ssl-speed-hybrid-sig-$run_num.txt"
-        classic_output_filename="$CLASSIC_SPEED/ssl-speed-classic-$run_num.txt"
+        kem_output_filename="$PQC_SPEED/tls-speed-kem-$run_num.txt"
+        sig_output_filename="$PQC_SPEED/tls-speed-sig-$run_num.txt"
+        hybrid_kem_output_filename="$HYBRID_SPEED/tls-speed-hybrid-kem-$run_num.txt"
+        hybrid_sig_output_filename="$HYBRID_SPEED/tls-speed-hybrid-sig-$run_num.txt"
+        classic_output_filename="$CLASSIC_SPEED/tls-speed-classic-$run_num.txt"
 
         # PQC sig and kem algs speed tests
         "$open_ssl_path/bin/openssl" speed -seconds $TIME_NUM -provider-path $provider_path -provider oqsprovider  $kem_algs_string > $kem_output_filename

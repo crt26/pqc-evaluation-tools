@@ -530,9 +530,16 @@ function main() {
                 oqs_provider_build
                 rm -rf $tmp_dir/*
 
-                # Creating the required alg-list files for testing
+                # Check if Liboqs alg-list files are present before deciding which alg-list files need generated
+                if [ -f "$alg_lists_dir/kem-algs.txt" ] && [ -f "$alg_lists_dir/sig-algs.txt" ]; then
+                    alg_list_flag="3"
+                else
+                    alg_list_flag="2"
+                fi
+
+                # Create the required alg-list files for testing
                 cd "$util_scripts"
-                $python_bin "get_algorithms.py" "3"
+                $python_bin "get_algorithms.py" "$alg_list_flag"
                 py_exit_status=$?
                 cd $root_dir
                 break;;

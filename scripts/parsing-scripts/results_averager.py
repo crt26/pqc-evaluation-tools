@@ -228,7 +228,7 @@ class LiboqsResultAverager:
         sig_speed_avg.to_csv(sig_csv_name, index=False)
 
 #-----------------------------------------------------------------------------------------------------------
-class OqsOpensslResultAverager:
+class OqsProviderResultAverager:
 
     #------------------------------------------------------------------------------
     def __init__(self, dir_paths, num_runs, algs_dict, pqc_type_vars, col_headers):
@@ -396,7 +396,7 @@ class OqsOpensslResultAverager:
         for test_type, dir_list in self.dir_paths["speed_types_dirs"].items():
 
             # Set file prefix depending on test type
-            pqc_fileprefix = "ssl-speed" if test_type == "pqc" else "ssl-speed-hybrid"
+            pqc_fileprefix = "tls-speed" if test_type == "pqc" else "tls-speed-hybrid"
 
             # Process both KEM and Sig averages for the current test type
             for alg_type in alg_types:

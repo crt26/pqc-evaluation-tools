@@ -73,10 +73,10 @@ function setup_base_env() {
     current_group=""
 
     # Declaring static algorithm arrays and alg-list filepaths
-    kem_alg_file="$test_data_dir/alg-lists/ssl-kem-algs.txt"
-    sig_alg_file="$test_data_dir/alg-lists/ssl-sig-algs.txt"
-    hybrid_kem_alg_file="$test_data_dir/alg-lists/ssl-hybr-kem-algs.txt"
-    hybrid_sig_alg_file="$test_data_dir/alg-lists/ssl-hybr-sig-algs.txt"
+    kem_alg_file="$test_data_dir/alg-lists/tls-kem-algs.txt"
+    sig_alg_file="$test_data_dir/alg-lists/tls-sig-algs.txt"
+    hybrid_kem_alg_file="$test_data_dir/alg-lists/tls-hybr-kem-algs.txt"
+    hybrid_sig_alg_file="$test_data_dir/alg-lists/tls-hybr-sig-algs.txt"
 
     classic_algs=("RSA_2048" "RSA_3072" "RSA_4096" "prime256v1" "secp384r1" "secp521r1")
     ciphers=("TLS_AES_256_GCM_SHA384" "TLS_CHACHA20_POLY1305_SHA256" "TLS_AES_128_GCM_SHA256")

@@ -65,8 +65,8 @@ function setup_base_env() {
     hybrid_cert_dir="$keys_dir/hybrid"
 
     # Declaring algorithm lists filepaths
-    sig_alg_file="$test_data_dir/alg-lists/ssl-sig-algs.txt"
-    hybrid_sig_alg_file="$test_data_dir/alg-lists/ssl-hybr-sig-algs.txt"
+    sig_alg_file="$test_data_dir/alg-lists/tls-sig-algs.txt"
+    hybrid_sig_alg_file="$test_data_dir/alg-lists/tls-hybr-sig-algs.txt"
 
 }
 

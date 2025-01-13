@@ -47,7 +47,7 @@ function setup_base_env() {
     # Declaring global library path files
     open_ssl_path="$libs_dir/openssl_3.2"
     liboqs_path="$libs_dir/liboqs"
-    oqs_openssl_path="$libs_dir/oqs-openssl"
+    oqs_provider_path="$libs_dir/oqs-provider"
 
     # Declaring global test parameter variables
     machine_num=""

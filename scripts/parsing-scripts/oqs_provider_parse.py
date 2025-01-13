@@ -13,7 +13,7 @@ import pandas as pd
 import os
 import sys
 import shutil
-from results_averager import OqsOpensslResultAverager
+from results_averager import OqsProviderResultAverager
 
 # Declaring global variables
 dir_paths = {}
@@ -77,15 +77,15 @@ def setup_parse_env(root_dir):
 
     # Setting the test results directory paths in central paths dictionary
     dir_paths['root_dir'] = root_dir
-    dir_paths['results_dir'] = os.path.join(root_dir, "test-data", "results", "oqs-openssl")
-    dir_paths['up_results'] = os.path.join(root_dir, "test-data", "up-results", "oqs-openssl")
+    dir_paths['results_dir'] = os.path.join(root_dir, "test-data", "results", "oqs-provider")
+    dir_paths['up_results'] = os.path.join(root_dir, "test-data", "up-results", "oqs-provider")
 
     # Setting the alg list filenames for the various PQC test types (PQC and PQC-Hybrid)
     alg_list_files = {
-        "kem_algs": os.path.join(root_dir, "test-data", "alg-lists", "ssl-kem-algs.txt"),
-        "sig_algs": os.path.join(root_dir, "test-data", "alg-lists", "ssl-sig-algs.txt"),
-        "hybrid_kem_algs": os.path.join(root_dir, "test-data", "alg-lists", "ssl-hybr-kem-algs.txt"),
-        "hybrid_sig_algs": os.path.join(root_dir, "test-data", "alg-lists", "ssl-hybr-sig-algs.txt")
+        "kem_algs": os.path.join(root_dir, "test-data", "alg-lists", "tls-kem-algs.txt"),
+        "sig_algs": os.path.join(root_dir, "test-data", "alg-lists", "tls-sig-algs.txt"),
+        "hybrid_kem_algs": os.path.join(root_dir, "test-data", "alg-lists", "tls-hybr-kem-algs.txt"),
+        "hybrid_sig_algs": os.path.join(root_dir, "test-data", "alg-lists", "tls-hybr-sig-algs.txt")
     }
 
     # Pulling algorithm names for alg-lists files and creating relevant alg lists
@@ -112,7 +112,7 @@ def handle_results_dir_creation(machine_num):
         while True:
 
             # Outputting potential options and handling user choice
-            print(f"\nFrom the following options, choose how would you like to handle the old OQS-OpenSSL-Provider results:\n")
+            print(f"\nFrom the following options, choose how would you like to handle the old OQS-Provider results:\n")
             print("Option 1 - Replace old parsed results with new ones")
             print("Option 2 - Exit parsing programme to move old results and rerun after (if you choose this option, please move the entire folder not just its contents)")
             print("Option 3 - Make parsing script programme wait until you have move files before continuing")
@@ -165,7 +165,7 @@ def handle_results_dir_creation(machine_num):
 #-----------------------------------------------------------------------------------------------------------
 def get_metrics(current_row, test_filepath, get_reuse_metrics):
     """ Function for pulling the current sig/kem metrics from 
-        the supplied OQS-OpenSSL s_time output file """
+        the supplied OQS-Provider s_time output file """
 
     # Getting relevant data from the supplied performance metrics output file
     try:
@@ -356,9 +356,9 @@ def classic_based_processing(current_run):
     cipher_metrics_df.to_csv(output_filepath, index=False)
 
 #-----------------------------------------------------------------------------------------------------------
-def ssl_speed_drop_last(data_cells):
+def tls_speed_drop_last(data_cells):
     """ Helper function for removing unwanted characters from 
-        metric values during the ssl-speed results parsing """
+        metric values during the tls-speed results parsing """
 
     # Loop through values and remove any s chars present in metrics
     for cell_index in range(1, len(data_cells)):
@@ -370,7 +370,7 @@ def ssl_speed_drop_last(data_cells):
 
 #-----------------------------------------------------------------------------------------------------------
 def get_speed_metrics(speed_filepath, alg_type):
-    """ Function for extracting the speed metrics from the raw openssl speed output file 
+    """ Function for extracting the speed metrics from the raw openssl speed with OQS-Provider output file 
         for the current algorithm type (kem or sig) """
 
     # Declaring variables needed for getting metrics and setting up dataframe with test/alg type headers
@@ -402,7 +402,7 @@ def get_speed_metrics(speed_filepath, alg_type):
         data_cells = data.split()
 
         # Removing any s char present in speed metric values for the row
-        data_cells = ssl_speed_drop_last(data_cells)
+        data_cells = tls_speed_drop_last(data_cells)
 
         # Adding new data row to speed metrics data frame
         new_row_df = pd.DataFrame([data_cells], columns=headers)
@@ -412,7 +412,7 @@ def get_speed_metrics(speed_filepath, alg_type):
 
 #-----------------------------------------------------------------------------------------------------------
 def speed_processing(current_run):
-    """ Function for processing openssl speed metrics for both PQC and PQC-Hybrid algorithms
+    """ Function for processing openssl speed with OQS_Provider metrics for both PQC and PQC-Hybrid algorithms
        for the current run """
 
     # Define alg type list 
@@ -422,7 +422,7 @@ def speed_processing(current_run):
     for test_type, dir_list in dir_paths['speed_types_dirs'].items():
 
         # Setting the file prefix depending on current test type
-        pqc_fileprefix = "ssl-speed" if test_type == "pqc" else "ssl-speed-hybrid"
+        pqc_fileprefix = "tls-speed" if test_type == "pqc" else "tls-speed-hybrid"
 
         # Process both KEM and Sig results for the current test type
         for alg_type in alg_types:
@@ -467,7 +467,7 @@ def process_tests(num_machines, algs_dict):
 
     # Creating an instance of the OQS-Provider average generator class before processing results
     oqs_provider_avg = None
-    oqs_provider_avg = OqsOpensslResultAverager(dir_paths, num_runs, algs_dict, pqc_type_vars, col_headers)
+    oqs_provider_avg = OqsProviderResultAverager(dir_paths, num_runs, algs_dict, pqc_type_vars, col_headers)
 
     # Looping through the specified number of machines
     for machine in range(1, num_machines+1):
@@ -503,7 +503,7 @@ def process_tests(num_machines, algs_dict):
         oqs_provider_avg.gen_speed_avgs(speed_headers)
 
 #-----------------------------------------------------------------------------------------------------------
-def parse_openssl(test_opts):
+def parse_oqs_provider(test_opts):
     """ Main function for controlling the parsing of the OQS-Provider TLS handshake and speed results. This function
         is called from the main parsing control script and will call the necessary functions to parse the results """
 
@@ -513,9 +513,9 @@ def parse_openssl(test_opts):
     num_runs = test_opts[1]
 
     # Setting up script variables
-    print(f"\nPreparing to Parse OQS-OpenSSL Results:\n")
+    print(f"\nPreparing to Parse OQS-Provider Results:\n")
     setup_parse_env(test_opts[2])
 
-    # Processing the OQS-OpenSSL results
+    # Processing the OQS-Provider results
     print("Parsing results... ")
     process_tests(num_machines, algs_dict)
