@@ -48,8 +48,8 @@ function setup_base_env() {
     # Declaring global library path files
     open_ssl_path="$libs_dir/openssl_3.2"
     liboqs_path="$libs_dir/liboqs"
-    oqs_openssl_path="$libs_dir/oqs-openssl"
-    provider_path="$libs_dir/oqs-openssl/lib"
+    oqs_openssl_path="$libs_dir/oqs-provider"
+    provider_path="$libs_dir/oqs-provider/lib"
 
     # Declaring key storage dir paths
     key_storage_path="$test_data_dir/keys"
