@@ -10,7 +10,7 @@ alongside taking in the test parameters used during the benchmarking to output f
 
 #-----------------------------------------------------------------------------------------------------------
 from liboqs_parse import parse_liboqs
-from oqs_openssl_parse import parse_openssl
+from oqs_provider_parse import parse_openssl
 import os
 import sys
 
