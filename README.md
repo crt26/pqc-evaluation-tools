@@ -84,7 +84,7 @@ This version of the repository has been fully tested using the following version
 
 - Liboqs Version 0.12.0
 
-- OQS Provider Version 0.6.1
+- OQS Provider Version 0.8.0
 
 - OpenSSL Version 3.2.1
 
