@@ -1,5 +1,5 @@
 """
-Copyright (c) 2024 Callum Turino
+Copyright (c) 2025 Callum Turino
 SPDX-License-Identifier: MIT
 
 This is a utility script which is used to get the algorithms which are supported by the Liboqs library and the OQS-Provider library.

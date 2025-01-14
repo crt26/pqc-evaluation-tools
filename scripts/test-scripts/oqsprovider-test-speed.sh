@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2024 Callum Turino
+# Copyright (c) 2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
 # Script ran from the client machine for testing the computational efficiency of the PQC algorithms when integrated into OpenSSL. 
@@ -48,10 +48,9 @@ function setup_base_env() {
 
     # Declaring global library path files
     open_ssl_path="$libs_dir/openssl_3.2"
-    oqs_openssl_path="$libs_dir/oqs-provider"
     provider_path="$libs_dir/oqs-provider/lib"
 
-    # Exporting openssl lib path
+    # Exporting OpenSSL library path
     if [[ -d "$open_ssl_path/lib64" ]]; then
         openssl_lib_path="$open_ssl_path/lib64"
     else

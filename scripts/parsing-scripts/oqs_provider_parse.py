@@ -1,5 +1,5 @@
 """
-Copyright (c) 2024 Callum Turino
+Copyright (c) 2025 Callum Turino
 SPDX-License-Identifier: MIT
 
 This python script will parse the OQS-Provider TLS handshake and speed result files outputted by the bash scripts
@@ -370,7 +370,7 @@ def tls_speed_drop_last(data_cells):
 
 #-----------------------------------------------------------------------------------------------------------
 def get_speed_metrics(speed_filepath, alg_type):
-    """ Function for extracting the speed metrics from the raw openssl speed with OQS-Provider output file 
+    """ Function for extracting the speed metrics from the raw OpenSSL speed with OQS-Provider output file 
         for the current algorithm type (kem or sig) """
 
     # Declaring variables needed for getting metrics and setting up dataframe with test/alg type headers
@@ -412,7 +412,7 @@ def get_speed_metrics(speed_filepath, alg_type):
 
 #-----------------------------------------------------------------------------------------------------------
 def speed_processing(current_run):
-    """ Function for processing openssl speed with OQS_Provider metrics for both PQC and PQC-Hybrid algorithms
+    """ Function for processing OpenSSL speed with OQS_Provider metrics for both PQC and PQC-Hybrid algorithms
        for the current run """
 
     # Define alg type list 

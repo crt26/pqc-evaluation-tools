@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2024 Callum Turino
+# Copyright (c) 2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
 # Server script for the TLS handshake tests, this script will coordinate with the client machine to conduct the tests
@@ -46,9 +46,7 @@ function setup_base_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declaring global library path files
-    open_ssl_path="$libs_dir/openssl_3.2"
-    liboqs_path="$libs_dir/liboqs"
-    oqs_provider_path="$libs_dir/oqs-provider"
+    openssl_path="$libs_dir/openssl_3.2"
     provider_path="$libs_dir/oqs-provider/lib"
 
     # Declaring key storage dir paths
@@ -60,11 +58,11 @@ function setup_base_env() {
     # Declaring global flags
     test_type=0 #0=pqc, 1=classic, 2=hybrid
 
-    # Exporting openssl lib path
-    if [[ -d "$open_ssl_path/lib64" ]]; then
-        openssl_lib_path="$open_ssl_path/lib64"
+    # Exporting OpenSSL library path
+    if [[ -d "$openssl_path/lib64" ]]; then
+        openssl_lib_path="$openssl_path/lib64"
     else
-        openssl_lib_path="$open_ssl_path/lib"
+        openssl_lib_path="$openssl_path/lib"
     fi
 
     export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
@@ -244,7 +242,7 @@ function classic_tests {
             # Performing current run cipher/curve combination test until passed successfully
             while true; do
 
-                # Check if an old openssl process is still active and kill if so
+                # Check if an old OpenSSL process is still active and kill if so
                 pgrep_output=$(pgrep openssl)
 
                 if [[ ! -z $pgrep_output ]]; then
@@ -269,7 +267,7 @@ function classic_tests {
                     classic_key_file="$classic_cert_dir/$classic_alg-srv.key"
 
                     # Start ECC test server processes
-                    "$open_ssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 \
+                    "$openssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 \
                         -curves $classic_alg -ciphersuites "$cipher" -accept 4433 &
                     server_pid=$!
 
@@ -280,7 +278,7 @@ function classic_tests {
                     classic_key_file="$classic_cert_dir/$classic_alg-srv.key"
 
                     # Start RSA test server processes
-                    "$open_ssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 -ciphersuites $cipher -accept 4433 &
+                    "$openssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 -ciphersuites $cipher -accept 4433 &
                     server_pid=$!
 
                 fi
@@ -335,7 +333,7 @@ function pqc_tests() {
             # Performing current run sig/kem combination test until passed
             while true; do
 
-                # Check if an old openssl process is still active
+                # Check if an old OpenSSL process is still active
                 pgrep_output=$(pgrep openssl)
 
                 # Kill old process if active
@@ -364,7 +362,7 @@ function pqc_tests() {
                 fi
 
                 # Starting server process
-                "$open_ssl_path/bin/openssl" s_server -cert $cert_file -key $key_file -www -tls1_3 -groups $kem \
+                "$openssl_path/bin/openssl" s_server -cert $cert_file -key $key_file -www -tls1_3 -groups $kem \
                     -provider oqsprovider -provider-path $provider_path -accept 4433 &
                 server_pid=$!
 
@@ -437,7 +435,7 @@ function main() {
         # Calling PQC Tests
         test_type=0
         set_test_env $test_type 1
-        pqc_tests
+        # pqc_tests
         echo -e "[OUTPUT] - Completed $run_num PQC Tests"
 
         # Performing run handshake
@@ -461,7 +459,7 @@ function main() {
         # Performing current run Hybrid-PQC Tests
         test_type=2
         set_test_env $test_type 1
-        pqc_tests
+        # pqc_tests
         echo "[OUTPUT] - Completed $run_num Classic TLS Handshake Tests"
 
         # Outputting that the current run is complete

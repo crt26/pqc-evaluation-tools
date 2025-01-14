@@ -1,5 +1,5 @@
 """
-Copyright (c) 2024 Callum Turino
+Copyright (c) 2025 Callum Turino
 SPDX-License-Identifier: MIT
 
 This script provides the classes and methods for generating the average metric files for the various Liboqs and OQS-Provider results.

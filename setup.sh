@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2024 Callum Turino
+# Copyright (c) 2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
 # Setup script for the automated PQC benchmark testing tools, the script provides various setup options
@@ -28,7 +28,7 @@ oqs_provider_source="$tmp_dir/oqs-provider-source"
 openssl_source="$tmp_dir/openssl-3.2.1"
 
 # Setting Global flag variables
-install_type=0 # 0=liboqs-only, 1=liboqs+OQS-Provider, 2=OQS-Provider-only
+install_type=0 # 0=Liboqs-only, 1=liboqs+OQS-Provider, 2=OQS-Provider-only
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function get_reinstall_choice() {

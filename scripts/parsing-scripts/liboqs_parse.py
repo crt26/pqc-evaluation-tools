@@ -1,5 +1,5 @@
 """
-Copyright (c) 2024 Callum Turino
+Copyright (c) 2025 Callum Turino
 SPDX-License-Identifier: MIT
 
 This python script will parse the liboqs result files outputted by the bash scripts

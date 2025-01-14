@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2024 Callum Turino
+# Copyright (c) 2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
 # Client script for the TLS handshake tests, this script will coordinate with the server machine to conduct the tests
@@ -46,9 +46,7 @@ function setup_base_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declaring global library path files
-    open_ssl_path="$libs_dir/openssl_3.2"
-    liboqs_path="$libs_dir/liboqs"
-    oqs_openssl_path="$libs_dir/oqs-provider"
+    openssl_path="$libs_dir/openssl_3.2"
     provider_path="$libs_dir/oqs-provider/lib"
 
     # Declaring key storage dir paths
@@ -60,11 +58,11 @@ function setup_base_env() {
     # Declaring global flags
     test_type=0 #0=pqc, 1=classic, 2=hybrid
 
-    # Exporting openssl lib path
-    if [[ -d "$open_ssl_path/lib64" ]]; then
-        openssl_lib_path="$open_ssl_path/lib64"
+    # Exporting OpenSSL library path
+    if [[ -d "$openssl_path/lib64" ]]; then
+        openssl_lib_path="$openssl_path/lib64"
     else
-        openssl_lib_path="$open_ssl_path/lib"
+        openssl_lib_path="$openssl_path/lib"
     fi
 
     export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
@@ -268,7 +266,7 @@ function classic_tests() {
                 while true; do
 
                     # Running OpenSSL s_time process with current test parameters
-                    "$open_ssl_path/bin/openssl" s_time -connect $SERVER_IP:4433 -CAfile $classic_cert_file -time $TIME_NUM > "$CLASSIC_HANDSHAKE/$output_name"
+                    "$openssl_path/bin/openssl" s_time -connect $SERVER_IP:4433 -CAfile $classic_cert_file -time $TIME_NUM > "$CLASSIC_HANDSHAKE/$output_name"
                     exit_code=$?
 
                     # Check if test was successful and retrying if not
@@ -366,9 +364,9 @@ function pqc_tests() {
                     # Performing testing until successful or fail counter reaches limit
                     while true; do
 
-                        #"$open_ssl_path/bin/openssl" s_client -connect $SERVER_IP:4433 -CAfile $cert_file -provider default -provider oqsprovider -provider-path $provider_path -groups "$kem"
+                        #"$openssl_path/bin/openssl" s_client -connect $SERVER_IP:4433 -CAfile $cert_file -provider default -provider oqsprovider -provider-path $provider_path -groups "$kem"
                         # Running OpenSSL s_time process with current test parameters
-                        "$open_ssl_path/bin/openssl" s_time -connect $server_ip:4433 -CAfile $cert_file -time $TIME_NUM  -verify 1 \
+                        "$openssl_path/bin/openssl" s_time -connect $server_ip:4433 -CAfile $cert_file -time $TIME_NUM  -verify 1 \
                             -provider default -provider oqsprovider -provider-path $provider_path > $handshake_dir/$output_name
                         exit_code=$?
 
@@ -453,7 +451,7 @@ function main() {
         # Calling PQC tests
         test_type=0
         set_test_env $test_type 1
-        pqc_tests
+        # pqc_tests
         echo -e "[OUTPUT] - Completed $run_num PQC Tests"
 
         # Performing current run classic handshakes
@@ -477,7 +475,7 @@ function main() {
         # Calling Hybrid-PQC tests
         test_type=2
         set_test_env $test_type 1
-        pqc_tests
+        # pqc_tests
         echo "[OUTPUT] - Completed $run_num Classic TLS Handshake Tests"
 
         # Outputting that the current run is complete

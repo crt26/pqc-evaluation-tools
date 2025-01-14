@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2024 Callum Turino
+# Copyright (c) 2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
 # Script for controlling the OQS-Provider benchmark testing, it takes in the test parameters and calls the relevant test scripts.
@@ -48,15 +48,13 @@ function setup_base_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declaring global library path files
-    open_ssl_path="$libs_dir/openssl_3.2"
-    liboqs_path="$libs_dir/liboqs"
-    oqs_provider_path="$libs_dir/oqs-provider"
+    openssl_path="$libs_dir/openssl_3.2"
 
-    # Exporting openssl lib path
-    if [[ -d "$open_ssl_path/lib64" ]]; then
-        openssl_lib_path="$open_ssl_path/lib64"
+    # Exporting OpenSSL library path
+    if [[ -d "$openssl_path/lib64" ]]; then
+        openssl_lib_path="$openssl_path/lib64"
     else
-        openssl_lib_path="$open_ssl_path/lib"
+        openssl_lib_path="$openssl_path/lib"
     fi
 
     export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"

@@ -193,7 +193,7 @@ The testing tool allows for tests to be conducted on a single machine or using t
 
 
 ### Testing Output Files
-After selecting the desired testing script, the performance benchmarks will be performed and the unparsed results will be stored in the newly created ``test-data/up-results`` directory. Liboqs unparsed results will be stored in the `test-data/up-results/liboqs/machine-x`* directory. The PQC TLS 1.3 test results will be stored in the `test-data/up-results/oqs-openssl/machine-x`* directory.
+After selecting the desired testing script, the performance benchmarks will be performed and the unparsed results will be stored in the newly created ``test-data/up-results`` directory. Liboqs unparsed results will be stored in the `test-data/up-results/liboqs/machine-x`* directory. The PQC TLS 1.3 test results will be stored in the `test-data/up-results/oqs-provider/machine-x`* directory.
 
 **The Machine-ID number assigned to the test*
 
@@ -253,7 +253,7 @@ python3 get_algorithms.py 1
 ```
 
 ### configure-openssl-cnf.sh <!-- omit from toc --> 
-This script can change the configurations added to the OpenSSL 3.2.1 configuration file by commenting or uncommenting the lines which set what default groups OpenSSL uses. This is needed to allow both the `oqsssl-generate-keys.sh` and the TLS performance testing scripts to operate correctly. This script is mainly used by the automated scripts, however it can be called manually using the following commands:
+This script can change the configurations added to the OpenSSL 3.2.1 configuration file by commenting or uncommenting the lines which set what default groups OpenSSL uses. This is needed to allow both the `oqsprovider-generate-keys.sh` and the TLS performance testing scripts to operate correctly. This script is mainly used by the automated scripts, however it can be called manually using the following commands:
 
 **configure-openssl-cnf.sh - Comment out Default Group Configurations:**
 ```

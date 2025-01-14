@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Copyright (c) 2024 Callum Turino
+# Copyright (c) 2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
 # This is a utility script for cleaning the various project files produced from compiling and benchmarking. The script 
-# provides functionality for either uninstalling the OQS-OpenSSL libraries from the system, clearing the old results and generated TLS keys, or both. 
+# provides functionality for either uninstalling the OQS-Provider libraries from the system, clearing the old results and generated TLS keys, or both. 
 # When uninstalling, the script will remove the liboqs, OQS-Provider, and OpenSSL 3.2.1 libraries from the system. When clearing the old results and keys,
 # the script will remove the old test results and generated keys directories from the test-data directory.
 
@@ -46,13 +46,13 @@ function setup_base_env() {
     test_data_dir="$root_dir/test-data"
 
     # Declaring global library path files
-    open_ssl_path="$libs_dir/openssl_3.2"
+    openssl_path="$libs_dir/openssl_3.2"
     liboqs_path="$libs_dir/liboqs"
-    oqs_openssl_path="$libs_dir/oqs-openssl"
+    oqs_provider_path="$libs_dir/oqs-provider"
 
     # Declaring global source-code path files
     liboqs_source="$tmp_dir/liboqs-source"
-    oqs_openssl_source="$tmp_dir/oqs-openssl-source"
+    oqs_provider_source="$tmp_dir/oqs-provider-source"
     openssl_source="$tmp_dir/openssl-3.2.1"
 
 }
@@ -81,25 +81,25 @@ function select_uninstall_mode() {
         case "$user_opt" in 
 
             1)
-                # Uninstall liboqs only
+                # Uninstall Liboqs only
                 rm -rf "$liboqs_path"
                 echo -e "\nLiboqs Uninstalled"
                 break;;
             
             2)
                 # Uninstal OQS-Provider only
-                rm -rf "$oqs_openssl_path"
+                rm -rf "$oqs_provider_path"
                 echo -e "\nOQS-Provider Uninstalled"
                 break;;
 
             3)
                 # Uninstall OpenSSL 3.2.1 only
-                rm -rf "$open_ssl_path"
+                rm -rf "$openssl_path"
                 echo -e "\nOpenSSL 3.2.1 Uninstalled"
                 break;;
 
             4)
-                # Uninstall all libs
+                # Uninstall all dependency libraries
                 rm -rf "$libs_dir" && rm -rf "$tmp_dir" && rm -rf "$dependency_dir"
                 rm -rf "$root_dir/.pqc_eval_dir_marker.tmp"
                 echo -e "\nAll Libraries Uninstalled"
@@ -180,7 +180,7 @@ function main() {
         case "$user_opt" in 
 
             1)
-                # Uninstall Libraries Only
+                # Uninstall dependency libraries only
                 echo -e "\nOption 1 Selected: Uninstall Libraries Only"
                 select_uninstall_mode
                 break;;

@@ -1,5 +1,5 @@
 """
-Copyright (c) 2024 Callum Turino
+Copyright (c) 2025 Callum Turino
 SPDX-License-Identifier: MIT
 
 This script controls the various parsing scripts for the results which have been outputted
