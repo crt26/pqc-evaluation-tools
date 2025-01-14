@@ -329,7 +329,7 @@ function liboqs_build() {
 
             # Clone Liboqs and checkout to the latest tested version
             git clone https://github.com/open-quantum-safe/liboqs.git $liboqs_source
-            cd $liboqs_source && git checkout "d93a431aaf9ac929f267901509e968a5727c053c"
+            cd $liboqs_source && git checkout "f4b96220e4bd208895172acc4fedb5a191d9f5b1"
             cd $root_dir
 
         else
@@ -403,7 +403,7 @@ function oqs_provider_build() {
 
         # Clone OQS-Provider and checkout to the latest tested version
         git clone https://github.com/open-quantum-safe/oqs-provider.git $oqs_provider_source >> /dev/null
-        cd $oqs_provider_source && git checkout "2cdbc17e149cc7fda3fdd8c355a49581625acbad"
+        cd $oqs_provider_source && git checkout "ec1e8431f92b52e5d437107a37dbe3408649e8c3"
         cd $root_dir
 
     else
