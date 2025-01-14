@@ -435,7 +435,7 @@ function main() {
         # Calling PQC Tests
         test_type=0
         set_test_env $test_type 1
-        # pqc_tests
+        pqc_tests
         echo -e "[OUTPUT] - Completed $run_num PQC Tests"
 
         # Performing run handshake
@@ -459,7 +459,7 @@ function main() {
         # Performing current run Hybrid-PQC Tests
         test_type=2
         set_test_env $test_type 1
-        # pqc_tests
+        pqc_tests
         echo "[OUTPUT] - Completed $run_num Classic TLS Handshake Tests"
 
         # Outputting that the current run is complete
