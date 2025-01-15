@@ -366,7 +366,7 @@ function pqc_tests() {
 
                         #"$openssl_path/bin/openssl" s_client -connect $SERVER_IP:4433 -CAfile $cert_file -provider default -provider oqsprovider -provider-path $provider_path -groups "$kem"
                         # Running OpenSSL s_time process with current test parameters
-                        "$openssl_path/bin/openssl" s_time -connect $server_ip:4433 -CAfile $cert_file -time $TIME_NUM  -verify 1 \
+                        "$openssl_path/bin/openssl" s_time -connect $SERVER_IP:4433 -CAfile $cert_file -time $TIME_NUM  -verify 1 \
                             -provider default -provider oqsprovider -provider-path $provider_path > $handshake_dir/$output_name
                         exit_code=$?
 
