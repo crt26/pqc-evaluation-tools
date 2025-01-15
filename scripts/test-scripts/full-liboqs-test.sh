@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2024 Callum Turino
+# Copyright (c) 2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
 # Script for controlling the Liboqs benchmark testing, it takes in the test parameters and calls the relevant test scripts
@@ -45,9 +45,7 @@ function setup_base_env() {
     test_scripts_path="$root_dir/scripts/test-scripts"
 
     # Declaring global library path files
-    open_ssl_path="$libs_dir/openssl_3.2"
     liboqs_path="$libs_dir/liboqs"
-    oqs_openssl_path="$libs_dir/oqs-openssl"
 
     # Declaring global test parameter variables
     machine_num=""

@@ -32,7 +32,7 @@ The scripts required for conducting the automated testing are stored in the `scr
 Before beginning testing, it is necessary to first generate the required server certificate and private key files needed for the TLS performance testing tools. This can be done by executing the following command from within the `scripts/testing-scripts` directory:
 
 ```
-./oqsssl-generate-keys.sh
+./oqsprovider-generate-keys.sh
 ```
 
 This will generate the certificates and private keys and output them to the `test-data/keys` directory in the project's root directory. **If testing performance over a physical/virtual network using two machines, the keys directory will need to be transferred to the second testing machine as well.**
@@ -41,7 +41,7 @@ This will generate the certificates and private keys and output them to the `tes
 To start the automated testing tool, open a terminal in the directory containing the Full PQC TLS Test tool and run the following command:
 
 ```
-./full-pqc-tls-test.sh
+./full-oqs-provider-test.sh
 ```
 
 **Please refer to the Testing Options section before beginning testing to ensure all configurations are correct**
@@ -103,7 +103,7 @@ When utilising two separate machines for testing, one machine will be set up as 
 4. When asked for the other machine's IP, provide the IP address of the server machine.
 
 ## Outputted Results
-The results from the Full PQC TLS Test will be stored in the `test-data/up-results/ops-openssl/machine-x` directory, which can be found within the code's root directory. The results include handshake and speed test results for both PQC and classic ciphersuites. This directory is used to store all of the unparsed results from the automated testing tools.
+The results from the Full PQC TLS Test will be stored in the `test-data/up-results/ops-provider/machine-x` directory, which can be found within the code's root directory. The results include handshake and speed test results for both PQC and classic ciphersuites. This directory is used to store all of the unparsed results from the automated testing tools.
 
 **Please note that when using more than one machine for testing, the results will only be stored on the client machine, not the server machine.**
 
@@ -113,21 +113,21 @@ However, the data stored is not yet ready for interpretation or graph generation
 ## Included Testing Scripts
 The Full PQC TLS Test tool uses several scripts to perform the TLS handshake tests. These include:
 
-- oqsssl-test-server.sh
-- oqsssl-test-client.sh
-- oqsssl-test-speed.sh
-- oqsssl-generate-keys.sh
+- oqsprovider-test-server.sh
+- oqsprovider-test-client.sh
+- oqsprovider-test-speed.sh
+- oqsprovider-generate-keys.sh
 
-### oqsssl-test-server.sh: <!-- omit from toc --> 
+### oqsprovider-test-server.sh: <!-- omit from toc --> 
 This script sets up and runs the server-side operations for the TLS handshake tests. It performs handshake tests for various combinations of PQC signature algorithms and KEM algorithms, as well as classical handshake tests. The script includes error handling to deal with test failures and will coordinate a reattempt with the client. The script also skips tests when both the signature and KEM algorithms are classical.
 
-### oqsssl-test-client.sh: <!-- omit from toc --> 
+### oqsprovider-test-client.sh: <!-- omit from toc --> 
 This script is responsible for client-side operations for the TLS handshake tests. It performs the client-side handshake operations and checks the test status. If the test fails, it sends a signal to the server to restart the test. The script also skips tests when both the signature and KEM algorithms are classical.
 
-### oqsssl-test-speed.sh: <!-- omit from toc --> 
+### oqsprovider-test-speed.sh: <!-- omit from toc --> 
 This script performs speed tests for the PQC algorithmic operations when integrated into the OpenSSL library. It performs these tests for both PQC and classic and stores the results in a specific directory.
 
-### oqsssl-generate-keys.sh: <!-- omit from toc --> 
+### oqsprovider-generate-keys.sh: <!-- omit from toc --> 
 This script generates the necessary PQC and classical certificates and  private keys needed for the TLS handshake tests. It creates a new key for each PQC signature algorithm and each ECC curve.
 
 These scripts together enable the execution of the Full PQC TLS Test, with each one handling a specific aspect of the process. They are designed to work together seamlessly, with different scripts signalling each other as needed to coordinate the process.

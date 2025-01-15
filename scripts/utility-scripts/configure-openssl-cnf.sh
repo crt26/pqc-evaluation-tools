@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2024 Callum Turino
+# Copyright (c) 2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
 # This is a utility script used to configure the openssl.cnf file for the OpenSSL library 
@@ -45,15 +45,15 @@ function setup_base_env() {
     test_scripts_path="$root_dir/scripts/test-scripts"
 
     # Declaring global library path files
-    open_ssl_path="$libs_dir/openssl_3.2"
+    openssl_path="$libs_dir/openssl_3.2"
     liboqs_path="$libs_dir/liboqs"
-    oqs_openssl_path="$libs_dir/oqs-openssl"
+    oqs_provider_path="$libs_dir/oqs-provider"
 
-    # Exporting openssl lib path
-    if [[ -d "$open_ssl_path/lib64" ]]; then
-        openssl_lib_path="$open_ssl_path/lib64"
+    # Exporting OpenSSL lib path
+    if [[ -d "$openssl_path/lib64" ]]; then
+        openssl_lib_path="$openssl_path/lib64"
     else
-        openssl_lib_path="$open_ssl_path/lib"
+        openssl_lib_path="$openssl_path/lib"
     fi
 
     export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
@@ -62,11 +62,11 @@ function setup_base_env() {
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function configure_conf_statements() {
-    # Function for commenting out additional lines in the openssl to temporarily remove the default groups configuration
+    # Function for commenting out additional lines in the OpenSSL to temporarily remove the default groups configuration
     # used in testing scripts to allow key generation to be performed
 
     # Declare required local variables
-    local conf_path="$open_ssl_path/openssl.cnf"
+    local conf_path="$openssl_path/openssl.cnf"
     local configure_mode="$1"
 
     # Set the configurations based on the configuration mode passed

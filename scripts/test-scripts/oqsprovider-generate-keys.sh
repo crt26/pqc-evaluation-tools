@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2024 Callum Turino
+# Copyright (c) 2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
 # This script is used to generate all the certificates and keys needed for the TLS benchmarking tests, this includes creating the
@@ -46,15 +46,13 @@ function setup_base_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declaring global library path files
-    open_ssl_path="$libs_dir/openssl_3.2"
-    liboqs_path="$libs_dir/liboqs"
-    oqs_openssl_path="$libs_dir/oqs-openssl"
+    openssl_path="$libs_dir/openssl_3.2"
 
-    # Exporting openssl lib path
-    if [[ -d "$open_ssl_path/lib64" ]]; then
-        openssl_lib_path="$open_ssl_path/lib64"
+    # Exporting OpenSSL library path
+    if [[ -d "$openssl_path/lib64" ]]; then
+        openssl_lib_path="$openssl_path/lib64"
     else
-        openssl_lib_path="$open_ssl_path/lib"
+        openssl_lib_path="$openssl_path/lib"
     fi
     export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
 
@@ -65,8 +63,8 @@ function setup_base_env() {
     hybrid_cert_dir="$keys_dir/hybrid"
 
     # Declaring algorithm lists filepaths
-    sig_alg_file="$test_data_dir/alg-lists/ssl-sig-algs.txt"
-    hybrid_sig_alg_file="$test_data_dir/alg-lists/ssl-hybr-sig-algs.txt"
+    sig_alg_file="$test_data_dir/alg-lists/tls-sig-algs.txt"
+    hybrid_sig_alg_file="$test_data_dir/alg-lists/tls-hybr-sig-algs.txt"
 
 }
 
@@ -108,13 +106,13 @@ function classic_keygen() {
         if [[ $sig == RSA:* ]]; then
 
             # Generate CA cert and key alongside server cert and key for current RSA signature algorithm
-            "$open_ssl_path/bin/openssl" req -x509 -new -newkey rsa:${sig#RSA:} -keyout "$classic_cert_dir/$sig_name-CA.key" \
-                -out "$classic_cert_dir/$sig_name-CA.crt" -nodes -subj "/CN=oqstest CA" -days 365 -config "$open_ssl_path/openssl.cnf"
+            "$openssl_path/bin/openssl" req -x509 -new -newkey rsa:${sig#RSA:} -keyout "$classic_cert_dir/$sig_name-CA.key" \
+                -out "$classic_cert_dir/$sig_name-CA.crt" -nodes -subj "/CN=oqstest CA" -days 365 -config "$openssl_path/openssl.cnf"
 
-            "$open_ssl_path/bin/openssl" req -new -newkey rsa:${sig#RSA:} -keyout "$classic_cert_dir/$sig_name-srv.key" \
-                -out "$classic_cert_dir/$sig_name-srv.csr" -nodes -subj "/CN=oqstest server" -config "$open_ssl_path/openssl.cnf"
+            "$openssl_path/bin/openssl" req -new -newkey rsa:${sig#RSA:} -keyout "$classic_cert_dir/$sig_name-srv.key" \
+                -out "$classic_cert_dir/$sig_name-srv.csr" -nodes -subj "/CN=oqstest server" -config "$openssl_path/openssl.cnf"
             
-            "$open_ssl_path/bin/openssl" x509 -req -in "$classic_cert_dir/$sig_name-srv.csr" \
+            "$openssl_path/bin/openssl" x509 -req -in "$classic_cert_dir/$sig_name-srv.csr" \
                 -out "$classic_cert_dir/$sig_name-srv.crt" -CA "$classic_cert_dir/$sig_name-CA.crt" \
                 -CAkey "$classic_cert_dir/$sig_name-CA.key" -CAcreateserial -days 365
 
@@ -124,19 +122,19 @@ function classic_keygen() {
         else
 
             # Generate ECC CA key and cert files
-            "$open_ssl_path/bin/openssl" ecparam -name $sig -genkey -out "$classic_cert_dir/${sig_name}-CA.key"
+            "$openssl_path/bin/openssl" ecparam -name $sig -genkey -out "$classic_cert_dir/${sig_name}-CA.key"
 
-            "$open_ssl_path/bin/openssl" req -x509 -new -key "$classic_cert_dir/${sig_name}-CA.key" \
-                -out "$classic_cert_dir/${sig_name}-CA.crt" -nodes -subj "/CN=oqstest CA" -days 365 -config "$open_ssl_path/openssl.cnf"
+            "$openssl_path/bin/openssl" req -x509 -new -key "$classic_cert_dir/${sig_name}-CA.key" \
+                -out "$classic_cert_dir/${sig_name}-CA.crt" -nodes -subj "/CN=oqstest CA" -days 365 -config "$openssl_path/openssl.cnf"
 
             # Generate server ECC key and CSR
-            "$open_ssl_path/bin/openssl" ecparam -name $sig -genkey -out "$classic_cert_dir/${sig_name}-srv.key"
+            "$openssl_path/bin/openssl" ecparam -name $sig -genkey -out "$classic_cert_dir/${sig_name}-srv.key"
 
-            "$open_ssl_path/bin/openssl" req -new -key "$classic_cert_dir/${sig_name}-srv.key" \
-                -out "$classic_cert_dir/${sig_name}-srv.csr" -nodes -subj "/CN=oqstest server" -config "$open_ssl_path/openssl.cnf"
+            "$openssl_path/bin/openssl" req -new -key "$classic_cert_dir/${sig_name}-srv.key" \
+                -out "$classic_cert_dir/${sig_name}-srv.csr" -nodes -subj "/CN=oqstest server" -config "$openssl_path/openssl.cnf"
 
             # Sign server CSR with ECC CA cert
-            "$open_ssl_path/bin/openssl" x509 -req -in "$classic_cert_dir/${sig_name}-srv.csr" \
+            "$openssl_path/bin/openssl" x509 -req -in "$classic_cert_dir/${sig_name}-srv.csr" \
                 -out "$classic_cert_dir/${sig_name}-srv.crt" -CA "$classic_cert_dir/${sig_name}-CA.crt" \
                 -CAkey "$classic_cert_dir/${sig_name}-CA.key" -CAcreateserial -days 365
 
@@ -157,13 +155,13 @@ function pqc_keygen() {
     for sig in "${sig_algs[@]}"; do
 
         # Generate CA cert and key alongside server cert and key for current PQC signature algorithm
-        "$open_ssl_path/bin/openssl" req -x509 -new -newkey $sig -keyout "$pqc_cert_dir/$sig-CA.key" \
-            -out "$pqc_cert_dir/$sig-CA.crt" -nodes -subj "/CN=oqstest $sig CA" -days 365 -config "$open_ssl_path/openssl.cnf"
+        "$openssl_path/bin/openssl" req -x509 -new -newkey $sig -keyout "$pqc_cert_dir/$sig-CA.key" \
+            -out "$pqc_cert_dir/$sig-CA.crt" -nodes -subj "/CN=oqstest $sig CA" -days 365 -config "$openssl_path/openssl.cnf"
 
-        "$open_ssl_path/bin/openssl" req -new -newkey $sig -keyout "$pqc_cert_dir/$sig-srv.key" \
-            -out "$pqc_cert_dir/$sig-srv.csr" -nodes -subj "/CN=oqstest $sig server" -config "$open_ssl_path/openssl.cnf"
+        "$openssl_path/bin/openssl" req -new -newkey $sig -keyout "$pqc_cert_dir/$sig-srv.key" \
+            -out "$pqc_cert_dir/$sig-srv.csr" -nodes -subj "/CN=oqstest $sig server" -config "$openssl_path/openssl.cnf"
 
-        "$open_ssl_path/bin/openssl" x509 -req -in "$pqc_cert_dir/$sig-srv.csr" \
+        "$openssl_path/bin/openssl" x509 -req -in "$pqc_cert_dir/$sig-srv.csr" \
             -out "$pqc_cert_dir/$sig-srv.crt" -CA "$pqc_cert_dir/$sig-CA.crt" -CAkey "$pqc_cert_dir/$sig-CA.key" -CAcreateserial -days 365
     
     done
@@ -178,13 +176,13 @@ function hybrid_pqc_keygen() {
     for sig in "${hybrid_sig_algs[@]}"; do
 
         # Generate CA cert and key alongside server cert and key for current Hybrid-PQC signature algorithm
-        "$open_ssl_path/bin/openssl" req -x509 -new -newkey $sig -keyout "$hybrid_cert_dir/$sig-CA.key" \
-            -out "$hybrid_cert_dir/$sig-CA.crt" -nodes -subj "/CN=oqstest $sig CA" -days 365 -config "$open_ssl_path/openssl.cnf"
+        "$openssl_path/bin/openssl" req -x509 -new -newkey $sig -keyout "$hybrid_cert_dir/$sig-CA.key" \
+            -out "$hybrid_cert_dir/$sig-CA.crt" -nodes -subj "/CN=oqstest $sig CA" -days 365 -config "$openssl_path/openssl.cnf"
 
-        "$open_ssl_path/bin/openssl" req -new -newkey $sig -keyout "$hybrid_cert_dir/$sig-srv.key" \
-            -out "$hybrid_cert_dir/$sig-srv.csr" -nodes -subj "/CN=oqstest $sig server" -config "$open_ssl_path/openssl.cnf"
+        "$openssl_path/bin/openssl" req -new -newkey $sig -keyout "$hybrid_cert_dir/$sig-srv.key" \
+            -out "$hybrid_cert_dir/$sig-srv.csr" -nodes -subj "/CN=oqstest $sig server" -config "$openssl_path/openssl.cnf"
 
-        "$open_ssl_path/bin/openssl" x509 -req -in "$hybrid_cert_dir/$sig-srv.csr" \
+        "$openssl_path/bin/openssl" x509 -req -in "$hybrid_cert_dir/$sig-srv.csr" \
             -out "$hybrid_cert_dir/$sig-srv.crt" -CA "$hybrid_cert_dir/$sig-CA.crt" -CAkey "$hybrid_cert_dir/$sig-CA.key" -CAcreateserial -days 365
 
     done

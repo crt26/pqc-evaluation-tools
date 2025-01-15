@@ -1,5 +1,5 @@
 """
-Copyright (c) 2024 Callum Turino
+Copyright (c) 2025 Callum Turino
 SPDX-License-Identifier: MIT
 
 This is a utility script which is used to get the algorithms which are supported by the Liboqs library and the OQS-Provider library.
@@ -206,14 +206,14 @@ def get_tls_pqc_algs():
 
         # Set the various output filenames depending on the current algorithm type
         if alg_type == "kem":
-            alg_list_file = os.path.join(output_dir, "ssl-kem-algs.txt")
-            speed_list_file = os.path.join(output_dir, "ssl-speed-kem-algs.txt")
-            hybrid_alg_list_file = os.path.join(output_dir, "ssl-hybr-kem-algs.txt")
+            alg_list_file = os.path.join(output_dir, "tls-kem-algs.txt")
+            speed_list_file = os.path.join(output_dir, "tls-speed-kem-algs.txt")
+            hybrid_alg_list_file = os.path.join(output_dir, "tls-hybr-kem-algs.txt")
         
         else:
-            alg_list_file = os.path.join(output_dir, "ssl-sig-algs.txt")
-            speed_list_file = os.path.join(output_dir, "ssl-speed-sig-algs.txt")
-            hybrid_alg_list_file = os.path.join(output_dir, "ssl-hybr-sig-algs.txt")
+            alg_list_file = os.path.join(output_dir, "tls-sig-algs.txt")
+            speed_list_file = os.path.join(output_dir, "tls-speed-sig-algs.txt")
+            hybrid_alg_list_file = os.path.join(output_dir, "tls-hybr-sig-algs.txt")
 
         # Write out the algorithms to the list file
         write_to_file(algs, alg_list_file)
@@ -231,8 +231,8 @@ def set_tls_classic_algs():
 
     # Set the output directory and text file names
     output_dir = os.path.join(root_dir, "test-data", "alg-lists")
-    kem_list_file = os.path.join(output_dir, "classic-ssl-kem-algs.txt")
-    sig_list_file = os.path.join(output_dir, "classic-ssl-sig-algs.txt")
+    kem_list_file = os.path.join(output_dir, "classic-tls-kem-algs.txt")
+    sig_list_file = os.path.join(output_dir, "classic-tls-sig-algs.txt")
     
     # Write out the classic algorithms to the list files
     write_to_file(classic_kems, kem_list_file)

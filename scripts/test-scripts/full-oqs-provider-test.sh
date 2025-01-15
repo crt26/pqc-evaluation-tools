@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Copyright (c) 2024 Callum Turino
+# Copyright (c) 2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
 # Script for controlling the OQS-Provider benchmark testing, it takes in the test parameters and calls the relevant test scripts.
 # The script will also determine which test machine it is being executed on within the test parameter collection functions. 
 # This script will  need to be executed on both machines to operate. Furthermore, the keys for the test will need to be generated first using 
-# the oqsssl-generate-keys.sh script and transferred to the client machine before the tests are ran. 
+# the oqsprovider-generate-keys.sh script and transferred to the client machine before the tests are ran. 
 # If executing both server and client on the same machine, this is not needed as the client can access the keys directly.
 
 #-------------------------------------------------------------------------------------------------------------------------------
@@ -48,15 +48,13 @@ function setup_base_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declaring global library path files
-    open_ssl_path="$libs_dir/openssl_3.2"
-    liboqs_path="$libs_dir/liboqs"
-    oqs_openssl_path="$libs_dir/oqs-openssl"
+    openssl_path="$libs_dir/openssl_3.2"
 
-    # Exporting openssl lib path
-    if [[ -d "$open_ssl_path/lib64" ]]; then
-        openssl_lib_path="$open_ssl_path/lib64"
+    # Exporting OpenSSL library path
+    if [[ -d "$openssl_path/lib64" ]]; then
+        openssl_lib_path="$openssl_path/lib64"
     else
-        openssl_lib_path="$open_ssl_path/lib"
+        openssl_lib_path="$openssl_path/lib"
     fi
 
     export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
@@ -73,7 +71,7 @@ function set_tls_paths() {
     # to the test and exporting the paths to the environment
 
     # Setting results path based on assigned machine number for results
-    export MACHINE_RESULTS_PATH="$test_data_dir/up-results/oqs-openssl/machine-$MACHINE_NUM"
+    export MACHINE_RESULTS_PATH="$test_data_dir/up-results/oqs-provider/machine-$MACHINE_NUM"
     export MACHINE_HANDSHAKE_RESULTS="$MACHINE_RESULTS_PATH/handshake-results"
     export MACHINE_SPEED_RESULTS="$MACHINE_RESULTS_PATH/speed-results"
 
@@ -402,7 +400,7 @@ function check_transferred_keys() {
                 break;;
 
             [Nn]* ) 
-                echo -e "\nPlease generate the certs and keys needed for testing using oqsssl-generate-keys.sh and transfer to client machine before testing"
+                echo -e "\nPlease generate the certs and keys needed for testing using oqsprovider-generate-keys.sh and transfer to client machine before testing"
                 echo -e "\nExiting test..."
                 sleep 2
                 exit 0
@@ -462,7 +460,7 @@ function run_tests() {
         export CLIENT_IP="$machine_ip"
 
         # Running test script
-        $test_scripts_path/oqsssl-test-server.sh 
+        $test_scripts_path/oqsprovider-test-server.sh 
         #>> "$root_dir/server-test-output.txt" - uncomment to save output for debugging
 
     else
@@ -476,7 +474,7 @@ function run_tests() {
         echo -e "####################################\n"
 
         # Running handshake test script
-        $test_scripts_path/oqsssl-test-client.sh 
+        $test_scripts_path/oqsprovider-test-client.sh 
         #>> "$root_dir/client-test-output.txt" - uncomment to save output for debugging
 
         # Outputting TLS Speed test task to the terminal if machine is client
@@ -485,7 +483,7 @@ function run_tests() {
         echo -e "##########################\n"
         
         # Running OQS-Provider speed test script
-        $test_scripts_path/oqsssl-test-speed.sh
+        $test_scripts_path/oqsprovider-test-speed.sh
     
     fi
 

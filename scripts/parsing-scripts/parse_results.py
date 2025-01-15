@@ -1,5 +1,5 @@
 """
-Copyright (c) 2024 Callum Turino
+Copyright (c) 2025 Callum Turino
 SPDX-License-Identifier: MIT
 
 This script controls the various parsing scripts for the results which have been outputted
@@ -10,7 +10,7 @@ alongside taking in the test parameters used during the benchmarking to output f
 
 #-----------------------------------------------------------------------------------------------------------
 from liboqs_parse import parse_liboqs
-from oqs_openssl_parse import parse_openssl
+from oqs_provider_parse import parse_oqs_provider
 import os
 import sys
 
@@ -76,16 +76,16 @@ def main():
     root_dir = setup_base_env()
 
     # Outputting greeting message
-    print(f"PQC-EVal-Tools Results Parsing Tool\n\n")
+    print(f"PQC-Evaluation-Tools Results Parsing Tool\n\n")
 
     # Getting parsing mode from user
     while True:
 
         # Outputting parsing options to user and storing input
         print("Please select one of the following Parsing options:")
-        print("1 - Parse liboqs results")
-        print("2 - Parse OQS-OpenSSL results")
-        print("3 - Parse both liboqs and oqs-openssl results")
+        print("1 - Parse Liboqs results")
+        print("2 - Parse OQS-Provider results")
+        print("3 - Parse both Liboqs and OQS-Provider results")
         print("4 - Exit")
         user_parse_mode = input("Enter your choice (1-4): ")
         print(f"\n")
@@ -94,27 +94,27 @@ def main():
         if user_parse_mode == '1':
 
             # Outputting selected parsing option
-            print("Parsing only liboqs results selected")
+            print("Parsing only Liboqs results selected")
 
             # Getting test options used for the benchmarking
             print(f"Setting total liboqs machine results\n")
             liboqs_test_opts = get_test_opts(root_dir)
 
-            # Calling parsing script for liboqs results
+            # Calling parsing script for Liboqs results
             parse_liboqs(liboqs_test_opts)
             break
         
         elif user_parse_mode == '2':
 
             # Outputting selected parsing option
-            print("Parsing only oqs-openssl results selected")
+            print("Parsing only OQS-Provider results selected")
 
             # Getting test options used for the benchmarking
-            print(f"Setting total oqs-openssl machine results\n")
-            openssl_test_opts = get_test_opts(root_dir)
+            print(f"Setting total OQS-Provider machine results\n")
+            oqs_provider_test_opts = get_test_opts(root_dir)
 
-            # Calling parsing script for oqs-provider TLS results
-            parse_openssl(openssl_test_opts)
+            # Calling parsing script for OQS-Provider TLS results
+            parse_oqs_provider(oqs_provider_test_opts)
             break
 
         elif user_parse_mode == '3':
@@ -123,19 +123,19 @@ def main():
             print("Parsing both result sets selected")
 
             # Getting test options used for the benchmarking
-            print(f"Setting total liboqs machine results\n")
+            print(f"Setting total Liboqs machine results\n")
             liboqs_test_opts = get_test_opts(root_dir)
 
-            print(f"\nSetting total oqs-openssl machine results\n")
-            openssl_test_opts = get_test_opts(root_dir)
+            print(f"\nSetting total OQS-Provider machine results\n")
+            oqs_provider_test_opts = get_test_opts(root_dir)
             
-            # Parsing liboqs results
+            # Parsing Liboqs results
             parse_liboqs(liboqs_test_opts)
             print("\nLiboqs Parsing complete\n")
 
-            # Parsing OQS-OpenSSL Results
-            parse_openssl(openssl_test_opts)
-            print("\nOQS-OpenSSL Parsing complete\n")
+            # Parsing OQS-Provider Results
+            parse_oqs_provider(oqs_provider_test_opts)
+            print("\nOQS-Provider Parsing complete\n")
             break
 
         elif user_parse_mode == '4':

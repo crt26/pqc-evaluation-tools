@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Copyright (c) 2024 Callum Turino
+# Copyright (c) 2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
 # Script ran from the client machine for testing the computational efficiency of the PQC algorithms when integrated into OpenSSL. 
-# The script will take in the test parameters from the OQS-OpenSSL test control script and gather the speed metrics. The script will then
+# The script will take in the test parameters from the OQS-Provider test control script and gather the speed metrics. The script will then
 # output the results, using the assigned machine ID stored in the environment from the main full-pqc-tls-test.sh script.
 # This script consists of three main tests, the PQC TLS handshake tests, Hybrid-PQC TLS handshake tests, and the Classic TLS handshake tests.
 
@@ -48,10 +48,9 @@ function setup_base_env() {
 
     # Declaring global library path files
     open_ssl_path="$libs_dir/openssl_3.2"
-    oqs_openssl_path="$libs_dir/oqs-openssl"
-    provider_path="$libs_dir/oqs-openssl/lib"
+    provider_path="$libs_dir/oqs-provider/lib"
 
-    # Exporting openssl lib path
+    # Exporting OpenSSL library path
     if [[ -d "$open_ssl_path/lib64" ]]; then
         openssl_lib_path="$open_ssl_path/lib64"
     else
@@ -61,10 +60,10 @@ function setup_base_env() {
     export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
 
     # Declaring static algorithm arrays and alg-list filepaths
-    kem_alg_file="$test_data_dir/alg-lists/ssl-kem-algs.txt"
-    sig_alg_file="$test_data_dir/alg-lists/ssl-sig-algs.txt"
-    hybrid_kem_alg_file="$test_data_dir/alg-lists/ssl-hybr-kem-algs.txt"
-    hybrid_sig_alg_file="$test_data_dir/alg-lists/ssl-hybr-sig-algs.txt"
+    kem_alg_file="$test_data_dir/alg-lists/tls-kem-algs.txt"
+    sig_alg_file="$test_data_dir/alg-lists/tls-sig-algs.txt"
+    hybrid_kem_alg_file="$test_data_dir/alg-lists/tls-hybr-kem-algs.txt"
+    hybrid_sig_alg_file="$test_data_dir/alg-lists/tls-hybr-sig-algs.txt"
 
 }
 
@@ -132,11 +131,11 @@ function main() {
     for run_num in $(seq 1 $NUM_RUN); do
 
         # Creating output names for current run
-        kem_output_filename="$PQC_SPEED/ssl-speed-kem-$run_num.txt"
-        sig_output_filename="$PQC_SPEED/ssl-speed-sig-$run_num.txt"
-        hybrid_kem_output_filename="$HYBRID_SPEED/ssl-speed-hybrid-kem-$run_num.txt"
-        hybrid_sig_output_filename="$HYBRID_SPEED/ssl-speed-hybrid-sig-$run_num.txt"
-        classic_output_filename="$CLASSIC_SPEED/ssl-speed-classic-$run_num.txt"
+        kem_output_filename="$PQC_SPEED/tls-speed-kem-$run_num.txt"
+        sig_output_filename="$PQC_SPEED/tls-speed-sig-$run_num.txt"
+        hybrid_kem_output_filename="$HYBRID_SPEED/tls-speed-hybrid-kem-$run_num.txt"
+        hybrid_sig_output_filename="$HYBRID_SPEED/tls-speed-hybrid-sig-$run_num.txt"
+        classic_output_filename="$CLASSIC_SPEED/tls-speed-classic-$run_num.txt"
 
         # PQC sig and kem algs speed tests
         "$open_ssl_path/bin/openssl" speed -seconds $TIME_NUM -provider-path $provider_path -provider oqsprovider  $kem_algs_string > $kem_output_filename

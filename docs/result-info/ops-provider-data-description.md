@@ -1,6 +1,6 @@
-# Description of OQS-OpenSSL Result Data
+# Description of OQS-Provider Result Data
 
-A description of the headers for the OQS-OpenSSL data tables and what they mean are as follows:
+A description of the headers for the OQS-Provider data tables generated using the OpenSSL benchmarking tools and what they mean are as follows:
 
 1. **Connections in User Time:** This is the number of successful TLS handshakes that were established during the user/CPU time. This gives you a raw number of handshakes per CPU second, which can be useful for understanding the efficiency of the algorithm.
 
