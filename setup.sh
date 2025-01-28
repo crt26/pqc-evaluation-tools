@@ -119,6 +119,40 @@ function configure_dirs() {
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
+function get_encoder_build_option() {
+    # Helper function for getting if the KEM encoders flag should be passed to the OQS-Provider build process. This is to allow the user to
+    # This option is given due to the fact that if the KEM encoders options is set to ON, it can increase the size of the OQS-Provider build
+
+    # Outputting current task to terminal
+    echo -e "\nConfiguring OQS-Provider Build Options:\n"
+
+    # Set the Default Encoder flag value to OFF
+    encoder_flag="OFF"
+
+    # Check if the user would like to enable the KEM encoders option in OQS-Provider build
+    while true; do
+        read -p "Would you like to enable the KEM encoders option in the OQS-Provider build? (y/n): " user_input
+
+        case $user_input in
+
+            [Yy]* )
+                encoder_flag="ON"
+                break;;
+
+            [Nn]* )
+                break;;
+                
+            * )
+                echo -e "Please answer y or n\n"
+                ;;
+
+        esac
+    
+    done
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
 function dependency_install() {
     # Function for checking if there any missing dependencies required for the testing
 
@@ -196,40 +230,6 @@ function handle_oqs_version() {
 
     fi
     
-}
-
-#-------------------------------------------------------------------------------------------------------------------------------
-function get_encoder_build_option() {
-    # Helper function for getting if the KEM encoders flag should be passed to the OQS-Provider build process. This is to allow the user to
-    # This option is given due to the fact that if the KEM encoders options is set to ON, it can increase the size of the OQS-Provider build
-
-    # Outputting current task to terminal
-    echo -e "\nConfiguring OQS-Provider Build Options:\n"
-
-    # Set the Default Encoder flag value to OFF
-    encoder_flag="OFF"
-
-    # Check if the user would like to enable the KEM encoders option in OQS-Provider build
-    while true; do
-        read -p "Would you like to enable the KEM encoders option in the OQS-Provider build? (y/n): " user_input
-
-        case $user_input in
-
-            [Yy]* )
-                encoder_flag="ON"
-                break;;
-
-            [Nn]* )
-                break;;
-
-            * )
-                echo -e "Please answer y or n\n"
-                ;;
-
-        esac
-    
-    done
-
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
@@ -593,6 +593,19 @@ function main() {
         esac
     
     done
+
+    # Configure the flag file the KEM encoders option in the OQS-Provider build for use by the testing scripts
+    if [ "$encoder_flag" == "ON" ]; then
+        touch "$tmp_dir/kem_encoders_enabled.flag"
+    
+    elif [ "$encoder_flag" == "OFF" ]; then
+
+        # Remove flag file if present in the tmp directory as the KEM encoders are disabled
+        if [ -f "$tmp_dir/kem_encoders_enabled.flag" ]; then
+            rm "$tmp_dir/kem_encoders_enabled.flag"
+        fi
+
+    fi
 
     # Outputting there was an issue with the python utility script that creates the alg-list files
     if [ "$py_exit_status" -ne 0 ]; then
