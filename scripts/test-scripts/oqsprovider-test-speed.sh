@@ -47,7 +47,7 @@ function setup_base_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declaring global library path files
-    open_ssl_path="$libs_dir/openssl_3.2"
+    open_ssl_path="$libs_dir/openssl_3.4"
     provider_path="$libs_dir/oqs-provider/lib"
 
     # Exporting OpenSSL library path

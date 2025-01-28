@@ -45,7 +45,7 @@ function setup_base_env() {
     test_scripts_path="$root_dir/scripts/test-scripts"
 
     # Declaring global library path files
-    openssl_path="$libs_dir/openssl_3.2"
+    openssl_path="$libs_dir/openssl_3.4"
     liboqs_path="$libs_dir/liboqs"
     oqs_provider_path="$libs_dir/oqs-provider"
 
