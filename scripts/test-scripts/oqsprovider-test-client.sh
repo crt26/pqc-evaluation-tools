@@ -5,7 +5,7 @@
 
 # Client script for the TLS handshake tests, this script will coordinate with the server machine to conduct the tests
 # using all the combinations of PQC and classic sig/kem using the global test parameters provided. 
-# This script consists of three main tests, the PQC TLS handshake tests, Hybrid-PQC TLS handshake tests, and the Classic TLS handshake tests. 
+# This script consists of three main tests, the PQC TLS handshake tests, Hybrid-PQC TLS handshake tests, and the Classic TLS handshake tests.
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function setup_base_env() {
@@ -119,9 +119,10 @@ function set_test_env() {
         # Set configurations in openssl.cnf file for PQC testing
         "$util_scripts/configure-openssl-cnf.sh" $configure_mode
 
-    elif [ "$test_type" -eq 1 ]; then # probably not needed and can remove
+    elif [ "$test_type" -eq 1 ]; then
 
         # Set configurations in openssl.cnf file for Classic testing
+        current_group="ffdhe2048:ffdhe3072:ffdhe4096:prime256v1:secp384r1:secp521r1"
         "$util_scripts/configure-openssl-cnf.sh" $configure_mode
 
     elif [ "$test_type" -eq 2 ]; then
