@@ -5,7 +5,7 @@
 
 # Client script for the TLS handshake tests, this script will coordinate with the server machine to conduct the tests
 # using all the combinations of PQC and classic sig/kem using the global test parameters provided. 
-# This script consists of three main tests, the PQC TLS handshake tests, Hybrid-PQC TLS handshake tests, and the Classic TLS handshake tests. 
+# This script consists of three main tests, the PQC TLS handshake tests, Hybrid-PQC TLS handshake tests, and the Classic TLS handshake tests.
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function setup_base_env() {
@@ -46,7 +46,7 @@ function setup_base_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declaring global library path files
-    openssl_path="$libs_dir/openssl_3.2"
+    openssl_path="$libs_dir/openssl_3.4"
     provider_path="$libs_dir/oqs-provider/lib"
 
     # Declaring key storage dir paths
@@ -119,9 +119,10 @@ function set_test_env() {
         # Set configurations in openssl.cnf file for PQC testing
         "$util_scripts/configure-openssl-cnf.sh" $configure_mode
 
-    elif [ "$test_type" -eq 1 ]; then # probably not needed and can remove
+    elif [ "$test_type" -eq 1 ]; then
 
         # Set configurations in openssl.cnf file for Classic testing
+        current_group="ffdhe2048:ffdhe3072:ffdhe4096:prime256v1:secp384r1:secp521r1"
         "$util_scripts/configure-openssl-cnf.sh" $configure_mode
 
     elif [ "$test_type" -eq 2 ]; then
@@ -153,7 +154,7 @@ function set_test_env() {
 
     # Export default group env var for openssl.cnf
     export DEFAULT_GROUPS=$current_group
-
+    
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
@@ -364,7 +365,9 @@ function pqc_tests() {
                     # Performing testing until successful or fail counter reaches limit
                     while true; do
 
+                        # Debug line for checking server connection with current sig/kem combination. To use uncomment line and then comment out the s_time line
                         #"$openssl_path/bin/openssl" s_client -connect $SERVER_IP:4433 -CAfile $cert_file -provider default -provider oqsprovider -provider-path $provider_path -groups "$kem"
+
                         # Running OpenSSL s_time process with current test parameters
                         "$openssl_path/bin/openssl" s_time -connect $SERVER_IP:4433 -CAfile $cert_file -time $TIME_NUM  -verify 1 \
                             -provider default -provider oqsprovider -provider-path $provider_path > $handshake_dir/$output_name

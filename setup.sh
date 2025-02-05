@@ -18,14 +18,14 @@ alg_lists_dir="$test_data_dir/alg-lists"
 util_scripts="$root_dir/scripts/utility-scripts"
 
 # Declaring global library path files
-openssl_path="$libs_dir/openssl_3.2"
+openssl_path="$libs_dir/openssl_3.4"
 liboqs_path="$libs_dir/liboqs"
 oqs_provider_path="$libs_dir/oqs-provider"
 
 # Declaring global source-code path files
 liboqs_source="$tmp_dir/liboqs-source"
 oqs_provider_source="$tmp_dir/oqs-provider-source"
-openssl_source="$tmp_dir/openssl-3.2.1"
+openssl_source="$tmp_dir/openssl-3.4.0"
 
 # Setting Global flag variables
 install_type=0 # 0=Liboqs-only, 1=liboqs+OQS-Provider, 2=OQS-Provider-only
@@ -119,6 +119,40 @@ function configure_dirs() {
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
+function get_encoder_build_option() {
+    # Helper function for getting if the KEM encoders flag should be passed to the OQS-Provider build process. This is to allow the user to
+    # This option is given due to the fact that if the KEM encoders options is set to ON, it can increase the size of the OQS-Provider build
+
+    # Outputting current task to terminal
+    echo -e "\nConfiguring OQS-Provider Build Options:\n"
+
+    # Set the Default Encoder flag value to OFF
+    encoder_flag="OFF"
+
+    # Check if the user would like to enable the KEM encoders option in OQS-Provider build
+    while true; do
+        read -p "Would you like to enable the KEM encoders option in the OQS-Provider build? (y/n): " user_input
+
+        case $user_input in
+
+            [Yy]* )
+                encoder_flag="ON"
+                break;;
+
+            [Nn]* )
+                break;;
+                
+            * )
+                echo -e "Please answer y or n\n"
+                ;;
+
+        esac
+    
+    done
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
 function dependency_install() {
     # Function for checking if there any missing dependencies required for the testing
 
@@ -200,7 +234,7 @@ function handle_oqs_version() {
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function openssl_build() {
-    # Function for building the required version of OpenSSL (3.2.1) for the testing tools
+    # Function for building the required version of OpenSSL (3.4.0) for the testing tools
 
     # Setting thread count for build and Declaring conf file changes array
     threads=$(nproc)
@@ -229,13 +263,13 @@ function openssl_build() {
 
         # Outputting current task to terminal
         echo -e "\n######################################"
-        echo "Downloading and Building OpenSSL-3.2.1"
+        echo "Downloading and Building OpenSSL-3.4.0"
         echo -e "######################################\n"
 
         # Getting required version of openssl and extracting
-        wget -O "$tmp_dir/openssl-3.2.1.tar.gz" https://www.openssl.org/source/openssl-3.2.1.tar.gz
-        tar -xf "$tmp_dir/openssl-3.2.1.tar.gz" -C $tmp_dir
-        rm "$tmp_dir/openssl-3.2.1.tar.gz"
+        wget -O "$tmp_dir/openssl-3.4.0.tar.gz" https://github.com/openssl/openssl/releases/download/openssl-3.4.0/openssl-3.4.0.tar.gz
+        tar -xf "$tmp_dir/openssl-3.4.0.tar.gz" -C $tmp_dir
+        rm "$tmp_dir/openssl-3.4.0.tar.gz"
 
         # Building required version of OpenSSL in testing-repo directory only
         echo "Building OpenSSL Library"
@@ -258,8 +292,9 @@ function openssl_build() {
 
         # Testing if the new version has correctly installed
         test_output=$("$openssl_path/bin/openssl" version)
+        echo "test_output: $test_output"
 
-        if [[ "$test_output" != "OpenSSL 3.2.1 30 Jan 2024 (Library: OpenSSL 3.2.1 30 Jan 2024)" ]]; then
+        if [[ "$test_output" != "OpenSSL 3.4.0 22 Oct 2024 (Library: OpenSSL 3.4.0 22 Oct 2024)" ]]; then
             echo -e "\n\nERROR: installing required OpenSSL version failed, please verify install process"
             exit 1
         fi
@@ -422,7 +457,7 @@ function oqs_provider_build() {
 
     # Building OQS-Provider library
     cmake -S $oqs_provider_source -B "$oqs_provider_path" \
-        -DCMAKE_INSTALL_PREFIX="$oqs_provider_path" -DOPENSSL_ROOT_DIR="$openssl_path" -Dliboqs_DIR="$liboqs_path/lib/cmake/liboqs"
+        -DCMAKE_INSTALL_PREFIX="$oqs_provider_path" -DOPENSSL_ROOT_DIR="$openssl_path" -Dliboqs_DIR="$liboqs_path/lib/cmake/liboqs" -DOQS_KEM_ENCODERS="$encoder_flag"
 
     cmake --build "$oqs_provider_path" -- -j $(nproc)
     cmake --install "$oqs_provider_path"
@@ -458,7 +493,7 @@ function main() {
                 echo "Liboqs Only Install Selected"
                 echo -e "############################\n"
 
-                # Setting install type, setting up dirs, and install dependencies
+                # Configuring setup environment and installing dependencies
                 install_type=0
                 configure_dirs
                 dependency_install
@@ -482,9 +517,10 @@ function main() {
                 echo "Liboqs and OQS-Provider Install Selected"
                 echo -e "########################################\n"
 
-                # Setting install type, setting up dirs, and install dependencies
+                # Configuring setup environment and installing dependencies
                 install_type=1
                 configure_dirs
+                get_encoder_build_option
                 dependency_install
 
                 # Building libraries and cleaning up
@@ -505,13 +541,14 @@ function main() {
                 echo -e "\n##################################"
                 echo "OQS-Provider Only Install Selected"
                 echo -e "##################################\n"
-                
-                # Setting install type, setting up dirs, and install dependencies
+
+                # Configuring setup environment and installing dependencies
                 install_type=2
                 configure_dirs
+                get_encoder_build_option
                 dependency_install
 
-                # Building OpenSSL 3.2.1
+                # Building OpenSSL 3.4.0
                 openssl_build
 
                 # Check if liboqs is present and install if not
@@ -556,6 +593,19 @@ function main() {
         esac
     
     done
+
+    # Configure the flag file the KEM encoders option in the OQS-Provider build for use by the testing scripts
+    if [ "$encoder_flag" == "ON" ]; then
+        touch "$tmp_dir/kem_encoders_enabled.flag"
+    
+    elif [ "$encoder_flag" == "OFF" ]; then
+
+        # Remove flag file if present in the tmp directory as the KEM encoders are disabled
+        if [ -f "$tmp_dir/kem_encoders_enabled.flag" ]; then
+            rm "$tmp_dir/kem_encoders_enabled.flag"
+        fi
+
+    fi
 
     # Outputting there was an issue with the python utility script that creates the alg-list files
     if [ "$py_exit_status" -ne 0 ]; then

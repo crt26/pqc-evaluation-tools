@@ -48,7 +48,7 @@ function setup_base_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declaring global library path files
-    openssl_path="$libs_dir/openssl_3.2"
+    openssl_path="$libs_dir/openssl_3.4"
 
     # Exporting OpenSSL library path
     if [[ -d "$openssl_path/lib64" ]]; then
@@ -497,7 +497,7 @@ function main() {
     setup_base_env
 
     # Outputting greeting message to the terminal
-    echo -e "PQC OQS-Provider Test Suite (OpenSSL_3.2.1)"
+    echo -e "PQC OQS-Provider Test Suite (OpenSSL_3.4.0)"
 
     # Getting test options and perform tests 
     configure_test_options

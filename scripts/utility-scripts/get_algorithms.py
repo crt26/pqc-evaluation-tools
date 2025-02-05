@@ -60,7 +60,7 @@ def setup_base_env():
 
     # Set the path to the liboqs build directory and the openssl path
     liboqs_build_dir = os.path.join(root_dir, "lib", "liboqs", "build", "tests")
-    openssl_path = os.path.join(root_dir, "lib", "openssl_3.2")
+    openssl_path = os.path.join(root_dir, "lib", "openssl_3.4")
     openssl_lib_dir = ""
 
     # Check which OpenSSL lib directory to use depending on the system
@@ -194,9 +194,9 @@ def get_tls_pqc_algs():
 
         # Run the openssl binary with the required flags to get the algorithms supported and capture the output
         process = subprocess.Popen(
-            [openssl_bin, "list", f"-{alg_type}-algorithms", "-provider", "oqsprovider"], 
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.PIPE, 
+            [openssl_bin, "list", f"-{alg_type}-algorithms", "-provider", "oqsprovider"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             universal_newlines=True
         )
         stdout, stderr = process.communicate()

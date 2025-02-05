@@ -46,7 +46,7 @@ function setup_base_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declaring global library path files
-    openssl_path="$libs_dir/openssl_3.2"
+    openssl_path="$libs_dir/openssl_3.4"
     provider_path="$libs_dir/oqs-provider/lib"
 
     # Declaring key storage dir paths
@@ -119,7 +119,10 @@ function set_test_env() {
         # Set configurations in openssl.cnf file for PQC testing
         "$util_scripts/configure-openssl-cnf.sh" $configure_mode
 
-    elif [ "$test_type" -eq 1 ]; then # probably not needed and can remove
+    elif [ "$test_type" -eq 1 ]; then
+
+        # Set configurations in openssl.cnf file for Classic testing
+        current_group="ffdhe2048:ffdhe3072:ffdhe4096:prime256v1:secp384r1:secp521r1"
 
         # Set configurations in openssl.cnf file for Classic testing
         "$util_scripts/configure-openssl-cnf.sh" $configure_mode
@@ -153,7 +156,7 @@ function set_test_env() {
 
     # Export default group env var for openssl.cnf
     export DEFAULT_GROUPS=$current_group
-
+    
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
@@ -267,8 +270,12 @@ function classic_tests {
                     classic_key_file="$classic_cert_dir/$classic_alg-srv.key"
 
                     # Start ECC test server processes
+                    # "$openssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 \
+                    #     -curves $classic_alg -ciphersuites "$cipher" -accept 4433 &
+
                     "$openssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 \
-                        -curves $classic_alg -ciphersuites "$cipher" -accept 4433 &
+                        -named_curve $classic_alg -ciphersuites "$cipher" -accept 4433 &
+
                     server_pid=$!
 
                 else
@@ -280,6 +287,7 @@ function classic_tests {
                     # Start RSA test server processes
                     "$openssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 -ciphersuites $cipher -accept 4433 &
                     server_pid=$!
+                    
 
                 fi
 
