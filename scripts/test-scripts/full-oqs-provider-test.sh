@@ -497,7 +497,7 @@ function main() {
     setup_base_env
 
     # Outputting greeting message to the terminal
-    echo -e "PQC OQS-Provider Test Suite (OpenSSL_3.2.1)"
+    echo -e "PQC OQS-Provider Test Suite (OpenSSL_3.4.0)"
 
     # Getting test options and perform tests 
     configure_test_options

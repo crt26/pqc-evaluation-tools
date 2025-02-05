@@ -138,5 +138,4 @@ These scripts together enable the execution of the Full PQC TLS Test, with each 
 - [Latest OQS-Provider Release Notes](https://github.com/open-quantum-safe/oqs-provider/blob/main/RELEASE.md)
 - [OQS Benchmarking Webpage](https://openquantumsafe.org/benchmarking/)
 - [OQS Profiling Project](https://openquantumsafe.org/benchmarking/)
-- [OpenSSL(3.2.1) Documentation](https://www.openssl.org/docs/man3.2/index.html)
-
+- [OpenSSL(3.4.0) Documentation](https://docs.openssl.org/3.4/)

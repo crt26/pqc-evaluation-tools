@@ -31,7 +31,7 @@ The project provides automation for:
 
 - Gathering PQC computational performance data, including **CPU** and **memory usage** metrics using the **Liboqs** library.
 
-- Gathering Networking performance data for the integration of PQC schemes in the **TLS 1.3**  protocol by utilising the **OpenSSL 3.2.1** and **OQS-Provider** libraries.
+- Gathering Networking performance data for the integration of PQC schemes in the **TLS 1.3**  protocol by utilising the **OpenSSL 3.4.0** and **OQS-Provider** libraries.
 
 - Coordinated testing of PQC TLS handshakes using either the loopback interface or a physical network connection between a server and client device.
 
@@ -86,7 +86,7 @@ This version of the repository has been fully tested using the following version
 
 - OQS Provider Version 0.8.0
 
-- OpenSSL Version 3.2.1
+- OpenSSL Version 3.4.0
 
 The repository is currently setup to pull the most up to date versions of the OQS projects and maintain use of the listed OpenSSL version above. This is to ensure the latest available algorithms can be tested and evaluated. Handling has been implemented to accommodate for any changes to the algorithms that are supported by the OQS libraries as newer versions are released.
 
@@ -129,7 +129,7 @@ When executing the setup script, you will be presented with three options:
 3. Build the OQS-Provider Library after a previous install of Liboqs
 
 
-The setup script will also handle the building of [OpenSSL 3.2.1](https://www.openssl.org/source/) within the pqc-eval-tools lib directory as this is required to utilise the OpenSSL provider functionality provided by OQS-Provider. This will be a separate build from the systems default OpenSSL installation and will not replace or interfere with those binaries.
+The setup script will also handle the building of [OpenSSL 3.4.0](https://www.openssl.org/source/) within the pqc-eval-tools lib directory as this is required to utilise the OpenSSL provider functionality provided by OQS-Provider. This will be a separate build from the systems default OpenSSL installation and will not replace or interfere with those binaries.
 
 Once all of the relevant options have been selected, the setup script will download, configure and build each of the libraries. Alongside, optimizing the builds for the current systems by automatically passing the relevant build parameters.
 
@@ -183,7 +183,7 @@ The test script can be executed using the following command:
 
 ### OQS-Provider Performance Testing
 
-This script is focused on benchmarking the performance of PQC and Hybrid-PQC algorithms when integrated within the OpenSSL (3.2.1) library via the OQS-Provider. The script firstly can test the computational efficiency of the PQC algorithms when integrated into the OpenSSL library. Alongside, how PQC/Hybrid-PQC algorithms perform when integrated into the TLS protocol by measuring empty TLS handshake performance. Furthermore, metrics for how classic algorithms perform when conducting the TLS handshake which can be used as a baseline to compare the PQC metrics against.  
+This script is focused on benchmarking the performance of PQC and Hybrid-PQC algorithms when integrated within the OpenSSL (3.4.0) library via the OQS-Provider. The script firstly can test the computational efficiency of the PQC algorithms when integrated into the OpenSSL library. Alongside, how PQC/Hybrid-PQC algorithms perform when integrated into the TLS protocol by measuring empty TLS handshake performance. Furthermore, metrics for how classic algorithms perform when conducting the TLS handshake which can be used as a baseline to compare the PQC metrics against.  
 
 The testing tool allows for tests to be conducted on a single machine or using two machines connected via a physical network. It should be noted that when using two physical machines the complexity of setup increases. However, regardless of which scenario, the process requires more additional steps then the Liboqs testing.
 
@@ -253,7 +253,7 @@ python3 get_algorithms.py 1
 ```
 
 ### configure-openssl-cnf.sh <!-- omit from toc --> 
-This script can change the configurations added to the OpenSSL 3.2.1 configuration file by commenting or uncommenting the lines which set what default groups OpenSSL uses. This is needed to allow both the `oqsprovider-generate-keys.sh` and the TLS performance testing scripts to operate correctly. This script is mainly used by the automated scripts, however it can be called manually using the following commands:
+This script can change the configurations added to the OpenSSL 3.4.0 configuration file by commenting or uncommenting the lines which set what default groups OpenSSL uses. This is needed to allow both the `oqsprovider-generate-keys.sh` and the TLS performance testing scripts to operate correctly. This script is mainly used by the automated scripts, however it can be called manually using the following commands:
 
 **configure-openssl-cnf.sh - Comment out Default Group Configurations:**
 ```
@@ -330,7 +330,7 @@ pqc-eval-tools/
 - [OQS-Provider GitHub Page](https://github.com/open-quantum-safe/oqs-provider)
 - [Latest liboqs Release Notes](https://github.com/open-quantum-safe/liboqs/blob/main/RELEASE.md)
 - [Latest OQS-Provider Release Notes](https://github.com/open-quantum-safe/oqs-provider/blob/main/RELEASE.md)
-- [OpenSSL(3.2.1) Documentation](https://www.openssl.org/docs/man3.2/index.html)
+- [OpenSSL(3.4.0) Documentation](https://docs.openssl.org/3.4/)
 - [TLS 1.3 RFC 8446](https://www.rfc-editor.org/rfc/rfc8446)
 
 ## License
