@@ -156,9 +156,7 @@ function set_test_env() {
 
     # Export default group env var for openssl.cnf
     export DEFAULT_GROUPS=$current_group
-
-    "$openssl_path/bin/openssl" list -key-exchange-algorithms
-
+    
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------

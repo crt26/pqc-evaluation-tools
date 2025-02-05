@@ -154,7 +154,7 @@ function set_test_env() {
 
     # Export default group env var for openssl.cnf
     export DEFAULT_GROUPS=$current_group
-
+    
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
