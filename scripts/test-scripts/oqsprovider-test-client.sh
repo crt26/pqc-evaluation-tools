@@ -164,10 +164,15 @@ function control_signal() {
     # Declare signal type local variable
     local type="$1"
 
-    # Determine signal type and send signal to server
+    # Wait until the client is listening on the control port before sending signal
+    until nc -z "$CLIENT_IP" 12346 > /dev/null 2>&1; do
+        :
+    done
+
+    # Determine signal type and send the control signal to the server
     if [ $type == "control" ]; then
 
-        # Send control signal
+        # Send control signal to the server until successful
         until nc -z -v -w 1 $SERVER_IP 12345 > /dev/null 2>&1; do
             exit_status=$?
             if [ $exit_status -ne 0 ]; then
@@ -179,7 +184,7 @@ function control_signal() {
 
     elif [ $type == "complete" ]; then
 
-        # Send test complete signals
+        # Send complete signal to the server until successful
         until echo "complete" | nc -n -w 1 $SERVER_IP 12345 > /dev/null 2>&1; do
             exit_status=$?
             if [ $exit_status -ne 0 ]; then
@@ -191,7 +196,7 @@ function control_signal() {
 
     elif [ $type == "failed" ]; then
 
-        # Send test failed signal
+        # Send failed signal to the server until successful
         until echo "failed" | nc -n -w 1 $SERVER_IP 12345 > /dev/null 2>&1; do
             exit_status=$?
             if [ $exit_status -ne 0 ]; then
@@ -203,7 +208,12 @@ function control_signal() {
 
    elif [ $type == "iteration_handshake" ]; then
 
-        # Sending ready signal to server
+        # Perform an additional check to ensure the server is listening on the control port
+        until nc -z "$SERVER_IP" 12345 2>/dev/null; do
+            :
+        done
+
+        # Sending ready signal to server until it is received 
         until echo "ready" | nc -n -w 1 $SERVER_IP 12345 > /dev/null 2>&1; do
             exit_status=$?
             if [ $exit_status -ne 0 ]; then

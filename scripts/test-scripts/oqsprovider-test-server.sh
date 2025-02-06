@@ -166,10 +166,15 @@ function control_signal() {
     # Declare signal type local variable
     local type="$1"
 
-    # Determine signal type and send signal to client
+    # Wait until the client is listening on the control port before sending signal
+    until nc -z "$CLIENT_IP" 12346 > /dev/null 2>&1; do
+        :
+    done
+
+    # Determine signal type and send the control signal to the client
     if [ $type == "normal" ]; then
 
-        # Send control signal
+        # Send normal signal to client until successful
         until nc -z -v -w 1 $CLIENT_IP 12346 > /dev/null 2>&1; do
             exit_status=$?
             if [ $exit_status -ne 0 ]; then
@@ -181,7 +186,7 @@ function control_signal() {
 
     elif [ $type == "ready" ]; then 
 
-        # Send server ready signal
+        # Send ready signal to client until successful
         until echo "ready" | nc -n -w 1 $CLIENT_IP 12346 > /dev/null 2>&1; do
             exit_status=$?
             if [ $exit_status -ne 0 ]; then
@@ -193,7 +198,7 @@ function control_signal() {
 
     elif [ $type == "skip" ]; then
 
-        # Send test skip signal
+        # Send skip signal to client until successful
         until echo "skip" | nc -n -w 1 $CLIENT_IP 12346 > /dev/null 2>&1; do
             exit_status=$?
             if [ $exit_status -ne 0 ]; then
@@ -215,6 +220,11 @@ function control_signal() {
                 break
             fi
 
+        done
+
+        # Perform an additional check to ensure the client is listening on the control port
+        until nc -z "$CLIENT_IP" 12346 > /dev/null 2>&1; do
+            :
         done
 
         # Sending ready message to client
