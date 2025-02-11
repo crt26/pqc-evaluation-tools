@@ -84,7 +84,7 @@ function setup_base_env() {
 #-------------------------------------------------------------------------------------------------------------------------------
 function set_test_env() {
     # Function for setting the default group depending on what type of tls test is being performed 
-    # Options are: (pqc,classic,hybrid) 0=pqc, 1=classic, 2=hybrid
+    # Options are: (pqc, hybrid-pqc, classic) 0=pqc, 1=hybrid, 2=classic
 
     # Declare local variables for arguments passed to function
     local test_type="$1"
@@ -121,12 +121,6 @@ function set_test_env() {
 
     elif [ "$test_type" -eq 1 ]; then
 
-        # Set configurations in openssl.cnf file for Classic testing
-        current_group="ffdhe2048:ffdhe3072:ffdhe4096:prime256v1:secp384r1:secp521r1"
-        "$util_scripts/configure-openssl-cnf.sh" $configure_mode
-
-    elif [ "$test_type" -eq 2 ]; then
-
         # Hybrid kem algorithms array
         kem_algs=()
         while IFS= read -r line; do
@@ -140,14 +134,22 @@ function set_test_env() {
         done < $hybrid_sig_alg_file
 
         # Populate current group array with PQC algs
-        for hyrb_kem_alg in "${kem_algs[@]}"; do
-            current_group+=":$hyrb_kem_alg"
+        for hybr_kem_alg in "${kem_algs[@]}"; do
+            current_group+=":$hybr_kem_alg"
         done
-
+        
         # Remove beginning : at index 0
         current_group="${current_group:1}"
 
         # Set configurations in openssl.cnf file for PQC testing
+        "$util_scripts/configure-openssl-cnf.sh" $configure_mode
+
+    elif [ "$test_type" -eq 2 ]; then
+
+        # Set configurations in openssl.cnf file for Classic testing
+        current_group="ffdhe2048:ffdhe3072:ffdhe4096:prime256v1:secp384r1:secp521r1"
+
+        # Set configurations in openssl.cnf file for Classic testing
         "$util_scripts/configure-openssl-cnf.sh" $configure_mode
 
     fi
@@ -439,7 +441,7 @@ function classic_tests() {
 function main() {
     # Main function which controls the client-side functionality of the TLS performance testing scripts
     # The global variables for the algorithm arrays and file path conventions are set using the specified
-    # test type value: 0=pqc, 1=classic, 2=hybrid
+    # test type value: 0=pqc, 1=hybrid, 2=classic
 
     # Setting up the base environment for the test suite
     setup_base_env
@@ -459,47 +461,47 @@ function main() {
         echo -e "\n************************************************"
         echo "Performing TLS Handshake Tests Run - $run_num"
         echo -e "************************************************\n"
-        
-        # Performing current run PQC handshakes
+
+        # Performing run PQC handshake tests
         echo "-----------------"
         echo "PQC run $run_num"
         echo -e "-----------------\n"
         control_signal "iteration_handshake"
-        
-        # Calling PQC tests
+
+        # Setting test type, environment, and calling PQC tests function
         test_type=0
         set_test_env $test_type 1
         pqc_tests
         echo -e "[OUTPUT] - Completed $run_num PQC TLS Handshake Tests"
 
-        # Performing current run classic handshakes
-        echo "-----------------"
-        echo "Classic run $run_num"
-        echo -e "-----------------\n"
-        control_signal "iteration_handshake"
-
-        # Calling classic tests
-        test_type=1
-        set_test_env $test_type 1
-        classic_tests
-        echo -e "[OUTPUT] - Completed $run_num Classic TLS Handshake Tests"
-
-        # Performing current run Hybrid-PQC handshakes
+        # Performing run Hybrid-PQC handshake tests
         echo "-----------------"
         echo "Hybrid-PQC run $run_num"
         echo -e "-----------------\n"
         control_signal "iteration_handshake"
 
-        # Calling Hybrid-PQC tests
-        test_type=2
+        # Setting test type, environment, and calling Hybrid-PQC tests function
+        test_type=1
         set_test_env $test_type 1
         pqc_tests
-        echo -e "[OUTPUT] - Completed $run_num  Hybrid-PQC TLS Handshake Tests"
+        echo "[OUTPUT] - Completed $run_num Hybrid-PQC TLS Handshake Tests"
+
+        # Performing run classic handshake tests
+        echo "-----------------"
+        echo "Classic run $run_num"
+        echo -e "-----------------\n"
+        control_signal "iteration_handshake"
+
+        # Setting test type, environment, and calling classic tests function
+        test_type=2
+        set_test_env $test_type 1
+        classic_tests
+        echo "[OUTPUT] - Completed $run_num Classic TLS Handshake Tests"
 
         # Outputting that the current run is complete
         echo "[OUTPUT] - All $run_num Testing Completed"
-        
-    done
 
+    done
+    
 }
 main
