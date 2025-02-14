@@ -184,8 +184,13 @@ function control_signal() {
 
         "control_send")
 
+            echo "****************************************"
+            echo "[DEBUG] - Initiating control send signal to server"
+
             # Check if the control port is open on the server before sending signal
             check_control_port
+
+            echo "Sending control signal to the server with the message - $message"
 
             # Send control signal to the server until successful
             until echo "$message" | nc -n -w 1 "$SERVER_IP" 12345 > /dev/null 2>&1; do
@@ -196,9 +201,14 @@ function control_signal() {
                     break
                 fi
             done
+
+            echo -e "Control signal sent to server\n"
             ;;
 
         "control_wait")
+
+            echo "****************************************"
+            echo "[DEBUG] - Initiating control wait signal from server"
 
             # Wait until the control signal has been received and return the message
             while true; do
@@ -212,13 +222,19 @@ function control_signal() {
                 fi
 
             done
+            echo -e "Control signal received from server with the message - $signal_message\n"
             ;;
 
         "iteration_handshake")
 
+            echo -e "\n****************************************"
+            echo "[DEBUG] - Initiating iteration handshake signal"
+
+            echo "Preparing to send ready signal to server"
             # Check if the control port is open on the server before sending signal
             check_control_port
 
+            echo "Sending ready signal to server"
             # Send control signal to the server until successful
             until echo "ready" | nc -n -w 1 "$SERVER_IP" 12345 > /dev/null 2>&1; do
                 exit_status=$?
@@ -228,7 +244,9 @@ function control_signal() {
                     break
                 fi
             done
+            echo "Ready signal sent to server successfully"
 
+            echo "Waiting for server to send ready signal"
             # Wait for the server to send ready signal
             while true; do
                 signal_message=$(nc -l -p 12346)
@@ -236,6 +254,8 @@ function control_signal() {
                     break
                 fi
             done
+
+            echo -e "Received ready signal from server, handshake complete\n"
             ;;
 
         *)
@@ -304,6 +324,7 @@ function pqc_tests() {
                         # Debug line for checking server connection with current sig/kem combination. To use uncomment line and then comment out the s_time line
                         #"$openssl_path/bin/openssl" s_client -connect $SERVER_IP:4433 -CAfile $cert_file -provider default -provider oqsprovider -provider-path $provider_path -groups "$kem"
 
+                        echo "[DEBUG] - Running client test process"
                         # Running OpenSSL s_time process with current test parameters
                         "$openssl_path/bin/openssl" s_time -connect $SERVER_IP:4433 -CAfile $cert_file -time $TIME_NUM  -verify 1 \
                             -provider default -provider oqsprovider -provider-path $provider_path > $handshake_dir/$output_name
@@ -392,6 +413,7 @@ function classic_tests() {
                 # Performing testing until successful or fail counter reaches limit
                 while true; do
 
+                    echo "[DEBUG] - Running client test process"
                     # Running OpenSSL s_time process with current test parameters
                     "$openssl_path/bin/openssl" s_time -connect $SERVER_IP:4433 -CAfile $classic_cert_file -time $TIME_NUM > "$CLASSIC_HANDSHAKE/$output_name"
                     exit_code=$?
