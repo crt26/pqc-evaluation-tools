@@ -183,6 +183,9 @@ function control_signal() {
     local type="$1"
     local message="$2"
 
+    # Kill lingering netcat processes
+    pkill -f "nc -l -p 12345"
+
     # Determine the type of control signal method to be used
     case "$type" in
 

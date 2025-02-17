@@ -164,10 +164,14 @@ function check_control_port() {
     # Helper function for checking if the control port is open and listening on the other testing machine. It will continuously check
     # until the port is open and listening before returning exiting the function, allowing the control_signal function to send the signal.
 
+    echo "Checking if target control port is open"
+
     # Wait until the server is listening on the control port before sending signal
     until nc -z "$SERVER_IP" 12345 > /dev/null 2>&1; do
         :
     done
+
+    echo "Target control port is open"
 
 }
 
@@ -178,6 +182,9 @@ function control_signal() {
     # Declare local variables for arguments passed to function
     local type="$1"
     local message="$2"
+
+    # Kill lingering netcat processes
+    pkill -f "nc -l -p 12346"
 
     # Determine the type of control signal method to be used
     case "$type" in
