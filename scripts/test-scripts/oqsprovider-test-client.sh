@@ -237,13 +237,13 @@ function control_signal() {
             echo -e "\n****************************************"
             echo "[DEBUG] - Initiating iteration handshake signal"
 
-            echo "Preparing to send ready signal to server"
+            echo "Preparing to send handshake_ready signal to server"
             # Check if the control port is open on the server before sending signal
             check_control_port
 
-            echo "Sending ready signal to server"
+            echo "Sending handshake_ready signal to server"
             # Send control signal to the server until successful
-            until echo "ready" | nc -n -w 1 "$SERVER_IP" 12345 > /dev/null 2>&1; do
+            until echo "handshake_ready" | nc -n -w 1 "$SERVER_IP" 12345 > /dev/null 2>&1; do
                 exit_status=$?
                 if [ "$exit_status" -ne 0 ]; then
                     :
@@ -251,18 +251,18 @@ function control_signal() {
                     break
                 fi
             done
-            echo "Ready signal sent to server successfully"
+            echo "handshake_ready signal sent to server successfully"
 
-            echo "Waiting for server to send ready signal"
+            echo "Waiting for server to send handshake_ready signal"
             # Wait for the server to send ready signal
             while true; do
                 signal_message=$(nc -l -p 12346)
-                if [[ "$signal_message" == "ready" ]]; then
+                if [[ "$signal_message" == "handshake_ready" ]]; then
                     break
                 fi
             done
 
-            echo -e "Received ready signal from server, handshake complete\n"
+            echo -e "Received handshake_ready signal from server, handshake complete\n"
             ;;
 
         *)
