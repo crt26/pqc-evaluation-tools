@@ -477,13 +477,13 @@ function run_tests() {
         $test_scripts_path/oqsprovider-test-client.sh 
         #>> "$root_dir/client-test-output.txt" - uncomment to save output for debugging
 
-        # Outputting TLS Speed test task to the terminal if machine is client
-        echo -e "\n##########################"
-        echo "Performing TLS Speed Tests"
-        echo -e "##########################\n"
+        # # Outputting TLS Speed test task to the terminal if machine is client
+        # echo -e "\n##########################"
+        # echo "Performing TLS Speed Tests"
+        # echo -e "##########################\n"
         
-        # Running OQS-Provider speed test script
-        $test_scripts_path/oqsprovider-test-speed.sh
+        # # Running OQS-Provider speed test script
+        # $test_scripts_path/oqsprovider-test-speed.sh
     
     fi
 
