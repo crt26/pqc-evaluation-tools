@@ -481,12 +481,19 @@ function main() {
     get_algs
     clear
 
+    # Declar run time arrays for storing test type runtimes
+    test_runtimes=()
+
     # Performing initial handshake with server
     echo -e "Client Script Activated, connecting to server...\n"
+    total_start_time=$(date +%s)
     control_signal "iteration_handshake"
 
     # Performing TLS handshake tests for the given number of runs
     for run_num in $(seq 1 $NUM_RUN); do
+
+        # Start Total runtime tracking
+        total_run_start_time=$(date +%s)
 
         # Performing output test start message
         echo -e "\n************************************************"
@@ -497,42 +504,93 @@ function main() {
         echo "-----------------"
         echo "PQC run $run_num"
         echo -e "-----------------\n"
+        pqc_start_time=$(date +%s)
         control_signal "iteration_handshake"
 
         # Setting test type, environment, and calling PQC tests function
         test_type=0
         set_test_env $test_type 1
         pqc_tests
+        pqc_end_time=$(date +%s)
+        pqc_duration=$(( pqc_end_time - pqc_start_time ))
+        pqc_time=$(date -u -d @${pqc_duration} +%H:%M:%S)
+        pqc_runtime_string="Time taken to complete Run-$run_num PQC Testing - $pqc_time"
+        test_runtimes+=("$pqc_runtime_string")
         echo -e "[OUTPUT] - Completed $run_num PQC TLS Handshake Tests"
 
         # Performing run Hybrid-PQC handshake tests
         echo "-----------------"
         echo "Hybrid-PQC run $run_num"
         echo -e "-----------------\n"
+        hybrid_start_time=$(date +%s)
         control_signal "iteration_handshake"
 
         # Setting test type, environment, and calling Hybrid-PQC tests function
         test_type=1
         set_test_env $test_type 1
         pqc_tests
+        hybrid_end_time=$(date +%s)
+        hybrid_duration=$(( hybrid_end_time - hybrid_start_time ))
+        hybrid_time=$(date -u -d @${hybrid_duration} +%H:%M:%S)
+        hybrid_runtime_string="Time taken to complete Run-$run_num Hybrid-PQC Testing - $hybrid_time"
+        test_runtimes+=("$hybrid_runtime_string")
         echo "[OUTPUT] - Completed $run_num Hybrid-PQC TLS Handshake Tests"
 
         # Performing run classic handshake tests
         echo "-----------------"
         echo "Classic run $run_num"
         echo -e "-----------------\n"
+        classic_start_time=$(date +%s)
         control_signal "iteration_handshake"
 
         # Setting test type, environment, and calling classic tests function
         test_type=2
         set_test_env $test_type 1
         classic_tests
+        classic_end_time=$(date +%s)
+        classic_duration=$(( classic_end_time - classic_start_time ))
+        classic_time=$(date -u -d @${classic_duration} +%H:%M:%S)
+        classic_runtime_string="Time taken to complete Run-$run_num Classic Testing - $classic_time"
+        test_runtimes+=("$classic_runtime_string")
         echo "[OUTPUT] - Completed $run_num Classic TLS Handshake Tests"
 
         # Outputting that the current run is complete
         echo "[OUTPUT] - All $run_num Testing Completed"
 
+        # Calculate total run execution time
+        total_run_end_time=$(date +%s)
+        total_run_duration=$(( total_run_end_time - total_run_start_time ))
+        total_run_time=$(date -u -d @${total_run_duration} +%H:%M:%S)
+        total_run_runtime_string="Total time taken to complete Run-$run_num - $total_run_time"
+        test_runtimes+=("$total_run_runtime_string")
+
     done
+
+    # Calculate total execution time
+    total_end_time=$(date +%s)
+    total_duration=$(( total_end_time - total_start_time ))
+    total_time=$(date -u -d @${total_duration} +%H:%M:%S)
+
+    # Output the caluilcated runtimes
+    echo -e "\n********** Test Run Summary **********\n"
+
+    for run_num in $(seq 1 $NUM_RUN); do
+
+        # Calculate the base index for this run
+        index=$(( (run_num - 1) * 4 ))
+
+        echo "-------------------------------------"
+        echo " Run #$run_num Summary"
+        echo "-------------------------------------"
+        echo "${test_runtimes[$index]}"       # PQC runtime
+        echo "${test_runtimes[$((index+1))]}" # Hybrid-PQC runtime
+        echo "${test_runtimes[$((index+2))]}" # Classic runtime
+        echo "${test_runtimes[$((index+3))]}" # Total run time
+        echo -e "\n"
+
+    done
+
+    echo "Total Execution time for all runs - $total_time"
     
 }
 main
