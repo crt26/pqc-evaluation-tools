@@ -381,6 +381,34 @@ function configure_test_options {
         
         done
 
+        # Get if the test runtime results should be outputted to terminal or stored in a file
+        while true; do
+
+            # Prompt the user to input an integer for the speed test length
+            echo -e "\n[Debugging Parameter]:"
+            read -p "Store the test runtime calculations to a file instead of the terminal [y/n]: " user_output_choice
+
+            # Check if the input is a valid integer
+            case $user_output_choice in
+
+                [Yy]* )
+                    export STORE_RUNTIME_RESULTS="True"
+                    break
+                    ;;
+
+                [Nn]* )
+                    export STORE_RUNTIME_RESULTS="False"
+                    break
+                    ;;
+
+                * )
+                    echo "[ERROR] - Invalid input. Please enter a valid response [y/n]"
+                    ;;
+
+            esac
+        
+        done
+
     fi
 
 }

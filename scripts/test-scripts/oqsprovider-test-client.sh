@@ -44,6 +44,7 @@ function setup_base_env() {
     test_data_dir="$root_dir/test-data"
     test_scripts_path="$root_dir/scripts/test-scripts"
     util_scripts="$root_dir/scripts/utility-scripts"
+    runtimes_dir="$test_data_dir/runtime-results" # temp whilst testing control signal sleep timing
 
     # Declaring global library path files
     openssl_path="$libs_dir/openssl_3.4"
@@ -480,7 +481,7 @@ function main() {
     # Import algorithms and clear terminal
     get_algs
     clear
-
+    
     # Declar run time arrays for storing test type runtimes
     test_runtimes=()
 
@@ -571,26 +572,63 @@ function main() {
     total_duration=$(( total_end_time - total_start_time ))
     total_time=$(date -u -d @${total_duration} +%H:%M:%S)
 
-    # Output the caluilcated runtimes
-    echo -e "\n********** Test Run Summary **********\n"
+    # Store or print runtime results based on flag in environment variable
+    if [ "$STORE_RUNTIME_RESULTS" == "True" ]; then
 
-    for run_num in $(seq 1 $NUM_RUN); do
+        # Check if the test-data directory that will store these results exists and if not create it
+        if [ ! -d "$runtimes_dir" ]; then
+            mkdir -p "$runtimes_dir"
+        fi
 
-        # Calculate the base index for this run
-        index=$(( (run_num - 1) * 4 ))
+        # Create runtime filename based on current date and time
+        runtime_filename="tls-handshake-runtimes-$(date +%Y-%m-%d-%H-%M-%S).txt"
+        runtime_filepath="$runtimes_dir/$runtime_filename"
 
-        echo "-------------------------------------"
-        echo " Run #$run_num Summary"
-        echo "-------------------------------------"
-        echo "${test_runtimes[$index]}"       # PQC runtime
-        echo "${test_runtimes[$((index+1))]}" # Hybrid-PQC runtime
-        echo "${test_runtimes[$((index+2))]}" # Classic runtime
-        echo "${test_runtimes[$((index+3))]}" # Total run time
-        echo -e "\n"
+        # Output the calculated runtimes
+        echo -e "\n********** Test Run Summary **********\n" >> $runtime_filepath
 
-    done
+        for run_num in $(seq 1 $NUM_RUN); do
 
-    echo "Total Execution time for all runs - $total_time"
+            # Calculate the base index for this run
+            index=$(( (run_num - 1) * 4 ))
+
+            echo "-------------------------------------" >> $runtime_filepath
+            echo " Run #$run_num Summary" >> $runtime_filepath
+            echo "-------------------------------------" >> $runtime_filepath
+            echo "${test_runtimes[$index]}" >> $runtime_filepath
+            echo "${test_runtimes[$((index+1))]}" >> $runtime_filepath
+            echo "${test_runtimes[$((index+2))]}" >> $runtime_filepath
+            echo "${test_runtimes[$((index+3))]}" >> $runtime_filepath
+            echo -e "\n" >> $runtime_filepath
+
+        done
+
+        echo "Total Execution time for all runs - $total_time" >> $runtime_filepath
+
+    else
+
+        # Output the calculated runtimes
+        echo -e "\n********** Test Run Summary **********\n"
+
+        for run_num in $(seq 1 $NUM_RUN); do
+
+            # Calculate the base index for this run
+            index=$(( (run_num - 1) * 4 ))
+
+            echo "-------------------------------------"
+            echo " Run #$run_num Summary"
+            echo "-------------------------------------"
+            echo "${test_runtimes[$index]}"       # PQC runtime
+            echo "${test_runtimes[$((index+1))]}" # Hybrid-PQC runtime
+            echo "${test_runtimes[$((index+2))]}" # Classic runtime
+            echo "${test_runtimes[$((index+3))]}" # Total run time
+            echo -e "\n"
+
+        done
+
+        echo "Total Execution time for all runs - $total_time"
+
+    fi
     
 }
 main
