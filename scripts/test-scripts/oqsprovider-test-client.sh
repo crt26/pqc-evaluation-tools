@@ -172,7 +172,7 @@ function check_control_port() {
         :
     done
 
-    sleep 0.25
+    sleep 0.3
 
     # echo "Target control port is open"
 
