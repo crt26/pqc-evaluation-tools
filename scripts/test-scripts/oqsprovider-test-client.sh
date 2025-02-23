@@ -167,10 +167,10 @@ function check_control_port() {
 
     # echo "Checking if target control port is open"
 
-    # Wait until the server is listening on the control port before sending signal
-    until nc -z "$SERVER_IP" 12345 > /dev/null 2>&1; do
-        :
-    done
+    # # Wait until the server is listening on the control port before sending signal
+    # until nc -z "$SERVER_IP" 12345 > /dev/null 2>&1; do
+    #     :
+    # done
 
     sleep 0.3
 
