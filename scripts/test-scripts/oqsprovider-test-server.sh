@@ -170,7 +170,7 @@ function check_control_port() {
     done
 
     # Small delay before sending signal to allow target device to open port and listen
-    sleep 0.3
+    sleep 0.25
 
 }
 
