@@ -165,10 +165,10 @@ function check_control_port() {
     # Helper function for checking if the control port is open and listening on the other testing machine. It will continuously check
     # until the port is open and listening before returning exiting the function, allowing the control_signal function to send the signal.
 
-    # # Wait until the server is listening on the control port before sending signal
-    # until nc -z "$SERVER_IP" 12345 > /dev/null 2>&1; do
-    #     :
-    # done
+    # Wait until the server is listening on the control port before sending signal
+    until nc -z "$SERVER_IP" 12345 > /dev/null 2>&1; do
+        :
+    done
 
     # Small delay before sending signal to allow target device to open port and listen
     sleep 0.3
