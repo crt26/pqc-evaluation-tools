@@ -381,34 +381,6 @@ function configure_test_options {
         
         done
 
-        # Get if the test runtime results should be outputted to terminal or stored in a file
-        while true; do
-
-            # Prompt the user to input an integer for the speed test length
-            echo -e "\n[Debugging Parameter]:"
-            read -p "Store the test runtime calculations to a file instead of the terminal [y/n]: " user_output_choice
-
-            # Check if the input is a valid integer
-            case $user_output_choice in
-
-                [Yy]* )
-                    export STORE_RUNTIME_RESULTS="True"
-                    break
-                    ;;
-
-                [Nn]* )
-                    export STORE_RUNTIME_RESULTS="False"
-                    break
-                    ;;
-
-                * )
-                    echo "[ERROR] - Invalid input. Please enter a valid response [y/n]"
-                    ;;
-
-            esac
-        
-        done
-
     fi
 
 }
@@ -502,16 +474,16 @@ function run_tests() {
         echo -e "####################################\n"
 
         # Running handshake test script
-        $test_scripts_path/oqsprovider-test-client.sh 
+        $test_scripts_path/oqsprovider-test-client.sh
         #>> "$root_dir/client-test-output.txt" - uncomment to save output for debugging
 
-        # # Outputting TLS Speed test task to the terminal if machine is client
-        # echo -e "\n##########################"
-        # echo "Performing TLS Speed Tests"
-        # echo -e "##########################\n"
+        # Outputting TLS Speed test task to the terminal if machine is client
+        echo -e "\n##########################"
+        echo "Performing TLS Speed Tests"
+        echo -e "##########################\n"
         
-        # # Running OQS-Provider speed test script
-        # $test_scripts_path/oqsprovider-test-speed.sh
+        # Running OQS-Provider speed test script
+        $test_scripts_path/oqsprovider-test-speed.sh
     
     fi
 
