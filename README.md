@@ -3,9 +3,8 @@
 ## Notice: <!-- omit from toc --> 
 This is the **development branch**, it may not be in a fully functioning state and documentation may still need updated. The checkboxes below indicates whether the current development version is in a basic functioning state and if the documentation is accurate for its current functionality. Regardless please keep this in mind and use the main branch if possible, thank you.
 
-- [ ] Functioning State*
-- [ ] Up to date documentation
-
+- [x] Functioning State*
+- [x] Up to date documentation
 
 <!-- > *Dev branch Notice: Current functioning state works for both x86 and ARM machines. However, on ARM devices, memory profiling for Falcon algorithm variations is non-functioning. Please refer to [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761) for more details. Work is underway to resolve this issue but for now the repository has methods in place to account for this. Automated testing and parsing scripts can still be used to gather performance metrics for all other algorithms on ARM systems.  -->
 
@@ -129,8 +128,9 @@ When executing the setup script, you will be presented with three options:
 
 3. Build the OQS-Provider Library after a previous install of Liboqs
 
-
 The setup script will also handle the building of [OpenSSL 3.4.0](https://www.openssl.org/source/) within the pqc-eval-tools lib directory as this is required to utilise the OpenSSL provider functionality provided by OQS-Provider. This will be a separate build from the systems default OpenSSL installation and will not replace or interfere with those binaries.
+
+Additionally, if compiling the OQS-Provider library, the setup script will prompt you to enable the optional KEM encoders feature. This feature is supported by OQS-Provider, but this repository does not currently utilize it. However, developers who wish to take advantage of KEM encoders can enable this option during setup.
 
 Once all of the relevant options have been selected, the setup script will download, configure and build each of the libraries. Alongside, optimizing the builds for the current systems by automatically passing the relevant build parameters.
 
@@ -267,8 +267,6 @@ This script can change the configurations added to the OpenSSL 3.4.0 configurati
 ```
 
 > Notice: As the `configure-openssl-cnf.sh` script is intended mainly to be used by the automated testing scripts, please take caution when calling the script manually. This is due to how the script anticipates the state of the configuration file. If calling manually ensure to verify the openssl.cnf file for any double comments or other misconfigurations.
-
-
 
 ## Repository Directory Structure
 

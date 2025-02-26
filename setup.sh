@@ -124,7 +124,7 @@ function get_encoder_build_option() {
     # This option is given due to the fact that if the KEM encoders options is set to ON, it can increase the size of the OQS-Provider build
 
     # Outputting current task to terminal
-    echo -e "\nConfiguring OQS-Provider Build Options:\n"
+    echo -e "\nConfiguring Optional OQS-Provider Build Flags:\n"
 
     # Set the Default Encoder flag value to OFF
     encoder_flag="OFF"
