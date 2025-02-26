@@ -293,7 +293,7 @@ function pqc_tests() {
                         cert_file="$pqc_cert_dir/""${sig_name}""-CA.crt"
                         handshake_dir=$PQC_HANDSHAKE
 
-                    elif [ "$test_type" -eq 2 ]; then
+                    elif [ "$test_type" -eq 1 ]; then
                         cert_file="$hybrid_cert_dir/""${sig/:/_}""-srv.crt"
                         handshake_dir=$HYBRID_HANDSHAKE
                     fi

@@ -291,7 +291,7 @@ function pqc_tests() {
                     cert_file="$pqc_cert_dir/""${sig/:/_}""-srv.crt"
                     key_file="$pqc_cert_dir/""${sig/:/_}""-srv.key"
 
-                elif [ "$test_type" -eq 2 ]; then
+                elif [ "$test_type" -eq 1 ]; then
                     cert_file="$hybrid_cert_dir/""${sig/:/_}""-srv.crt"
                     key_file="$hybrid_cert_dir/""${sig/:/_}""-srv.key"
                 fi
