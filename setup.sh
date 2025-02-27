@@ -181,12 +181,88 @@ function dependency_install() {
         sudo apt-get install -y "${not_installed[@]}"
     fi
 
-    # Installing needed python modules for testing tools
-    echo "Checking Python Dependency Modules..."
-    pip install pandas --break-system-packages
-    pip install matplotlib --break-system-packages
-    pip install jinja2 --break-system-packages
-    pip install tabulate --break-system-packages
+    # Determine which python packages are needing to be installed
+    echo "Checking Python Dependencies..."
+    required_pip_packages=("pandas" "jinja2" "tabulate")
+    missing_pip_packages=()
+
+    for package in "${required_pip_packages[@]}"; do
+        if ! python3 -c "import $package" 2>/dev/null; then
+            missing_pip_packages+=("$package")
+        fi
+    done
+
+    # Check if any packages are missing before checking pip install functionality
+    if [[ ${#missing_pip_packages[@]} -ne 0 ]]; then
+
+        # Capture the output of the pip install for error checking
+        pip_output=$(pip install 2>&1)
+        exit_status=$?
+
+        # Check if pip is functioning correctly and if the break system packages flag is needed
+        if [ "$exit_status" -ne 0 ]; then
+
+            # Determine the cause of the pip failure
+            if echo "$pip_output" | grep -q "error: externally-managed-environment"; then
+
+                # Output the cause to the user and determine if they wish to use the break system packages flag
+                echo -e "\nNOTICE: This version of pip requires that either virtual environments be used or the packages be installed system-wide"
+                echo -e "This project does not currently support automatic setup of virtual environments.\n"
+                
+                # Output the options to the user
+                echo "Please select one of the following options to handle missing pip packages:"
+                echo "1. Use the --break-system-packages flag to install packages system-wide."
+                echo "2. Exit the setup script and manually install the required packages before retrying."
+
+                # Get the user choice for using the break system packages flag
+                while true; do
+
+                    read -p "Please Select from the above options (1/2): " user_input
+
+                    case $user_input in
+
+                        1 )
+                            echo "Proceeding with system-wide installation using --break-system-packages..."
+                            export PIP_BREAK_SYSTEM_PACKAGES=1
+                            break
+                            ;;
+
+                        2 )
+                            echo -e "Exiting setup script, please handle the install of the following pip packages manually:"
+                            echo "${missing_pip_packages[@]}"
+                            exit 1
+                            ;;
+
+                        * )
+                            echo -e "Invalid selection. Please enter 1 or 2.\n"
+                            ;;
+
+                    esac
+
+                done
+
+            elif echo "$pip_output" | grep -q 'ERROR: You must give at least one requirement to install (see "pip help install")'; then
+                # No need to do anything as pip is functioning correctly, as it supports the installing to the local user installation
+                # this check just makes sure that this expected error from the pip install is ignored and does get caught by the else statement
+                :
+
+            else
+                echo -e "\nERROR: pip is not functioning correctly, please verify the installation and rerun the setup script"
+                exit 1
+            
+            fi
+        
+        fi
+        
+        # Installing the missing pip packages
+        for package in "${missing_pip_packages[@]}"; do
+            pip install "$package"
+        done
+    
+    else
+        echo "All required Python packages are installed and are accessible in the current environment"
+
+    fi
 
     # Determine location of Python3 binary
     if [ -x "$(command -v python3)" ]; then
