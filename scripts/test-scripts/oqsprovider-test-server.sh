@@ -84,7 +84,7 @@ function setup_base_env() {
 #-------------------------------------------------------------------------------------------------------------------------------
 function set_test_env() {
     # Function for setting the default group depending on what type of tls test is being performed 
-    # Options are: (pqc,classic,hybrid) 0=pqc, 1=classic, 2=hybrid
+    # Options are: (pqc, hybrid-pqc, classic) 0=pqc, 1=hybrid, 2=classic
 
     # Declare local variables for arguments passed to function
     local test_type="$1"
@@ -121,14 +121,6 @@ function set_test_env() {
 
     elif [ "$test_type" -eq 1 ]; then
 
-        # Set configurations in openssl.cnf file for Classic testing
-        current_group="ffdhe2048:ffdhe3072:ffdhe4096:prime256v1:secp384r1:secp521r1"
-
-        # Set configurations in openssl.cnf file for Classic testing
-        "$util_scripts/configure-openssl-cnf.sh" $configure_mode
-
-    elif [ "$test_type" -eq 2 ]; then
-
         # Hybrid kem algorithms array
         kem_algs=()
         while IFS= read -r line; do
@@ -152,6 +144,14 @@ function set_test_env() {
         # Set configurations in openssl.cnf file for PQC testing
         "$util_scripts/configure-openssl-cnf.sh" $configure_mode
 
+    elif [ "$test_type" -eq 2 ]; then
+
+        # Set configurations in openssl.cnf file for Classic testing
+        current_group="ffdhe2048:ffdhe3072:ffdhe4096:prime256v1:secp384r1:secp521r1"
+
+        # Set configurations in openssl.cnf file for Classic testing
+        "$util_scripts/configure-openssl-cnf.sh" $configure_mode
+
     fi
 
     # Export default group env var for openssl.cnf
@@ -160,169 +160,96 @@ function set_test_env() {
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
-function control_signal() {
-    # Function for sending control signals to the client that are not part of the control handshake
+function check_control_port() {
+    # Helper function for checking if the control port is open and listening on the other testing machine. It will continuously check
+    # until the port is open and listening before returning exiting the function, allowing the control_signal function to send the signal.
 
-    # Declare signal type local variable
-    local type="$1"
+    # Wait until the client is listening on the control port before sending signal
+    until nc -z "$CLIENT_IP" 12346 > /dev/null 2>&1; do
+        :
+    done
 
-    # Determine signal type and send signal to client
-    if [ $type == "normal" ]; then
-
-        # Send control signal
-        until nc -z -v -w 1 $CLIENT_IP 12346 > /dev/null 2>&1; do
-            exit_status=$?
-            if [ $exit_status -ne 0 ]; then
-                :
-            else
-                break
-            fi
-        done
-
-    elif [ $type == "ready" ]; then 
-
-        # Send server ready signal
-        until echo "ready" | nc -n -w 1 $CLIENT_IP 12346 > /dev/null 2>&1; do
-            exit_status=$?
-            if [ $exit_status -ne 0 ]; then
-                :
-            else
-                break
-            fi
-        done
-
-    elif [ $type == "skip" ]; then
-
-        # Send test skip signal
-        until echo "skip" | nc -n -w 1 $CLIENT_IP 12346 > /dev/null 2>&1; do
-            exit_status=$?
-            if [ $exit_status -ne 0 ]; then
-                :
-            else
-                break
-            fi
-
-        done
-    
-    elif [ $type == "iteration_handshake" ]; then
-
-        # Wait for ready connection from client
-        while true; do
-
-            # Wait for a connection from the client and capture the request in a variable
-            signal_message=$(nc -l -p 12345)
-            if [[ $signal_message == "ready" ]]; then
-                break
-            fi
-
-        done
-
-        # Sending ready message to client
-        until echo "ready" | nc -n -w 1 $CLIENT_IP 12346 > /dev/null 2>&1; do
-            exit_status=$?
-            if [ $exit_status -ne 0 ]; then
-                :
-            else
-                break
-            fi
-          
-        done
-
-    fi
+    # Small delay before sending signal to allow target device to open port and listen
+    sleep 0.25
 
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
-function classic_tests {
-    # Function for performing the classic TLS handshake tests using the given test parameters
+function control_signal() {
+    # Function for sending control signals to the client that are not part of the control handshake
 
-    # Running tests for ecdsa ciphers
-    for cipher in "${ciphers[@]}"; do
+    # Declare local variables for arguments passed to function
+    local type="$1"
+    local message="$2"
 
-        # Loop through all classic algs and perform tests with current cipher
-        for classic_alg in "${classic_algs[@]}"; do
+    # Kill lingering netcat processes
+    pkill -f "nc -l -p 12345"
 
-            # Performing current run cipher/curve combination test until passed successfully
+    # Determine the type of control signal method to be used
+    case "$type" in
+
+        "control_send")
+
+            # Check if the control port is open on the client before sending signal
+            check_control_port
+
+            # Send control signal to the client until successful
+            until echo "$message" | nc -n -w 1 "$CLIENT_IP" 12346 > /dev/null 2>&1; do
+                exit_status=$?
+                if [ "$exit_status" -ne 0 ]; then
+                    :
+                else
+                    break
+                fi
+            done
+            ;;
+
+        "control_wait")
+
+            # Wait until the control signal has been received and return the message
             while true; do
 
-                # Check if an old OpenSSL process is still active and kill if so
-                pgrep_output=$(pgrep openssl)
-
-                if [[ ! -z $pgrep_output ]]; then
-                    kill "$pgrep_output"
-                fi
-
-                # Outputting current classic TLS test info
-                echo -e "\n-------------------------------------------------------------------------"
-                echo "[OUTPUT] - Classic Cipher Tests, Run - $run_num, Cipher - $cipher, Sig Alg - $classic_alg"
-
-                # Performing iteration handshake
-                control_signal "iteration_handshake"
-
-                # Wait for ready signal from client
-                nc -l -p 12345 > /dev/null
-
-                # Checking if RSA or ECC to determine what parameters s_server needs
-                if [[ $classic_alg == "prime256v1" || $classic_alg == "secp384r1" || $classic_alg == "secp521r1" ]]; then
-
-                    # Set cert/key filenames for current ECC algorithm
-                    classic_cert_file="$classic_cert_dir/$classic_alg-srv.crt"
-                    classic_key_file="$classic_cert_dir/$classic_alg-srv.key"
-
-                    # Start ECC test server processes
-                    # "$openssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 \
-                    #     -curves $classic_alg -ciphersuites "$cipher" -accept 4433 &
-
-                    "$openssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 \
-                        -named_curve $classic_alg -ciphersuites "$cipher" -accept 4433 &
-
-                    server_pid=$!
-
-                else
-
-                    # Set cert/key filenames for current RSA algorithm
-                    classic_cert_file="$classic_cert_dir/$classic_alg-srv.crt"
-                    classic_key_file="$classic_cert_dir/$classic_alg-srv.key"
-
-                    # Start RSA test server processes
-                    "$openssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 -ciphersuites $cipher -accept 4433 &
-                    server_pid=$!
-                    
-
-                fi
-
-                # Check if s_server has started before sending ready signal to client
-                until netstat -tuln | grep ':4433' > /dev/null; do
-                    :
-                done
-
-                # Send ready signal to client and wait for test status signal
-                control_signal "normal"
-
-                # Wait for final test status signal from client
+                # Wait for a connection from the client and capture the request in a variable
                 signal_message=$(nc -l -p 12345)
 
-                # Check if test status signal received from client is complete or failed
-                if [ $signal_message == "complete" ]; then
-
-                    # Successful completion of test from client
-                    kill $server_pid
+                # Check if the received control signal message is valid
+                if [[ "$signal_message" == "ready" || "$signal_message" == "skip" || "$signal_message" == "complete" ]]; then
                     break
-
-                elif [ $signal_message == "failed" ]; then
-
-                    # Restart sig/kem combination if failed signal from client
-                    echo "[ERROR] - 3000 failed attempts signal received from client, restarting sig/kem combination"
-                    kill $server_pid
-                    sleep 2
-                
                 fi
 
             done
+            ;;
 
-        done
+        "iteration_handshake")
 
-    done
+            # Wait for the client to send ready signal
+            while true; do
+                signal_message=$(nc -l -p 12345)
+                if [[ "$signal_message" == "handshake_ready" ]]; then
+                    break
+                fi
+            done
+
+            # Check if the control port is open on the client before sending signal
+            check_control_port
+
+            # Wait for the server to send ready signal
+            until echo "handshake_ready" | nc -n -w 1 "$CLIENT_IP" 12346 > /dev/null 2>&1; do
+                exit_status=$?
+                if [ "$exit_status" -ne 0 ]; then
+                    :
+                else
+                    break
+                fi
+            done
+            ;;
+
+        *)
+            echo "[ERROR] - Unknown control signal type: $type"
+            exit 1
+            ;;
+
+    esac
 
 }
 
@@ -357,14 +284,14 @@ function pqc_tests() {
                 control_signal "iteration_handshake"
 
                 # Wait for ready from client signal
-                nc -l -p 12345 > /dev/null
+                control_signal "control_wait"
 
                 # Setting cert and key files depending on test type
                 if [ "$test_type" -eq 0 ]; then
                     cert_file="$pqc_cert_dir/""${sig/:/_}""-srv.crt"
                     key_file="$pqc_cert_dir/""${sig/:/_}""-srv.key"
 
-                elif [ "$test_type" -eq 2 ]; then
+                elif [ "$test_type" -eq 1 ]; then
                     cert_file="$hybrid_cert_dir/""${sig/:/_}""-srv.crt"
                     key_file="$hybrid_cert_dir/""${sig/:/_}""-srv.key"
                 fi
@@ -380,10 +307,10 @@ function pqc_tests() {
                 done
 
                 # Send ready signal to client
-                control_signal "ready"
+                control_signal "control_send" "ready"
 
                 # Check test status signal from client
-                signal_message=$(nc -l -p 12345)
+                control_signal "control_wait"
 
                 # Check if test status signal received from client is complete or failed
                 if [ $signal_message == "complete" ]; then
@@ -410,10 +337,101 @@ function pqc_tests() {
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
+function classic_tests {
+    # Function for performing the classic TLS handshake tests using the given test parameters
+
+    # Running tests for ecdsa ciphers
+    for cipher in "${ciphers[@]}"; do
+
+        # Loop through all classic algs and perform tests with current cipher
+        for classic_alg in "${classic_algs[@]}"; do
+
+            # Performing current run cipher/curve combination test until passed successfully
+            while true; do
+
+                # Check if an old OpenSSL process is still active and kill if so
+                pgrep_output=$(pgrep openssl)
+
+                if [[ ! -z $pgrep_output ]]; then
+                    kill "$pgrep_output"
+                fi
+
+                # Outputting current classic TLS test info
+                echo -e "\n-------------------------------------------------------------------------"
+                echo "[OUTPUT] - Classic Cipher Tests, Run - $run_num, Cipher - $cipher, Sig Alg - $classic_alg"
+
+                # Performing iteration handshake
+                control_signal "iteration_handshake"
+
+                # Wait for ready signal from client
+                control_signal "control_wait"
+
+                # Checking if RSA or ECC to determine what parameters s_server needs
+                if [[ $classic_alg == "prime256v1" || $classic_alg == "secp384r1" || $classic_alg == "secp521r1" ]]; then
+
+                    # Set cert/key filenames for current ECC algorithm
+                    classic_cert_file="$classic_cert_dir/$classic_alg-srv.crt"
+                    classic_key_file="$classic_cert_dir/$classic_alg-srv.key"
+
+                    # Start ECC test server processes
+                    "$openssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 \
+                        -named_curve $classic_alg -ciphersuites "$cipher" -accept 4433 &
+
+                    server_pid=$!
+
+                else
+
+                    # Set cert/key filenames for current RSA algorithm
+                    classic_cert_file="$classic_cert_dir/$classic_alg-srv.crt"
+                    classic_key_file="$classic_cert_dir/$classic_alg-srv.key"
+
+                    # Start RSA test server processes
+                    "$openssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 -ciphersuites $cipher -accept 4433 &
+                    server_pid=$!
+                    
+
+                fi
+
+                # Check if s_server has started before sending ready signal to client
+                until netstat -tuln | grep ':4433' > /dev/null; do
+                    :
+                done
+
+                # Send ready signal to client and wait for test status signal
+                control_signal "control_send" "ready"
+
+                # Wait for final test status signal from client
+                control_signal "control_wait"
+
+                # Check if test status signal received from client is complete or failed
+                if [ $signal_message == "complete" ]; then
+
+                    # Successful completion of test from client
+                    kill $server_pid
+                    break
+
+                elif [ $signal_message == "failed" ]; then
+
+                    # Restart sig/kem combination if failed signal from client
+                    echo "[ERROR] - 3000 failed attempts signal received from client, restarting sig/kem combination"
+                    kill $server_pid
+                    sleep 2
+                
+                fi
+
+            done
+
+        done
+
+    done
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
 function main() {
     # Main function which controls the server-side functionality of the TLS performance testing scripts
     # The global variables for the algorithm arrays and file path conventions are set using the specified
-    # test type value: 0=pqc, 1=classic, 2=hybrid
+    # test type value: 0=pqc, 1=hybrid, 2=classic
 
     # Setting up the base environment for the test suite
     setup_base_env
@@ -434,40 +452,40 @@ function main() {
         echo "Performing TLS Handshake Tests Run - $run_num"
         echo -e "************************************************\n"
 
-        # Performing run PQC test
+        # Performing run PQC handshake tests
         echo "-----------------"
         echo "PQC run $run_num"
         echo -e "-----------------\n"
         control_signal "iteration_handshake"
 
-        # Calling PQC Tests
+        # Setting test type, environment, and calling PQC tests function
         test_type=0
         set_test_env $test_type 1
         pqc_tests
-        echo -e "[OUTPUT] - Completed $run_num PQC Tests"
+        echo -e "[OUTPUT] - Completed $run_num PQC TLS Handshake Tests"
 
-        # Performing run handshake
-        echo "-----------------"
-        echo "Classic run $run_num"
-        echo -e "-----------------\n"
-        control_signal "iteration_handshake"
-
-        # Performing current run classic Tests
-        test_type=1
-        set_test_env $test_type 1
-        classic_tests
-        echo "[OUTPUT] - Completed $run_num Classic TLS Handshake Tests"
-
-        # Performing run handshake
+        # Performing run Hybrid-PQC handshake tests
         echo "-----------------"
         echo "Hybrid-PQC run $run_num"
         echo -e "-----------------\n"
         control_signal "iteration_handshake"
 
-        # Performing current run Hybrid-PQC Tests
-        test_type=2
+        # Setting test type, environment, and calling Hybrid-PQC tests function
+        test_type=1
         set_test_env $test_type 1
         pqc_tests
+        echo "[OUTPUT] - Completed $run_num Hybrid-PQC TLS Handshake Tests"
+
+        # Performing run classic handshake tests
+        echo "-----------------"
+        echo "Classic run $run_num"
+        echo -e "-----------------\n"
+        control_signal "iteration_handshake"
+
+        # Setting test type, environment, and calling classic tests function
+        test_type=2
+        set_test_env $test_type 1
+        classic_tests
         echo "[OUTPUT] - Completed $run_num Classic TLS Handshake Tests"
 
         # Outputting that the current run is complete

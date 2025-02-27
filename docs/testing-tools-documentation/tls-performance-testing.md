@@ -3,6 +3,7 @@
 ## Contents <!-- omit from toc --> 
 - [Overview](#overview)
 - [Getting Started](#getting-started)
+  - [Ensuring Access to Control Signal Ports in Firewalls](#ensuring-access-to-control-signal-ports-in-firewalls)
   - [Generating Required Certificates and Private Keys](#generating-required-certificates-and-private-keys)
   - [Testing Tool Execution](#testing-tool-execution)
   - [Testing Options](#testing-options)
@@ -28,8 +29,21 @@ To begin testing the performance of PQC algorithms when integrated within TLS, t
 
 The scripts required for conducting the automated testing are stored in the `scripts/test-scripts` directory which can be found within the project's root directory.
 
+### Ensuring Access to Control Signal Ports in Firewalls
+Before running the various scripts for the automated TLS performance benchmarking, it is first crucial to ensure the testing environment allows communications over the required control signalling ports. These ports are used within the automated Bash scripts to coordinate TLS testing between the server and client machines, including when testing on localhost.
+
+By default, the ports used for control signalling are as follows:
+- **Server TCP Port**: 12345
+- **Client TCP Port**: 12346
+
+Please ensure the firewall on the testing devices, alongside any firewalls placed between the server and client machines, allow communications on the ports specified above before continuing with the rest of the instructions.
+
+If needed, these port numbers can be changed directly in the `oqsprovider-test-server.sh` and `oqsprovider-test-client.sh` bash scripts. This can be done by modifying the source and destination port values supplied to the nc commands in the `control_signal` function within these scripts. 
+
+> **Note:** Future versions of the repository will facilitate the option to supply custom ports to the testing scripts during setup to reduce the need to edit the script files if the default ports are not suitable.
+
 ### Generating Required Certificates and Private Keys
-Before beginning testing, it is necessary to first generate the required server certificate and private key files needed for the TLS performance testing tools. This can be done by executing the following command from within the `scripts/testing-scripts` directory:
+It is necessary to first generate the required server certificate and private key files needed for the TLS performance testing tools before running the automated testing. This can be done by executing the following command from within the `scripts/testing-scripts` directory:
 
 ```
 ./oqsprovider-generate-keys.sh
@@ -105,10 +119,9 @@ When utilising two separate machines for testing, one machine will be set up as 
 ## Outputted Results
 The results from the Full PQC TLS Test will be stored in the `test-data/up-results/ops-provider/machine-x` directory, which can be found within the code's root directory. The results include handshake and speed test results for both PQC and classic ciphersuites. This directory is used to store all of the unparsed results from the automated testing tools.
 
-**Please note that when using more than one machine for testing, the results will only be stored on the client machine, not the server machine.**
-
 However, the data stored is not yet ready for interpretation or graph generation. To parse the data into a format that can be used for further analysis please refer to the [parsing results](../../README.md) section within the readme file.
 
+> **Note:** When using more than one machine for testing, the results will only be stored on the client machine, not the server machine.
 
 ## Included Testing Scripts
 The Full PQC TLS Test tool uses several scripts to perform the TLS handshake tests. These include:
