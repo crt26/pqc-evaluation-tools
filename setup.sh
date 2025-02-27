@@ -188,7 +188,7 @@ function dependency_install() {
 
     for package in "${required_pip_packages[@]}"; do
         if ! python3 -c "import $package" 2>/dev/null; then
-            missing_packages+=("$package")
+            missing_pip_packages+=("$package")
         fi
     done
 
