@@ -183,7 +183,7 @@ function dependency_install() {
 
     # Determine which python packages are needing to be installed
     echo "Checking Python Dependencies..."
-    required_pip_packages=("pandas" "matplotlib" "jinja2" "tabulate")
+    required_pip_packages=("pandas" "jinja2" "tabulate")
     missing_pip_packages=()
 
     for package in "${required_pip_packages[@]}"; do
@@ -191,6 +191,8 @@ function dependency_install() {
             missing_pip_packages+=("$package")
         fi
     done
+
+    echo "msissing_pip_packages: ${missing_pip_packages[@]}"
 
     # Check if any packages are missing before checking pip install functionality
     if [[ ${#missing_pip_packages[@]} -ne 0 ]]; then
