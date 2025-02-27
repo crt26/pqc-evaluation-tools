@@ -192,8 +192,6 @@ function dependency_install() {
         fi
     done
 
-    echo "msissing_pip_packages: ${missing_pip_packages[@]}"
-
     # Check if any packages are missing before checking pip install functionality
     if [[ ${#missing_pip_packages[@]} -ne 0 ]]; then
 
