@@ -181,12 +181,17 @@ function dependency_install() {
         sudo apt-get install -y "${not_installed[@]}"
     fi
 
+    # Set the pip break system package env var
+    export PIP_BREAK_SYSTEM_PACKAGES=1
+
     # Installing needed python modules for testing tools
     echo "Checking Python Dependency Modules..."
-    pip install pandas --break-system-packages
-    pip install matplotlib --break-system-packages
-    pip install jinja2 --break-system-packages
-    pip install tabulate --break-system-packages
+    pip install pandas
+    pip install matplotlib
+    pip install jinja2
+    pip install tabulate
+
+    unset PIP_BREAK_SYSTEM_PACKAGES
 
     # Determine location of Python3 binary
     if [ -x "$(command -v python3)" ]; then
