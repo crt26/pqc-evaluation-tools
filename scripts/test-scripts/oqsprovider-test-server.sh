@@ -165,7 +165,7 @@ function check_control_port() {
     # until the port is open and listening before returning exiting the function, allowing the control_signal function to send the signal.
 
     # Wait until the client is listening on the control port before sending signal
-    until nc -z "$CLIENT_IP" 12346 > /dev/null 2>&1; do
+    until nc -z "$CLIENT_IP" "$CLIENT_CONTROL_PORT" > /dev/null 2>&1; do
         :
     done
 
@@ -183,7 +183,7 @@ function control_signal() {
     local message="$2"
 
     # Kill lingering netcat processes
-    pkill -f "nc -l -p 12345"
+    pkill -f "nc -l -p $SERVER_CONTROL_PORT"
 
     # Determine the type of control signal method to be used
     case "$type" in
@@ -194,7 +194,7 @@ function control_signal() {
             check_control_port
 
             # Send control signal to the client until successful
-            until echo "$message" | nc -n -w 1 "$CLIENT_IP" 12346 > /dev/null 2>&1; do
+            until echo "$message" | nc -n -w 1 "$CLIENT_IP" "$CLIENT_CONTROL_PORT" > /dev/null 2>&1; do
                 exit_status=$?
                 if [ "$exit_status" -ne 0 ]; then
                     :
@@ -210,7 +210,7 @@ function control_signal() {
             while true; do
 
                 # Wait for a connection from the client and capture the request in a variable
-                signal_message=$(nc -l -p 12345)
+                signal_message=$(nc -l -p "$SERVER_CONTROL_PORT")
 
                 # Check if the received control signal message is valid
                 if [[ "$signal_message" == "ready" || "$signal_message" == "skip" || "$signal_message" == "complete" ]]; then
@@ -224,7 +224,7 @@ function control_signal() {
 
             # Wait for the client to send ready signal
             while true; do
-                signal_message=$(nc -l -p 12345)
+                signal_message=$(nc -l -p "$SERVER_CONTROL_PORT")
                 if [[ "$signal_message" == "handshake_ready" ]]; then
                     break
                 fi
@@ -233,8 +233,8 @@ function control_signal() {
             # Check if the control port is open on the client before sending signal
             check_control_port
 
-            # Wait for the server to send ready signal
-            until echo "handshake_ready" | nc -n -w 1 "$CLIENT_IP" 12346 > /dev/null 2>&1; do
+            # Send the handshake ready signal to the client
+            until echo "handshake_ready" | nc -n -w 1 "$CLIENT_IP" "$CLIENT_CONTROL_PORT" > /dev/null 2>&1; do
                 exit_status=$?
                 if [ "$exit_status" -ne 0 ]; then
                     :
@@ -440,7 +440,15 @@ function main() {
     get_algs
     clear
 
-    # Performing initial handshake with client
+    # Checking if custom ports have been used and if so, outputting a warning message
+    if [ "$SERVER_CONTROL_PORT" != "55000" ] || [ "$CLIENT_CONTROL_PORT" != "55001" ]; then
+        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        echo "Custom control port detected, Server Control Port: $SERVER_CONTROL_PORT, Client Control Port: $CLIENT_CONTROL_PORT"
+        echo "Please ensure that the client is passed the same control port values"
+        echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    fi
+
+    # Outputting the start message and beginning the initial handshake
     echo -e "Server Script Activated, waiting for connection from client..."
     control_signal "iteration_handshake"
 

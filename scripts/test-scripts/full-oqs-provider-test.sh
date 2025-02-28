@@ -10,10 +10,149 @@
 # If executing both server and client on the same machine, this is not needed as the client can access the keys directly.
 
 #-------------------------------------------------------------------------------------------------------------------------------
+function is_valid_port() {
+    # Helper function called by parse_script_flags to check if the custom port passed to the script when called is a valid TCP port number
+
+    # Store passed value and check if it is a valid port number
+    local port="$1"
+    if [[ "$port" =~ ^[0-9]+$ ]] && (( port >= 1024 && port <= 65535 )); then
+        return 0
+    else
+        return 1
+    fi
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
+function parse_script_flags {
+    # Function for parsing the flags passed to the script when called
+
+    # Check if custom control port flags have been passed to the script
+    while [[ $# -gt 0 ]]; do
+
+        case "$1" in
+
+            --server-control-port=*)
+                # Store the custom server control port number
+                server_control_port="${1#*=}"
+
+                # Check if the port number is valid
+                if ! is_valid_port "$server_control_port"; then
+                    echo -e "[ERROR] - Invalid server control port number: $server_control_port"
+                    exit 1
+                fi
+
+                shift
+                ;;
+
+            --client-control-port=*)
+
+                # Store the custom client control port number
+                client_control_port="${1#*=}"
+
+                # Check if the port number is valid
+                if ! is_valid_port "$client_control_port"; then
+                    echo -e "[ERROR] - Invalid client control port number: $client_control_port"
+                    exit 1
+                fi
+
+                shift
+                ;;
+
+            *)
+                echo "Unknown option: $1"
+                echo "Valid options are:"
+                echo "  --server-control-port=<PORT>    Set the server control port (1024-65535)"
+                echo "  --client-control-port=<PORT>    Set the client control port (1024-65535)"
+                exit 1
+                ;;
+
+        esac
+
+    done
+
+    # Ensure that the server and client control ports are not the same
+    if [ "$server_control_port" == "$client_control_port" ]; then
+        echo -e "\n[ERROR] - Server and client control ports cannot be the same"
+        exit 1
+    fi
+
+    # Ensure that no active processes are running on the control ports
+    if lsof -Pi :$server_control_port -sTCP:LISTEN -t >/dev/null || lsof -Pi :$client_control_port -sTCP:LISTEN -t >/dev/null; then
+        echo -e "\n[ERROR] - Server or client control port is already in use"
+        exit 1
+    fi
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
+function is_port_in_use() {
+    # Helper function to determine the custom set control ports are in use. It will try a variety of methods to determine if the port is in use
+    # to account for variations in the tools available on different systems.
+
+    # Store the passed port number variable
+    local port="$1"
+
+    # Attempt various methods to determine if the port is in use
+    if command -v lsof &>/dev/null; then
+        lsof -Pi :"$port" -sTCP:LISTEN -t >/dev/null 2>&1
+
+    elif command -v ss &>/dev/null; then
+        ss -tulnp | grep -q ":${port} "
+
+    elif command -v netstat &>/dev/null; then
+        netstat -tulnp 2>/dev/null | grep -q ":${port} "
+
+    else
+
+        # Output warning that no tool was found to check port usage
+        echo -e "[WARNING] - No tool found to check port usage (lsof, ss, netstat)\n"
+        
+        # Ask the user if they wish to proceed without checking
+        while true; do
+
+            read -p "Do you wish to continue without checking if the control ports are already in use? [y/n] - " user_response
+
+            case $user_response in
+
+                [Yy]* )
+                    skip_port_check="True"
+                    return 1
+                    ;;
+
+                [Nn]* )
+                    echo -e "\nExiting script..."
+                    exit 1
+                    ;;
+
+                * )
+                    echo -e "Please enter a valid response [y/n]\n"
+                    ;;
+
+            esac
+
+        done
+
+    fi
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
 function setup_base_env() {
     # Function for setting up the basic global variables for the test suite. This includes setting the root directory
     # and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
     # using this, determines the root directory of the project.
+
+    # Ensure that control ports are not in the use by other processes in the system
+    if is_port_in_use "$server_control_port"; then
+        echo -e "[ERROR] - Server control port is already in use, Server control port: $server_control_port"
+        exit 1
+    fi
+
+    if [ "$skip_port_check" != "True" ] && is_port_in_use "$client_control_port"; then
+        echo -e "[ERROR] - Client control port is already in use, Client control port: $client_control_port"
+        exit 1
+    fi
 
     # Determine directory that the script is being run from
     script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -63,6 +202,10 @@ function setup_base_env() {
     machine_type=""
     MACHINE_NUM="1"
 
+    # Exporting the control port variables
+    export SERVER_CONTROL_PORT="$server_control_port"
+    export CLIENT_CONTROL_PORT="$client_control_port"
+
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
@@ -105,6 +248,8 @@ function clean_environment() {
     unset CLIENT_IP
     unset SERVER_IP
     unset LD_LIBRARY_PATH
+    unset SERVER_CONTROL_PORT
+    unset CLIENT_CONTROL_PORT
 
     # Clearing result types paths 
     for var in "${result_dir_paths[@]}"; do
@@ -493,6 +638,15 @@ function run_tests() {
 function main() {
     # Main function for controlling OQS-Provider TLS performance testing
 
+    # Set default control port values
+    server_control_port="55000"
+    client_control_port="55001"
+
+    # Parse script flags if there are any
+    if [[ $# -gt 0 ]]; then
+        parse_script_flags "$@"
+    fi
+
     # Setting up the base environment for the test suite
     setup_base_env
 
@@ -507,4 +661,4 @@ function main() {
     clean_environment
 
 }
-main
+main "$@"
