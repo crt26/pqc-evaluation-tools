@@ -5,7 +5,7 @@
 
 # This is a utility script for cleaning the various project files produced from compiling and benchmarking. The script 
 # provides functionality for either uninstalling the OQS-Provider libraries from the system, clearing the old results and generated TLS keys, or both. 
-# When uninstalling, the script will remove the liboqs, OQS-Provider, and OpenSSL 3.4.0 libraries from the system. When clearing the old results and keys,
+# When uninstalling, the script will remove the liboqs, OQS-Provider, and OpenSSL 3.4.1 libraries from the system. When clearing the old results and keys,
 # the script will remove the old test results and generated keys directories from the test-data directory.
 
 #-------------------------------------------------------------------------------------------------------------------------------
@@ -53,7 +53,7 @@ function setup_base_env() {
     # Declaring global source-code path files
     liboqs_source="$tmp_dir/liboqs-source"
     oqs_provider_source="$tmp_dir/oqs-provider-source"
-    openssl_source="$tmp_dir/openssl-3.4.0"
+    openssl_source="$tmp_dir/openssl-3.4.1"
 
 }
 
@@ -72,7 +72,7 @@ function select_uninstall_mode() {
         echo -e "\nPlease Select one of the following uninstall options"
         echo "1 - Uninstall Liboqs Library Only"
         echo "2 - Uninstall OQS-Provider Library only"
-        echo "3 - Uninstall OpenSSL 3.4.0 Only"
+        echo "3 - Uninstall OpenSSL 3.4.1 Only"
         echo "4 - Uninstall all Libraries"
         echo "5 - Exit Setup"
         read -p "Enter your choice (1-5): " user_opt
@@ -93,9 +93,9 @@ function select_uninstall_mode() {
                 break;;
 
             3)
-                # Uninstall OpenSSL 3.4.0 only
+                # Uninstall OpenSSL 3.4.1 only
                 rm -rf "$openssl_path"
-                echo -e "\nOpenSSL 3.4.0 Uninstalled"
+                echo -e "\nOpenSSL 3.4.1 Uninstalled"
                 break;;
 
             4)

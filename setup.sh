@@ -25,7 +25,7 @@ oqs_provider_path="$libs_dir/oqs-provider"
 # Declaring global source-code path files
 liboqs_source="$tmp_dir/liboqs-source"
 oqs_provider_source="$tmp_dir/oqs-provider-source"
-openssl_source="$tmp_dir/openssl-3.4.0"
+openssl_source="$tmp_dir/openssl-3.4.1"
 
 # Setting Global flag variables
 install_type=0 # 0=Liboqs-only, 1=liboqs+OQS-Provider, 2=OQS-Provider-only
@@ -310,7 +310,7 @@ function handle_oqs_version() {
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function openssl_build() {
-    # Function for building the required version of OpenSSL (3.4.0) for the testing tools
+    # Function for building the required version of OpenSSL (3.4.1) for the testing tools
 
     # Setting thread count for build and Declaring conf file changes array
     threads=$(nproc)
@@ -339,13 +339,13 @@ function openssl_build() {
 
         # Outputting current task to terminal
         echo -e "\n######################################"
-        echo "Downloading and Building OpenSSL-3.4.0"
+        echo "Downloading and Building OpenSSL-3.4.1"
         echo -e "######################################\n"
 
         # Getting required version of openssl and extracting
-        wget -O "$tmp_dir/openssl-3.4.0.tar.gz" https://github.com/openssl/openssl/releases/download/openssl-3.4.0/openssl-3.4.0.tar.gz
-        tar -xf "$tmp_dir/openssl-3.4.0.tar.gz" -C $tmp_dir
-        rm "$tmp_dir/openssl-3.4.0.tar.gz"
+        wget -O "$tmp_dir/openssl-3.4.1.tar.gz" https://github.com/openssl/openssl/releases/download/openssl-3.4.1/openssl-3.4.1.tar.gz
+        tar -xf "$tmp_dir/openssl-3.4.1.tar.gz" -C $tmp_dir
+        rm "$tmp_dir/openssl-3.4.1.tar.gz"
 
         # Building required version of OpenSSL in testing-repo directory only
         echo "Building OpenSSL Library"
@@ -368,9 +368,8 @@ function openssl_build() {
 
         # Testing if the new version has correctly installed
         test_output=$("$openssl_path/bin/openssl" version)
-        echo "test_output: $test_output"
 
-        if [[ "$test_output" != "OpenSSL 3.4.0 22 Oct 2024 (Library: OpenSSL 3.4.0 22 Oct 2024)" ]]; then
+        if [[ "$test_output" != "OpenSSL 3.4.1 11 Feb 2025 (Library: OpenSSL 3.4.1 11 Feb 2025)" ]]; then
             echo -e "\n\nERROR: installing required OpenSSL version failed, please verify install process"
             exit 1
         fi
@@ -624,7 +623,7 @@ function main() {
                 get_encoder_build_option
                 dependency_install
 
-                # Building OpenSSL 3.4.0
+                # Building OpenSSL 3.4.1
                 openssl_build
 
                 # Check if liboqs is present and install if not
