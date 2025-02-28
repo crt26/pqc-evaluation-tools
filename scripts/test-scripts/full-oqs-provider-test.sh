@@ -96,8 +96,9 @@ function is_port_in_use() {
     # Helper function to determine if a given port is in use.
     # If a process is using the port, it stores the process name in `port_process`.
 
+    # Store the port number and initialise the process name
     local port="$1"
-    port_process=""  # Reset the variable storing the process name
+    port_process=""
 
     # Attempt to check if the port is in use and if so store the process name to check if it is the test suite
     if command -v lsof &>/dev/null; then
