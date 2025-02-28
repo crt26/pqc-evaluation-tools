@@ -165,7 +165,7 @@ function check_control_port() {
     # until the port is open and listening before returning exiting the function, allowing the control_signal function to send the signal.
 
     # Wait until the server is listening on the control port before sending signal
-    until nc -z "$SERVER_IP" 12345 > /dev/null 2>&1; do
+    until nc -z "$SERVER_IP" "$SERVER_CONTROL_PORT" > /dev/null 2>&1; do
         :
     done
 
@@ -183,7 +183,7 @@ function control_signal() {
     local message="$2"
 
     # Kill lingering netcat processes
-    pkill -f "nc -l -p 12346"
+    pkill -f "nc -l -p $CLIENT_CONTROL_PORT"
 
     # Determine the type of control signal method to be used
     case "$type" in
@@ -194,7 +194,7 @@ function control_signal() {
             check_control_port
 
             # Send control signal to the server until successful
-            until echo "$message" | nc -n -w 1 "$SERVER_IP" 12345 > /dev/null 2>&1; do
+            until echo "$message" | nc -n -w 1 "$SERVER_IP" "$SERVER_CONTROL_PORT" > /dev/null 2>&1; do
                 exit_status=$?
                 if [ "$exit_status" -ne 0 ]; then
                     :
@@ -210,7 +210,7 @@ function control_signal() {
             while true; do
 
                 # Wait for a connection from the server and capture the request in a variable
-                signal_message=$(nc -l -p 12346)
+                signal_message=$(nc -l -p "$CLIENT_CONTROL_PORT")
 
                 # Check if the received control signal message is valid
                 if [[ "$signal_message" == "ready" || "$signal_message" == "skip" || "$signal_message" == "complete" ]]; then
@@ -226,7 +226,7 @@ function control_signal() {
             check_control_port
 
             # Send control signal to the server until successful
-            until echo "handshake_ready" | nc -n -w 1 "$SERVER_IP" 12345 > /dev/null 2>&1; do
+            until echo "handshake_ready" | nc -n -w 1 "$SERVER_IP" "$SERVER_CONTROL_PORT" > /dev/null 2>&1; do
                 exit_status=$?
                 if [ "$exit_status" -ne 0 ]; then
                     :
@@ -237,7 +237,7 @@ function control_signal() {
 
             # Wait for the server to send ready signal
             while true; do
-                signal_message=$(nc -l -p 12346)
+                signal_message=$(nc -l -p "$CLIENT_CONTROL_PORT")
                 if [[ "$signal_message" == "handshake_ready" ]]; then
                     break
                 fi
@@ -308,10 +308,10 @@ function pqc_tests() {
                     while true; do
 
                         # Debug line for checking server connection with current sig/kem combination. To use uncomment line and then comment out the s_time line
-                        #"$openssl_path/bin/openssl" s_client -connect $SERVER_IP:4433 -CAfile $cert_file -provider default -provider oqsprovider -provider-path $provider_path -groups "$kem"
+                        #"$openssl_path/bin/openssl" s_client -connect $SERVER_IP:$S_SERVER_PORT -CAfile $cert_file -provider default -provider oqsprovider -provider-path $provider_path -groups "$kem"
 
                         # Running OpenSSL s_time process with current test parameters
-                        "$openssl_path/bin/openssl" s_time -connect $SERVER_IP:4433 -CAfile $cert_file -time $TIME_NUM  -verify 1 \
+                        "$openssl_path/bin/openssl" s_time -connect $SERVER_IP:$S_SERVER_PORT -CAfile $cert_file -time $TIME_NUM  -verify 1 \
                             -provider default -provider oqsprovider -provider-path $provider_path > $handshake_dir/$output_name
                         exit_code=$?
 
@@ -399,7 +399,8 @@ function classic_tests() {
                 while true; do
 
                     # Running OpenSSL s_time process with current test parameters
-                    "$openssl_path/bin/openssl" s_time -connect $SERVER_IP:4433 -CAfile $classic_cert_file -time $TIME_NUM > "$CLASSIC_HANDSHAKE/$output_name"
+                    "$openssl_path/bin/openssl" s_time -connect $SERVER_IP:$S_SERVER_PORT -CAfile $classic_cert_file \
+                        -time $TIME_NUM > "$CLASSIC_HANDSHAKE/$output_name"
                     exit_code=$?
 
                     # Check if test was successful and retrying if not
@@ -455,6 +456,14 @@ function main() {
     # Import algorithms and clear terminal
     get_algs
     clear
+
+    # Checking if custom ports have been used and if so, outputting a warning message
+    if [ "$SERVER_CONTROL_PORT" != "55000" ] || [ "$CLIENT_CONTROL_PORT" != "55001" ] || [ "$S_SERVER_PORT" != "4433" ]; then
+        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        echo "Custom TCP ports detected - Server Control Port: $SERVER_CONTROL_PORT, Client Control Port: $CLIENT_CONTROL_PORT, S_Server Port: $S_SERVER_PORT"
+        echo "Please ensure that the server has been passed the same custom TCP port values, otherwise tests will fail"
+        echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    fi
 
     # Performing initial handshake with server
     echo -e "Client Script Activated, connecting to server...\n"

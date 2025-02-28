@@ -3,7 +3,7 @@
 ## Contents <!-- omit from toc --> 
 - [Overview](#overview)
 - [Getting Started](#getting-started)
-  - [Ensuring Access to Control Signal Ports in Firewalls](#ensuring-access-to-control-signal-ports-in-firewalls)
+  - [Control Ports and Firewall Setup for Testing](#control-ports-and-firewall-setup-for-testing)
   - [Generating Required Certificates and Private Keys](#generating-required-certificates-and-private-keys)
   - [Testing Tool Execution](#testing-tool-execution)
   - [Testing Options](#testing-options)
@@ -25,22 +25,34 @@ The automated testing tool is currently only supported on the following devices:
 - ARM Linux devices using a 64-bit Debian based Operating System
 
 ## Getting Started
-To begin testing the performance of PQC algorithms when integrated within TLS, there are various steps that must be completed and they differ depending on whether a single machine or two machines are being used. Please fully review this section before conducting the tests to ensure all configurations are correct.
+Before running tests, ensure proper setup based on your testing environment (single vs. dual machine). Review this section to configure everything correctly.
 
 The scripts required for conducting the automated testing are stored in the `scripts/test-scripts` directory which can be found within the project's root directory.
 
-### Ensuring Access to Control Signal Ports in Firewalls
-Before running the various scripts for the automated TLS performance benchmarking, it is first crucial to ensure the testing environment allows communications over the required control signalling ports. These ports are used within the automated Bash scripts to coordinate TLS testing between the server and client machines, including when testing on localhost.
+### Control Ports and Firewall Setup for Testing
+Before running the automated TLS performance benchmarking scripts, ensure that your firewall settings allow communication over the required control signalling ports. These ports enable coordination between the server and client machines, even when testing on localhost
 
-By default, the ports used for control signalling are as follows:
-- **Server TCP Port**: 12345
-- **Client TCP Port**: 12346
+#### Default Ports Used in the Testing Suite
 
-Please ensure the firewall on the testing devices, alongside any firewalls placed between the server and client machines, allow communications on the ports specified above before continuing with the rest of the instructions.
+| **Port Usage**            | **Default Port** |
+|---------------------------|------------------|
+| Server Control TCP Port   | 55000            |
+| Client Control TCP Port   | 55001            |
+| OpenSSL S_Server TCP Port | 4433             |
 
-If needed, these port numbers can be changed directly in the `oqsprovider-test-server.sh` and `oqsprovider-test-client.sh` bash scripts. This can be done by modifying the source and destination port values supplied to the nc commands in the `control_signal` function within these scripts. 
+The server machine must accept incoming traffic on the OpenSSL S_Server port to allow TLS handshake testing. Ensure your firewall settings permit communication on the above ports for both local and remote testing.
 
-> **Note:** Future versions of the repository will facilitate the option to supply custom ports to the testing scripts during setup to reduce the need to edit the script files if the default ports are not suitable.
+#### Using Custom Ports
+
+If the default testing suite TCP ports are **not suitable** for the testing environment, you can specify custom ports when executing the `full-oqs-provider-test.sh` script. This can be done for either the server, the client, or both machines by including the following flags:
+
+```
+--server-control-port=<PORT>    Set the server control port   (1024-65535)
+--client-control-port=<PORT>    Set the client control port   (1024-65535)
+--s-server-port=<PORT>          Set the OpenSSL S_Server port (1024-65535)
+```
+
+When testing between two physical machines, it is essential to specify the same custom ports on both the server and client by including these flags when executing the script on each machine.
 
 ### Generating Required Certificates and Private Keys
 It is necessary to first generate the required server certificate and private key files needed for the TLS performance testing tools before running the automated testing. This can be done by executing the following command from within the `scripts/testing-scripts` directory:
