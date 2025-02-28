@@ -298,11 +298,11 @@ function pqc_tests() {
 
                 # Starting server process
                 "$openssl_path/bin/openssl" s_server -cert $cert_file -key $key_file -www -tls1_3 -groups $kem \
-                    -provider oqsprovider -provider-path $provider_path -accept 4433 &
+                    -provider oqsprovider -provider-path $provider_path -accept $S_SERVER_PORT &
                 server_pid=$!
 
                 # Check if server has started before sending ready signal
-                until netstat -tuln | grep ':4433' > /dev/null; do
+                until netstat -tuln | grep ":$S_SERVER_PORT" > /dev/null; do
                     :
                 done
 
@@ -375,7 +375,7 @@ function classic_tests {
 
                     # Start ECC test server processes
                     "$openssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 \
-                        -named_curve $classic_alg -ciphersuites "$cipher" -accept 4433 &
+                        -named_curve $classic_alg -ciphersuites "$cipher" -accept $S_SERVER_PORT &
 
                     server_pid=$!
 
@@ -386,14 +386,14 @@ function classic_tests {
                     classic_key_file="$classic_cert_dir/$classic_alg-srv.key"
 
                     # Start RSA test server processes
-                    "$openssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 -ciphersuites $cipher -accept 4433 &
+                    "$openssl_path/bin/openssl" s_server -cert $classic_cert_file -key $classic_key_file -www -tls1_3 -ciphersuites $cipher -accept $S_SERVER_PORT &
                     server_pid=$!
                     
 
                 fi
 
                 # Check if s_server has started before sending ready signal to client
-                until netstat -tuln | grep ':4433' > /dev/null; do
+                until netstat -tuln | grep ":$S_SERVER_PORT" > /dev/null; do
                     :
                 done
 
@@ -441,11 +441,11 @@ function main() {
     clear
 
     # Checking if custom ports have been used and if so, outputting a warning message
-    if [ "$SERVER_CONTROL_PORT" != "55000" ] || [ "$CLIENT_CONTROL_PORT" != "55001" ]; then
-        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        echo "Custom control port detected, Server Control Port: $SERVER_CONTROL_PORT, Client Control Port: $CLIENT_CONTROL_PORT"
-        echo "Please ensure that the client is passed the same control port values"
-        echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    if [ "$SERVER_CONTROL_PORT" != "55000" ] || [ "$CLIENT_CONTROL_PORT" != "55001" ] || [ "$S_SERVER_PORT" != "4433" ]; then
+        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        echo "Custom TCP ports detected - Server Control Port: $SERVER_CONTROL_PORT, Client Control Port: $CLIENT_CONTROL_PORT, S_Server Port: $S_SERVER_PORT"
+        echo "Please ensure that the client is passed the flags for any custom TCP port values"
+        echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
     fi
 
     # Outputting the start message and beginning the initial handshake

@@ -41,7 +41,6 @@ function parse_script_flags {
                     echo -e "[ERROR] - Invalid server control port number: $server_control_port"
                     exit 1
                 fi
-
                 shift
                 ;;
 
@@ -55,15 +54,28 @@ function parse_script_flags {
                     echo -e "[ERROR] - Invalid client control port number: $client_control_port"
                     exit 1
                 fi
+                shift
+                ;;
 
+            --s-server-port=*)
+
+                # Store the custom s_server port number
+                s_server_port="${1#*=}"
+
+                # Check if the port number is valid
+                if ! is_valid_port "$s_server_port"; then
+                    echo -e "[ERROR] - Invalid s_server port number: $s_server_port"
+                    exit 1
+                fi
                 shift
                 ;;
 
             *)
-                echo "Unknown option: $1"
+                echo "[ERROR] - Unknown option: $1"
                 echo "Valid options are:"
-                echo "  --server-control-port=<PORT>    Set the server control port (1024-65535)"
-                echo "  --client-control-port=<PORT>    Set the client control port (1024-65535)"
+                echo "  --server-control-port=<PORT>    Set the server control port   (1024-65535)"
+                echo "  --client-control-port=<PORT>    Set the client control port   (1024-65535)"
+                echo "  --s-server-port=<PORT>          Set the OpenSSL S_Server port (1024-65535)"
                 exit 1
                 ;;
 
@@ -71,15 +83,9 @@ function parse_script_flags {
 
     done
 
-    # Ensure that the server and client control ports are not the same
-    if [ "$server_control_port" == "$client_control_port" ]; then
-        echo -e "\n[ERROR] - Server and client control ports cannot be the same"
-        exit 1
-    fi
-
-    # Ensure that no active processes are running on the control ports
-    if lsof -Pi :$server_control_port -sTCP:LISTEN -t >/dev/null || lsof -Pi :$client_control_port -sTCP:LISTEN -t >/dev/null; then
-        echo -e "\n[ERROR] - Server or client control port is already in use"
+    # Ensure that no custom ports are the same
+    if [ "$server_control_port" == "$client_control_port" ] || [ "$server_control_port" == "$s_server_port" ] || [ "$client_control_port" == "$s_server_port" ]; then
+        echo -e "[ERROR] - Custom TCP ports cannot be the same"
         exit 1
     fi
 
@@ -87,27 +93,37 @@ function parse_script_flags {
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function is_port_in_use() {
-    # Helper function to determine the custom set control ports are in use. It will try a variety of methods to determine if the port is in use
-    # to account for variations in the tools available on different systems.
+    # Helper function to determine if a given port is in use.
+    # If a process is using the port, it stores the process name in `port_process`.
 
-    # Store the passed port number variable
     local port="$1"
+    port_process=""  # Reset the variable storing the process name
 
-    # Attempt various methods to determine if the port is in use
+    # Attempt to check if the port is in use and if so store the process name to check if it is the test suite
     if command -v lsof &>/dev/null; then
-        lsof -Pi :"$port" -sTCP:LISTEN -t >/dev/null 2>&1
+        port_pid=$(lsof -Pi :"$port" -sTCP:LISTEN -t 2>/dev/null | awk 'NR==2 {print $2}')
+        if [[ -n "$port_pid" ]]; then
+            port_process=$(ps -p "$port_pid" -o comm= 2>/dev/null | awk '{$1=$1};1')
+            return 0
+        fi
 
     elif command -v ss &>/dev/null; then
-        ss -tulnp | grep -q ":${port} "
+        port_process=$(ss -tulnp | awk -v port=":$port" '$0 ~ port {print $NF}' | cut -d',' -f2 | cut -d'"' -f2)
+        if [[ -n "$port_process" ]]; then
+            return 0
+        fi
 
     elif command -v netstat &>/dev/null; then
-        netstat -tulnp 2>/dev/null | grep -q ":${port} "
+        port_process=$(netstat -tulnp 2>/dev/null | grep ":$port" | awk '{print $7}' | cut -d'/' -f2)
+        if [[ -n "$port_process" ]]; then
+            return 0
+        fi
 
     else
 
         # Output warning that no tool was found to check port usage
         echo -e "[WARNING] - No tool found to check port usage (lsof, ss, netstat)\n"
-        
+
         # Ask the user if they wish to proceed without checking
         while true; do
 
@@ -135,6 +151,9 @@ function is_port_in_use() {
 
     fi
 
+    # Return 1 if the port is not in use
+    return 1
+
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
@@ -143,16 +162,25 @@ function setup_base_env() {
     # and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
     # using this, determines the root directory of the project.
 
-    # Ensure that control ports are not in the use by other processes in the system
-    if is_port_in_use "$server_control_port"; then
-        echo -e "[ERROR] - Server control port is already in use, Server control port: $server_control_port"
-        exit 1
-    fi
+    # Ensure that control ports are not in use by other processes in the system
+    skip_port_check="False"
+    ports_to_check=("$server_control_port" "$client_control_port" "$s_server_port")
+    port_names=("Server control port" "Client control port" "OpenSSL S_Server port")
 
-    if [ "$skip_port_check" != "True" ] && is_port_in_use "$client_control_port"; then
-        echo -e "[ERROR] - Client control port is already in use, Client control port: $client_control_port"
-        exit 1
-    fi
+    for custom_port_index in "${!ports_to_check[@]}"; do
+
+        # Check if the port is in use in the system if the user has not chosen to skip the check due to missing tools
+        if [ "$skip_port_check" != "True" ] && is_port_in_use "${ports_to_check[$custom_port_index]}"; then
+
+            # Check if that process is another instance of the test suite (to allow localhost testing)
+            if [ "$port_process" != "nc" ]; then
+                echo -e "[ERROR] - ${port_names[$custom_port_index]} is already in use, Port: ${ports_to_check[$custom_port_index]}"
+                echo "$port_process is using the port"
+                exit 1
+            fi
+
+        fi
+    done
 
     # Determine directory that the script is being run from
     script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -202,9 +230,10 @@ function setup_base_env() {
     machine_type=""
     MACHINE_NUM="1"
 
-    # Exporting the control port variables
+    # Exporting the TCP port variables
     export SERVER_CONTROL_PORT="$server_control_port"
     export CLIENT_CONTROL_PORT="$client_control_port"
+    export S_SERVER_PORT="$s_server_port"
 
 }
 
@@ -250,6 +279,7 @@ function clean_environment() {
     unset LD_LIBRARY_PATH
     unset SERVER_CONTROL_PORT
     unset CLIENT_CONTROL_PORT
+    unset S_SERVER_PORT
 
     # Clearing result types paths 
     for var in "${result_dir_paths[@]}"; do
@@ -638,9 +668,10 @@ function run_tests() {
 function main() {
     # Main function for controlling OQS-Provider TLS performance testing
 
-    # Set default control port values
+    # Set default TCP port values
     server_control_port="55000"
     client_control_port="55001"
+    s_server_port="4433"
 
     # Parse script flags if there are any
     if [[ $# -gt 0 ]]; then

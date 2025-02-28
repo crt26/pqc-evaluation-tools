@@ -308,10 +308,10 @@ function pqc_tests() {
                     while true; do
 
                         # Debug line for checking server connection with current sig/kem combination. To use uncomment line and then comment out the s_time line
-                        #"$openssl_path/bin/openssl" s_client -connect $SERVER_IP:4433 -CAfile $cert_file -provider default -provider oqsprovider -provider-path $provider_path -groups "$kem"
+                        #"$openssl_path/bin/openssl" s_client -connect $SERVER_IP:$S_SERVER_PORT -CAfile $cert_file -provider default -provider oqsprovider -provider-path $provider_path -groups "$kem"
 
                         # Running OpenSSL s_time process with current test parameters
-                        "$openssl_path/bin/openssl" s_time -connect $SERVER_IP:4433 -CAfile $cert_file -time $TIME_NUM  -verify 1 \
+                        "$openssl_path/bin/openssl" s_time -connect $SERVER_IP:$S_SERVER_PORT -CAfile $cert_file -time $TIME_NUM  -verify 1 \
                             -provider default -provider oqsprovider -provider-path $provider_path > $handshake_dir/$output_name
                         exit_code=$?
 
@@ -399,7 +399,8 @@ function classic_tests() {
                 while true; do
 
                     # Running OpenSSL s_time process with current test parameters
-                    "$openssl_path/bin/openssl" s_time -connect $SERVER_IP:4433 -CAfile $classic_cert_file -time $TIME_NUM > "$CLASSIC_HANDSHAKE/$output_name"
+                    "$openssl_path/bin/openssl" s_time -connect $SERVER_IP:$S_SERVER_PORT -CAfile $classic_cert_file \
+                        -time $TIME_NUM > "$CLASSIC_HANDSHAKE/$output_name"
                     exit_code=$?
 
                     # Check if test was successful and retrying if not
@@ -457,11 +458,11 @@ function main() {
     clear
 
     # Checking if custom ports have been used and if so, outputting a warning message
-    if [ "$SERVER_CONTROL_PORT" != "55000" ] || [ "$CLIENT_CONTROL_PORT" != "55001" ]; then
-        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        echo "Custom control ports detected, Server Control Port: $SERVER_CONTROL_PORT, Client Control Port: $CLIENT_CONTROL_PORT"
-        echo "Please ensure that the server has been passed the same control port values, otherwise tests will fail"
-        echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    if [ "$SERVER_CONTROL_PORT" != "55000" ] || [ "$CLIENT_CONTROL_PORT" != "55001" ] || [ "$S_SERVER_PORT" != "4433" ]; then
+        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        echo "Custom TCP ports detected - Server Control Port: $SERVER_CONTROL_PORT, Client Control Port: $CLIENT_CONTROL_PORT, S_Server Port: $S_SERVER_PORT"
+        echo "Please ensure that the server has been passed the same custom TCP port values, otherwise tests will fail"
+        echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
     fi
 
     # Performing initial handshake with server
