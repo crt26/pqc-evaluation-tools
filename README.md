@@ -130,7 +130,11 @@ When executing the setup script, you will be presented with three options:
 
 The setup script will also handle the building of [OpenSSL 3.4.1](https://www.openssl.org/source/) within the pqc-eval-tools lib directory as this is required to utilise the OpenSSL provider functionality provided by OQS-Provider. This will be a separate build from the systems default OpenSSL installation and will not replace or interfere with those binaries.
 
-Additionally, if compiling the OQS-Provider library, the setup script will prompt you to enable the optional KEM encoders feature. This feature is supported by OQS-Provider, but this repository does not currently utilize it. However, developers who wish to take advantage of KEM encoders can enable this option during setup.
+Additionally, when compiling the **OQS-Provider library**, the setup script will prompt you to enable two optional features:
+
+- **Enabling all disabled signature algorithms** – The setup script provides an option to enable all digital signature algorithms in the OQS-Provider library that are disabled by default. Enabling this feature ensures that TLS performance testing can be conducted using the full range of digital signature algorithms and their variations supported by OQS-Provider.
+
+- **KEM Encoders** – The setup script also allows enabling the optional KEM encoders feature. While this repository does not currently utilise KEM encoders, developers who wish to use them can enable this option as part of the build process.
 
 Once all of the relevant options have been selected, the setup script will download, configure and build each of the libraries. Alongside, optimizing the builds for the current systems by automatically passing the relevant build parameters.
 

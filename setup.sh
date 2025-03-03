@@ -31,28 +31,31 @@ openssl_source="$tmp_dir/openssl-3.4.1"
 install_type=0 # 0=Liboqs-only, 1=liboqs+OQS-Provider, 2=OQS-Provider-only
 
 #-------------------------------------------------------------------------------------------------------------------------------
-function get_reinstall_choice() {
-    
-    # Check if user would like to reinstall libs
+function get_user_yes_no() {
+    # Helper function for getting a yes or no response from the user for a given question regarding the setup process
+
+    local user_prompt="$1"
+
+    # Get the user input for the yes or no question
     while true; do
-        echo -e "\nPrevious Install Detected!!"
-        read -p "would you like to reinstall? (y/n):" user_input
+        read -p "$user_prompt (y/n): " user_input
 
         case $user_input in
 
             [Yy]* )
-                echo -e "Deleting old files and reinstalling...\n"
-                break;;
+                user_y_n_response=1
+                return 0
+                ;;
 
             [Nn]* )
-                echo "Will not reinstall, exiting setup script"
-                exit 0
-                break;;
+                user_y_n_response=0
+                return 1
+                ;;
 
             * )
                 echo -e "Please answer y or n\n"
                 ;;
-        
+
         esac
 
     done
@@ -66,28 +69,48 @@ function configure_dirs() {
     # Declaring directory check array
     required_dirs=("$libs_dir" "$dependency_dir" "$oqs_provider_source" "$tmp_dir" "$test_data_dir" "$alg_lists_dir")
 
+    # Set the default value for the previous install flag
+    previous_install=0
+
     # Check if libs have already been installed based on install type selected
     case $install_type in
 
         0)
             if [ -d "$liboqs_path" ]; then
-                get_reinstall_choice
+                previous_install=1
             fi
             ;;
 
         1)
             if [ -d "$liboqs_path" ] || [ -d "$oqs_provider_path" ]; then
-                get_reinstall_choice
+                previous_install=1
             fi
             ;;
 
         2)
             if [ -d "$oqs_provider_path" ]; then
-                get_reinstall_choice
+                previous_install=1
             fi
             ;;
 
     esac
+
+    # If a previous install is detected, get the user choice for reinstalling the libraries
+    if [ "$previous_install" -eq 1 ]; then
+
+        # Output warning message and get the user choice for reinstalling the libraries
+        echo -e "\nPrevious Install Detected!!"
+        get_user_yes_no "Would you like to reinstall the libraries?"
+
+        # Continue with the setup or exit based on the user choice
+        if [ "$user_y_n_response" -eq 1 ]; then
+            echo -e "Deleting old files and reinstalling...\n"
+        else
+            echo "Will not reinstall, exiting setup script..."
+            exit 0
+        fi
+
+    fi
 
     # Removing old dirs depending on install type
     for dir in "${required_dirs[@]}"; do
@@ -119,36 +142,35 @@ function configure_dirs() {
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
-function get_encoder_build_option() {
-    # Helper function for getting if the KEM encoders flag should be passed to the OQS-Provider build process. This is to allow the user to
-    # This option is given due to the fact that if the KEM encoders options is set to ON, it can increase the size of the OQS-Provider build
+function configure_oqs_provider_build() {
+    # Function for configuring the OQS-Provider build process based on the user input
 
-    # Outputting current task to terminal
-    echo -e "\nConfiguring Optional OQS-Provider Build Flags:\n"
+    # Declare the default OQS-Provider build flag values
+    oqs_enable_algs="false"
+    oqs_enable_encoders="false"
 
-    # Set the Default Encoder flag value to OFF
-    encoder_flag="OFF"
+    # Outputting the current task to the terminal
+    echo -e "\nConfiguring Optional OQS-Provider Build Options:\n"
 
-    # Check if the user would like to enable the KEM encoders option in OQS-Provider build
-    while true; do
-        read -p "Would you like to enable the KEM encoders option in the OQS-Provider build? (y/n): " user_input
+    # Determine if the user wishes to enable all disabled signature algorithms in the OQS-Provider library
+    get_user_yes_no "Would you like to enable all the digital signature algorithms in the OQS-Provider library that are disabled by default?"
 
-        case $user_input in
+    # Set the enable_algs flag based on the user response to later be used in the OQS-Provider build function
+    if [ "$user_y_n_response" -eq 1 ]; then
+        oqs_enable_algs="true"
+    else
+        oqs_enable_algs="false"
+    fi
 
-            [Yy]* )
-                encoder_flag="ON"
-                break;;
+    # Prompt the user to ask if they wish to enable the KEM encoders option in the OQS-Provider build
+    get_user_yes_no "Would you like to enable the KEM encoders option in the OQS-Provider build?"
 
-            [Nn]* )
-                break;;
-                
-            * )
-                echo -e "Please answer y or n\n"
-                ;;
-
-        esac
-    
-    done
+    # Set the OQS-Provider build flags based on the user input
+    if [ "$oqs_enable_algs" == "true" ]; then
+        encoder_flag="ON"
+    else
+        encoder_flag="OFF"
+    fi
 
 }
 
@@ -508,6 +530,10 @@ function oqs_provider_build() {
     echo "Downloading and Installing OQS-Provider"
     echo -e "#######################################\n"
 
+    # Set the generate.yml filepaths
+    backup_generate_file="$root_dir/modded-lib-files/generate.yml"
+    oqs_provider_generate_file="$oqs_provider_source/oqs-template/generate.yml"
+
     # Cloning OQS-Provider library repos based on version selected
     if [ "$use_tested_version" -eq 1 ]; then
 
@@ -524,11 +550,61 @@ function oqs_provider_build() {
     fi
 
     # Enabling all disabled signature algorithms before building
-    export LIBOQS_SRC_DIR="$liboqs_source"
-    cp "$root_dir/modded-lib-files/generate.yml" "$oqs_provider_source/oqs-template/generate.yml"
-    cd $oqs_provider_source
-    /usr/bin/python3 $oqs_provider_source/oqs-template/generate.py
-    cd $root_dir
+    if [ "$oqs_enable_algs" == "true" ]; then
+
+        # Ensure that the generate.yml file is present and determine action based on its presence
+        if [ ! -f  "$oqs_provider_generate_file" ]; then
+
+            # Outputting error message and getting user response
+            echo -e "\n[WARNING]: The generate.yml file is missing from the OQS-Provider library, it is possible that the library no longer supports this feature"
+            get_user_yes_no "Would you like to continue with the setup process anyway?"
+
+            # Determine action based on user response
+            if [ "$user_y_n_response" -eq 0 ]; then
+                echo -e "Exiting setup script..."
+                exit 1
+            else
+                echo "Continuing setup process..."
+                return 0
+            fi
+
+        fi
+
+        # Ensure that the generate.yml file still follows the enable: true/enable: false format before proceeding
+        if ! grep -q "enable: true" "$oqs_provider_generate_file" || ! grep -q "enable: false" "$oqs_provider_generate_file"; then
+
+            # Outputting error message and getting user response
+            echo -e "\n[WARNING]: The generate.yml file in the OQS-Provider library does not follow the expected format"
+            echo -e "this setup script cannot automatically enable all disabled signature algorithms\n"
+            get_user_yes_no "Would you like to continue with the setup process anyway?"
+
+            # Determine action based on user response
+            if [ "$user_y_n_response" -eq 0 ]; then
+                echo -e "Exiting setup script..."
+                exit 1
+            else
+                echo "Continuing setup process..."
+                return 0
+            fi
+
+        fi
+
+        # Modify the generate.yml file to enable all disabled signature algorithms
+        sed -i 's/enable: false/enable: true/g' "$oqs_provider_generate_file"
+
+        # Check if the generate.yml file was successfully modified
+        if ! grep -q "enable: true" "$oqs_provider_generate_file"; then
+            echo -e "\nERROR: enabling all disabled signature algorithms in the OQS-Provider library failed, please verify the setup and run a clean install"
+            exit 1
+        fi
+
+        # Run the generate.py script to enable all disabled signature algorithms
+        export LIBOQS_SRC_DIR="$liboqs_source"
+        cd $oqs_provider_source
+        /usr/bin/python3 $oqs_provider_source/oqs-template/generate.py
+        cd $root_dir
+
+    fi
 
     # Building OQS-Provider library
     cmake -S $oqs_provider_source -B "$oqs_provider_path" \
@@ -595,7 +671,7 @@ function main() {
                 # Configuring setup environment and installing dependencies
                 install_type=1
                 configure_dirs
-                get_encoder_build_option
+                configure_oqs_provider_build
                 dependency_install
 
                 # Building libraries and cleaning up
@@ -620,7 +696,7 @@ function main() {
                 # Configuring setup environment and installing dependencies
                 install_type=2
                 configure_dirs
-                get_encoder_build_option
+                configure_oqs_provider_build
                 dependency_install
 
                 # Building OpenSSL 3.4.1
