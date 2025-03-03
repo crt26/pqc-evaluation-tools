@@ -93,30 +93,56 @@ function parse_script_flags {
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function is_port_in_use() {
-    # Helper function to determine if a given port is in use.
-    # If a process is using the port, it stores the process name in `port_process`.
+    # Helper function to determine if a given port is in use. The function will attempt to use various system tools to check if the port is in use.
+    # Once the available system tool has been determine, the function checks if a process is using the port, it then stores the process name 
+    # in `port_process` and the process ID in `port_pid`.
 
-    # Store the port number and initialise the process name
+    # Store the port number and initialize the process name and PID
     local port="$1"
     port_process=""
+    port_pid=""
+    system_net_tool=""
 
-    # Attempt to check if the port is in use and if so store the process name to check if it is the test suite
-    if command -v lsof &>/dev/null; then
-        port_pid=$(lsof -Pi :"$port" -sTCP:LISTEN -t 2>/dev/null | awk 'NR==2 {print $2}')
+    # Attempt to check if the port is in use and, if so, store the process name and PID
+    if command -v ss &>/dev/null; then
+
+        # Set the system network tool to ss
+        system_net_tool="ss"
+
+        # Grab the process ID and process name when supplying the port number
+        port_pid=$(ss -tulnp | awk -v port=":$port" '$0 ~ port {gsub(".*pid=","",$NF); gsub(",.*","",$NF); print $NF}')
+        port_process=$(ss -tulnp | awk -v port=":$port" '$0 ~ port {for (i=1; i<=NF; i++) if ($i ~ /users:\(\("/) {print $i; exit}}' | sed -E 's/users:\(\("//;s/",pid=.*//')
+
+        # Determine if the port is in use based on if a process ID is found
         if [[ -n "$port_pid" ]]; then
-            port_process=$(ps -p "$port_pid" -o comm= 2>/dev/null | awk '{$1=$1};1')
-            return 0
-        fi
-
-    elif command -v ss &>/dev/null; then
-        port_process=$(ss -tulnp | awk -v port=":$port" '$0 ~ port {print $NF}' | cut -d',' -f2 | cut -d'"' -f2)
-        if [[ -n "$port_process" ]]; then
             return 0
         fi
 
     elif command -v netstat &>/dev/null; then
+
+        # Set the system network tool to netstat
+        system_net_tool="netstat"
+
+        # Grab the process ID and process name when supplying the port number
+        port_pid=$(netstat -tulnp 2>/dev/null | grep ":$port" | awk '{print $7}' | cut -d'/' -f1)
         port_process=$(netstat -tulnp 2>/dev/null | grep ":$port" | awk '{print $7}' | cut -d'/' -f2)
-        if [[ -n "$port_process" ]]; then
+
+        # Determine if the port is in use based on if a process ID is found
+        if [[ -n "$port_pid" ]]; then
+            return 0
+        fi
+
+    if command -v lsof &>/dev/null; then
+
+        # Set the system network tool to lsof
+        system_net_tool="lsof"
+
+        # Grab the process ID and process name when supplying the port number
+        port_pid=$(lsof -Pi :"$port" -sTCP:LISTEN -t 2>/dev/null)
+
+        # Determine if the port is in use based on if a process ID is found
+        if [[ -n "$port_pid" ]]; then
+            port_process=$(ps -p "$port_pid" -o comm= 2>/dev/null | awk '{$1=$1};1')
             return 0
         fi
 
@@ -152,7 +178,7 @@ function is_port_in_use() {
 
     fi
 
-    # Return 1 if the port is not in use
+    # Return that no process is using the passed port
     return 1
 
 }
@@ -160,28 +186,11 @@ function is_port_in_use() {
 #-------------------------------------------------------------------------------------------------------------------------------
 function setup_base_env() {
     # Function for setting up the basic global variables for the test suite. This includes setting the root directory
-    # and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
+    # and the global library paths for the test suite. The function establishes the root path by determining the path of the script and
     # using this, determines the root directory of the project.
 
-    # Ensure that control ports are not in use by other processes in the system
-    skip_port_check="False"
-    ports_to_check=("$server_control_port" "$client_control_port" "$s_server_port")
-    port_names=("Server control port" "Client control port" "OpenSSL S_Server port")
-
-    for custom_port_index in "${!ports_to_check[@]}"; do
-
-        # Check if the port is in use in the system if the user has not chosen to skip the check due to missing tools
-        if [ "$skip_port_check" != "True" ] && is_port_in_use "${ports_to_check[$custom_port_index]}"; then
-
-            # Check if that process is another instance of the test suite (to allow localhost testing)
-            if [ "$port_process" != "nc" ]; then
-                echo -e "[ERROR] - ${port_names[$custom_port_index]} is already in use, Port: ${ports_to_check[$custom_port_index]}"
-                echo "$port_process is using the port"
-                exit 1
-            fi
-
-        fi
-    done
+    # Outputting greeting message to the terminal
+    echo -e "PQC OQS-Provider Test Suite (OpenSSL_3.4.1)\n"
 
     # Determine directory that the script is being run from
     script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -235,6 +244,51 @@ function setup_base_env() {
     export SERVER_CONTROL_PORT="$server_control_port"
     export CLIENT_CONTROL_PORT="$client_control_port"
     export S_SERVER_PORT="$s_server_port"
+
+    # Define the flag and arrays used for the port checking
+    skip_port_check="False"
+    ports_to_check=("$server_control_port" "$client_control_port" "$s_server_port")
+    port_names=("Server control port" "Client control port" "OpenSSL S_Server port")
+
+    # Ensure that control ports are not in use by other processes in the system
+    for custom_port_index in "${!ports_to_check[@]}"; do
+
+        # Check if the port is in use in the system if the user has not chosen to skip the check due to missing tools
+        if [ "$skip_port_check" != "True" ] && is_port_in_use "${ports_to_check[$custom_port_index]}"; then
+
+            # Extract where the process pid is being ran from for the port being checked
+            process_cmdline=$(readlink -f /proc/$port_pid/cwd)
+
+            # Check if the conflicting process is from this test suite
+            if echo "$process_cmdline" | grep -q "$root_dir"; then
+
+                # Determine if the process is from this testing suite
+                if [ "$port_process" == "nc" ] && [ "$custom_port_index" -ne 2 ]; then
+                    continue
+
+                elif [ "$custom_port_index" -eq 2 ] && [ "$port_process" == "openssl" ]; then
+                    echo "[WARNING] - ${port_names[$custom_port_index]} is active from a previous test, killing the process"
+                    kill -9 "$port_pid"
+
+                else
+                    echo "[ERROR] - A service in the project is using the port: ${ports_to_check[$custom_port_index]}, this should not be the case"
+                    echo "Please manually stop the service and try again"
+                    exit 1
+
+                fi
+
+            else
+
+                # Output error message and exit the script
+                echo -e "[ERROR] - ${port_names[$custom_port_index]} is already in use, Port: ${ports_to_check[$custom_port_index]}"
+                echo "$port_process is using the port"
+                exit 1
+
+            fi
+
+        fi
+
+    done
 
 }
 
@@ -678,12 +732,9 @@ function main() {
     if [[ $# -gt 0 ]]; then
         parse_script_flags "$@"
     fi
-    
+
     # Setting up the base environment for the test suite
     setup_base_env
-
-    # Outputting greeting message to the terminal
-    echo -e "PQC OQS-Provider Test Suite (OpenSSL_3.4.1)"
 
     # Getting test options and perform tests 
     configure_test_options
