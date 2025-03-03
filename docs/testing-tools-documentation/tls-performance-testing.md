@@ -36,8 +36,8 @@ Before running the automated TLS performance benchmarking scripts, ensure that y
 
 | **Port Usage**            | **Default Port** |
 |---------------------------|------------------|
-| Server Control TCP Port   | 55000            |
-| Client Control TCP Port   | 55001            |
+| Server Control TCP Port   | 25000            |
+| Client Control TCP Port   | 25001            |
 | OpenSSL S_Server TCP Port | 4433             |
 
 The server machine must accept incoming traffic on the OpenSSL S_Server port to allow TLS handshake testing. Ensure your firewall settings permit communication on the above ports for both local and remote testing.
