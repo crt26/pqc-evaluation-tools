@@ -670,15 +670,15 @@ function main() {
     # Main function for controlling OQS-Provider TLS performance testing
 
     # Set default TCP port values
-    server_control_port="55000"
-    client_control_port="55001"
+    server_control_port="25000"
+    client_control_port="25001"
     s_server_port="4433"
 
     # Parse script flags if there are any
     if [[ $# -gt 0 ]]; then
         parse_script_flags "$@"
     fi
-
+    
     # Setting up the base environment for the test suite
     setup_base_env
 
