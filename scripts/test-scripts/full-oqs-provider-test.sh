@@ -132,7 +132,7 @@ function is_port_in_use() {
             return 0
         fi
 
-    if command -v lsof &>/dev/null; then
+    elif command -v lsof &>/dev/null; then
 
         # Set the system network tool to lsof
         system_net_tool="lsof"
