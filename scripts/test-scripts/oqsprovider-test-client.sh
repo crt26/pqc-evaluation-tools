@@ -458,7 +458,7 @@ function main() {
     clear
 
     # Checking if custom ports have been used and if so, outputting a warning message
-    if [ "$SERVER_CONTROL_PORT" != "55000" ] || [ "$CLIENT_CONTROL_PORT" != "55001" ] || [ "$S_SERVER_PORT" != "4433" ]; then
+    if [ "$SERVER_CONTROL_PORT" != "25000" ] || [ "$CLIENT_CONTROL_PORT" != "25001" ] || [ "$S_SERVER_PORT" != "4433" ]; then
         echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         echo "Custom TCP ports detected - Server Control Port: $SERVER_CONTROL_PORT, Client Control Port: $CLIENT_CONTROL_PORT, S_Server Port: $S_SERVER_PORT"
         echo "Please ensure that the server has been passed the same custom TCP port values, otherwise tests will fail"
