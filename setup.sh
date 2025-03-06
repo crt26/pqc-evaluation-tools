@@ -521,8 +521,6 @@ function modify_openssl_src() {
     sed -i "s/#define MAX_SIG_NUM [0-9]\+/#define MAX_SIG_NUM $new_value/g" "$speed_c_filepath"
     sed -i "s/#define MAX_KEM_NUM [0-9]\+/#define MAX_KEM_NUM $new_value/g" "$speed_c_filepath"
 
-    get_user_yes_no "Would you like to continue with the setup process?"
-
     # Ensure that the MAX_KEM_NUM/MAX_SIG_NUM values were successfully modified before continuing
     if ! grep -q "#define MAX_SIG_NUM $new_value" "$speed_c_filepath" || ! grep -q "#define MAX_KEM_NUM $new_value" "$speed_c_filepath"; then
         echo -e "\n[ERROR] - Modifying the MAX_KEM_NUM/MAX_SIG_NUM values in the speed.c file failed, please verify the setup and run a clean install"
