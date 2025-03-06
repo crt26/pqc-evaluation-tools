@@ -99,7 +99,7 @@ function configure_dirs() {
     if [ "$previous_install" -eq 1 ]; then
 
         # Output warning message and get the user choice for reinstalling the libraries
-        echo -e "\nPrevious Install Detected!!"
+        echo -e "\n[WARNING] - Previous Install Detected!!"
         get_user_yes_no "Would you like to reinstall the libraries?"
 
         # Continue with the setup or exit based on the user choice
@@ -170,6 +170,80 @@ function configure_oqs_provider_build() {
         encoder_flag="ON"
     else
         encoder_flag="OFF"
+    fi
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
+function download_libraries() {
+    # Function for downloading the required versions of the dependencies libraries (OpenSSL, Liboqs, OQS-Provider)
+
+    # Output the current task to the terminal
+    echo -e "\n##############################"
+    echo "Downloading Required Libraries"
+    echo -e "##############################\n"
+
+    # Downloading OpenSSL 3.4.1 and extracting into temp dir
+    wget -O "$tmp_dir/openssl-3.4.1.tar.gz" https://github.com/openssl/openssl/releases/download/openssl-3.4.1/openssl-3.4.1.tar.gz
+    tar -xf "$tmp_dir/openssl-3.4.1.tar.gz" -C $tmp_dir
+    rm "$tmp_dir/openssl-3.4.1.tar.gz"
+
+    # Ensure that the OpenSSL source directory is present before continuing
+    if [ ! -d "$openssl_source" ]; then
+        echo -e "\n[ERROR] - The OpenSSL source directory could not be found after downloading, please verify the installation and rerun the setup script"
+        exit 1
+    fi
+
+    # Download the Liboqs library based on the user_opt selected
+    if [ "$user_opt" == "1" ] || [ "$user_opt" == "2" ]; then
+
+        # Cloning liboqs library repos based on version selected
+        if [ "$use_tested_version" -eq 1 ]; then
+
+            # Clone Liboqs and checkout to the latest tested version
+            git clone https://github.com/open-quantum-safe/liboqs.git $liboqs_source
+            cd $liboqs_source && git checkout "f4b96220e4bd208895172acc4fedb5a191d9f5b1"
+            cd $root_dir
+
+        else
+
+            # Clone latest Liboqs version
+            git clone https://github.com/open-quantum-safe/liboqs.git $liboqs_source
+        
+        fi
+
+        # Ensure that the liboqs source directory is present before continuing
+        if [ ! -d "$liboqs_source" ]; then
+            echo -e "\n[ERROR] - The Liboqs source directory could not be found after downloading, please verify the installation and rerun the setup script"
+            exit 1
+        fi
+
+    fi
+
+    # Download the OQS-Provider library based on the user_opt selected
+    if [ "$user_opt" == "2" ] || [ "$user_opt" == "3" ]; then
+
+        # Cloning OQS-Provider library repos based on version selected
+        if [ "$use_tested_version" -eq 1 ]; then
+
+            # Clone OQS-Provider and checkout to the latest tested version
+            git clone https://github.com/open-quantum-safe/oqs-provider.git $oqs_provider_source >> /dev/null
+            cd $oqs_provider_source && git checkout "ec1e8431f92b52e5d437107a37dbe3408649e8c3"
+            cd $root_dir
+
+        else
+
+            # Clone latest OQS-Provider version
+            git clone https://github.com/open-quantum-safe/oqs-provider.git $oqs_provider_source >> /dev/null
+        
+        fi
+
+        # Ensure that the OQS-Provider source directory is present before continuing
+        if [ ! -d "$oqs_provider_source" ]; then
+            echo -e "\n[ERROR] - The OQS-Provider source directory could not be found after downloading, please verify the installation and rerun the setup script"
+            exit 1
+        fi
+
     fi
 
 }
@@ -269,7 +343,7 @@ function dependency_install() {
                 :
 
             else
-                echo -e "\nERROR: pip is not functioning correctly, please verify the installation and rerun the setup script"
+                echo -e "\n[ERROR] - pip is not functioning correctly, please verify the installation and rerun the setup script"
                 exit 1
             
             fi
@@ -295,6 +369,9 @@ function dependency_install() {
 
     echo "Dependency checks complete"
 
+    # Downloading the required dependency libraries
+    download_libraries
+
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
@@ -316,7 +393,7 @@ function handle_oqs_version() {
         else
 
             # Outputting argument error and help message
-            echo -e "\nERROR: Argument Passed to setup script is invalid: $script_arg"
+            echo -e "\n[ERROR] - Argument Passed to setup script is invalid: $script_arg"
             echo -e "If you are trying to use the last tested versions of the OQS libraries, please use the --safe-setup argument when calling the script\n"
             exit 1
 
@@ -331,12 +408,142 @@ function handle_oqs_version() {
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
+function modify_openssl_src() {
+
+    # Set the default value for the new MAX_KEM_NUM/MAX_SIG_NUM values and the speed.c filepath
+    new_value=200
+    alg_padding=50
+    speed_c_filepath="$openssl_source/apps/speed.c"
+
+    # Set the empty variable for the fail output message used in the initial file checks
+    fail_output=""
+
+    # Check if the speed.c file is present
+    if [ ! -f "$speed_c_filepath" ]; then
+        fail_output="1"
+
+    elif ! grep -q "#define MAX_SIG_NUM" "$speed_c_filepath" || ! grep -q "#define MAX_KEM_NUM" "$speed_c_filepath"; then
+        fail_output="2"
+
+    fi
+
+    # If a fail output message is present, output the related options for the fail type
+    if [ -n "$fail_output" ]; then
+
+        # Output the relevant warning message and info to the the user
+        if [ "$fail_output" == "1" ]; then
+
+            # Output the file can not be found warning message to the user
+            echo "[WARNING] - The setup script cannot find the speed.c file in the OpenSSL source code."
+            echo -e "The setup process can continue, but the TLS speed tests may not work correctly.\n"
+
+        elif [ "$fail_output" == "2" ]; then
+
+            # Output the MAX_KEM_NUM/MAX_SIG_NUM values not found warning message to the user
+            echo "[WARNING] - The OpenSSL speed.c file does not contain the MAX_KEM_NUM/MAX_SIG_NUM values and could not be modified."
+            echo "The setup script can continue, but as the enable all disabled algs flag is set, the TLS speed tests may not work correctly."
+            echo -e "However, the TLS handshake tests will still work as expected.\n"
+
+        fi
+
+        # Output the options to the user and determine the next steps
+        get_user_yes_no "Would you like to continue with the setup process?"
+
+        if [ "$user_y_n_response" -eq 1 ]; then
+            echo "Continuing setup process..."
+            return 0
+        else
+            echo "Exiting setup script..."
+            exit 1
+        fi
+
+    fi
+
+    # Determine how much the hardcoded MAX_KEM_NUM/MAX_SIG_NUM values need increased by
+    cd "$util_scripts"
+    util_output=$($python_bin "get_algorithms.py" "4" 2>&1)
+    py_exit_status=$?
+
+    # Check if there were any errors with executing the python utility script
+    if [ "$py_exit_status" -eq 0 ]; then
+
+        # Extract the number of algorithms from the Python script output
+        alg_count=$(echo "$util_output" | grep -oP '(?<=Total number of Algorithms: )\d+')
+
+        # Set the new alg_count value depending on how many algorithms were found
+        check_value=$((alg_count + $alg_padding))
+
+        # Check if the check value is greater than the default increase value
+        if [ "$check_value" -gt $new_value ]; then
+            new_value=$check_value
+        fi
+
+    else
+
+        # Determine what the cause of the error was and output the appropriate message
+        if echo "$util_output" | grep -q "File not found:.*"; then
+
+            # Output the error message to the user
+            echo "[ERROR] - The Python script that extracts the number of algorithms from the OQS-Provider library could not find the required files."
+            echo "Please verify the installation of the OQS-Provider library and rerun the setup script."
+            exit 1
+        
+        elif echo "$util_output" | grep -q "Failed to parse processing file structure:.*"; then
+
+            # Output the warning message to the user
+            echo "[WARNING] - There was an issue with the Python script that extracts the number of algorithms from the OQS-Provider library."
+            echo "The script returned the following error message occurred: $util_output"
+
+            # Present the options to the user and determine the next steps
+            echo -e "\nIt is possible to continue with the setup process using the fallback high values for the MAX_KEM_NUM and MAX_SIG_NUM values."
+            get_user_yes_no "Would you like to continue with the setup process using the fallback values?"
+
+            if [ "$user_y_n_response" -eq 1 ]; then
+                echo "Continuing setup process with fallback values..."
+            else
+                echo "Exiting setup script..."
+                exit 1
+            fi
+
+        else
+
+            # Output the error message to the user
+            echo "[ERROR] - A wider error occurred within the Python get_algorithms utility script. This will cause larger errors in the setup process."
+            echo "Please verify the setup environment and rerun the setup script."
+            echo "The script returned the following error message: $util_output"
+            exit 1
+
+        fi
+        
+    fi
+
+    # Modify the speed.c file to increase the MAX_KEM_NUM/MAX_SIG_NUM values
+    sed -i "s/#define MAX_SIG_NUM [0-9]\+/#define MAX_SIG_NUM $new_value/g" "$speed_c_filepath"
+    sed -i "s/#define MAX_KEM_NUM [0-9]\+/#define MAX_KEM_NUM $new_value/g" "$speed_c_filepath"
+
+    get_user_yes_no "Would you like to continue with the setup process?"
+
+    # Ensure that the MAX_KEM_NUM/MAX_SIG_NUM values were successfully modified before continuing
+    if ! grep -q "#define MAX_SIG_NUM $new_value" "$speed_c_filepath" || ! grep -q "#define MAX_KEM_NUM $new_value" "$speed_c_filepath"; then
+        echo -e "\n[ERROR] - Modifying the MAX_KEM_NUM/MAX_SIG_NUM values in the speed.c file failed, please verify the setup and run a clean install"
+        exit 1
+    fi
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
 function openssl_build() {
     # Function for building the required version of OpenSSL (3.4.1) for the testing tools
+
+    # Outputting current task to terminal
+    echo -e "\n######################"
+    echo "Building OpenSSL-3.4.1"
+    echo -e "######################\n"
 
     # Setting thread count for build and Declaring conf file changes array
     threads=$(nproc)
 
+    # Define the path to the OQS-Provider library and the openssl.cnf file changes
     oqsprovider_path="$oqs_provider_path/lib/oqsprovider.so"
     conf_changes=(
         "[openssl_init]"
@@ -359,15 +566,10 @@ function openssl_build() {
     # Check if previous openssl build is present and build if not
     if [ ! -d "$openssl_path" ]; then
 
-        # Outputting current task to terminal
-        echo -e "\n######################################"
-        echo "Downloading and Building OpenSSL-3.4.1"
-        echo -e "######################################\n"
-
-        # Getting required version of openssl and extracting
-        wget -O "$tmp_dir/openssl-3.4.1.tar.gz" https://github.com/openssl/openssl/releases/download/openssl-3.4.1/openssl-3.4.1.tar.gz
-        tar -xf "$tmp_dir/openssl-3.4.1.tar.gz" -C $tmp_dir
-        rm "$tmp_dir/openssl-3.4.1.tar.gz"
+        # Modify the speed.c source code if the OQS-Provider library is being built with the enable all disabled algs flag
+        if [ "$oqs_enable_algs" == "true" ]; then
+            modify_openssl_src
+        fi
 
         # Building required version of OpenSSL in testing-repo directory only
         echo "Building OpenSSL Library"
@@ -392,7 +594,7 @@ function openssl_build() {
         test_output=$("$openssl_path/bin/openssl" version)
 
         if [[ "$test_output" != "OpenSSL 3.4.1 11 Feb 2025 (Library: OpenSSL 3.4.1 11 Feb 2025)" ]]; then
-            echo -e "\n\nERROR: installing required OpenSSL version failed, please verify install process"
+            echo -e "\n\n[ERROR] - Installing required OpenSSL version failed, please verify install process"
             exit 1
         fi
 
@@ -445,31 +647,17 @@ function liboqs_build() {
     # Building liboqs if install type is 0 or 1
     if [ "$install_type" -eq 0 ] || [ "$install_type" -eq 1 ]; then
 
+        # Outputting Current Task  
+        echo -e "\n#################"
+        echo "Installing Liboqs"
+        echo -e "#################\n"
+
         # Ensuring clean build path
         if [ -d "$liboqs_path" ]; then 
             sudo rm -r "$liboqs_path"
         fi
         mkdir -p $liboqs_path
 
-        # Outputting Current Task  
-        echo -e "\n#################################"
-        echo "Downloading and Installing Liboqs"
-        echo -e "#################################\n"
-
-        # Cloning liboqs library repos based on version selected
-        if [ "$use_tested_version" -eq 1 ]; then
-
-            # Clone Liboqs and checkout to the latest tested version
-            git clone https://github.com/open-quantum-safe/liboqs.git $liboqs_source
-            cd $liboqs_source && git checkout "f4b96220e4bd208895172acc4fedb5a191d9f5b1"
-            cd $root_dir
-
-        else
-            # Clone latest Liboqs version
-            git clone https://github.com/open-quantum-safe/liboqs.git $liboqs_source
-        
-        fi
-        
         # Setting build options based on current system
         if [ "$(uname -m)" = "x86_64" ] && [ "$(uname -s)" = "Linux" ]; then
 
@@ -497,7 +685,7 @@ function liboqs_build() {
             
         else
             # Unsupported system error 
-            echo -e "ERROR: Unsupported System Detected - Manual Build Required!\n"
+            echo -e "[ERROR] - Unsupported System Detected - Manual Build Required!\n"
             exit 1
         fi
 
@@ -526,28 +714,13 @@ function oqs_provider_build() {
     # Function for building OQS-Provider library, will build relevant version based on system architecture
 
     # Cloning required repositories
-    echo -e "\n#######################################"
-    echo "Downloading and Installing OQS-Provider"
-    echo -e "#######################################\n"
+    echo -e "\n#######################"
+    echo "Installing OQS-Provider"
+    echo -e "#######################\n"
 
     # Set the generate.yml filepaths
     backup_generate_file="$root_dir/modded-lib-files/generate.yml"
     oqs_provider_generate_file="$oqs_provider_source/oqs-template/generate.yml"
-
-    # Cloning OQS-Provider library repos based on version selected
-    if [ "$use_tested_version" -eq 1 ]; then
-
-        # Clone OQS-Provider and checkout to the latest tested version
-        git clone https://github.com/open-quantum-safe/oqs-provider.git $oqs_provider_source >> /dev/null
-        cd $oqs_provider_source && git checkout "ec1e8431f92b52e5d437107a37dbe3408649e8c3"
-        cd $root_dir
-
-    else
-
-        # Clone latest OQS-Provider version
-        git clone https://github.com/open-quantum-safe/oqs-provider.git $oqs_provider_source >> /dev/null
-    
-    fi
 
     # Enabling all disabled signature algorithms before building
     if [ "$oqs_enable_algs" == "true" ]; then
@@ -556,7 +729,7 @@ function oqs_provider_build() {
         if [ ! -f  "$oqs_provider_generate_file" ]; then
 
             # Outputting error message and getting user response
-            echo -e "\n[WARNING]: The generate.yml file is missing from the OQS-Provider library, it is possible that the library no longer supports this feature"
+            echo -e "\n[WARNING] - The generate.yml file is missing from the OQS-Provider library, it is possible that the library no longer supports this feature"
             get_user_yes_no "Would you like to continue with the setup process anyway?"
 
             # Determine action based on user response
@@ -574,7 +747,7 @@ function oqs_provider_build() {
         if ! grep -q "enable: true" "$oqs_provider_generate_file" || ! grep -q "enable: false" "$oqs_provider_generate_file"; then
 
             # Outputting error message and getting user response
-            echo -e "\n[WARNING]: The generate.yml file in the OQS-Provider library does not follow the expected format"
+            echo -e "\n[WARNING] - The generate.yml file in the OQS-Provider library does not follow the expected format"
             echo -e "this setup script cannot automatically enable all disabled signature algorithms\n"
             get_user_yes_no "Would you like to continue with the setup process anyway?"
 
@@ -594,7 +767,7 @@ function oqs_provider_build() {
 
         # Check if the generate.yml file was successfully modified
         if ! grep -q "enable: true" "$oqs_provider_generate_file"; then
-            echo -e "\nERROR: enabling all disabled signature algorithms in the OQS-Provider library failed, please verify the setup and run a clean install"
+            echo -e "\n[ERROR] - Enabling all disabled signature algorithms in the OQS-Provider library failed, please verify the setup and run a clean install"
             exit 1
         fi
 
@@ -608,7 +781,8 @@ function oqs_provider_build() {
 
     # Building OQS-Provider library
     cmake -S $oqs_provider_source -B "$oqs_provider_path" \
-        -DCMAKE_INSTALL_PREFIX="$oqs_provider_path" -DOPENSSL_ROOT_DIR="$openssl_path" -Dliboqs_DIR="$liboqs_path/lib/cmake/liboqs" -DOQS_KEM_ENCODERS="$encoder_flag"
+        -DCMAKE_INSTALL_PREFIX="$oqs_provider_path" -DOPENSSL_ROOT_DIR="$openssl_path" \
+        -Dliboqs_DIR="$liboqs_path/lib/cmake/liboqs" -DOQS_KEM_ENCODERS="$encoder_flag"
 
     cmake --build "$oqs_provider_path" -- -j $(nproc)
     cmake --install "$oqs_provider_path"
@@ -760,7 +934,7 @@ function main() {
 
     # Outputting there was an issue with the python utility script that creates the alg-list files
     if [ "$py_exit_status" -ne 0 ]; then
-        echo -e "\nERROR: creating algorithm list files failed, please verify both setup and python scripts and rerun setup!!!"
+        echo -e "\n[ERROR] - creating algorithm list files failed, please verify both setup and python scripts and rerun setup!!!"
         echo -e "If the issue persists, you may want to consider re-cloning the repo and rerunning the setup script\n"
     
     elif [ -z "$py_exit_status" ]; then
