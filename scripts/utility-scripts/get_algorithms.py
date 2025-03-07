@@ -299,7 +299,7 @@ def parse_oqs_provider_algorithms_md():
         sys.exit(1)
 
     except Exception as e:
-        print(f"[ERROR] - Failed to parse processing file structure: {e}")
+        print(f"Failed to parse processing file structure: {e}")
         sys.exit(1)
 
     # Print out the number of algorithms supported by the OQS-Provider library and exit successfully

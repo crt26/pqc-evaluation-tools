@@ -28,7 +28,51 @@ oqs_provider_source="$tmp_dir/oqs-provider-source"
 openssl_source="$tmp_dir/openssl-3.4.1"
 
 # Setting Global flag variables
-install_type=0 # 0=Liboqs-only, 1=liboqs+OQS-Provider, 2=OQS-Provider-only
+install_type=0 # 0=Liboqs-only, 1=Liboqs+OQS-Provider, 2=OQS-Provider-only
+
+#-------------------------------------------------------------------------------------------------------------------------------
+function parse_args() {
+
+    # Check if custom control port flags have been passed to the script
+    while [[ $# -gt 0 ]]; do
+
+        case "$1" in
+
+            --safe-setup)
+
+                # Output the safe setup message to the user and set the use_tested_version flag
+                echo -e "[NOTICE] - Safe-Setup selected, using the last tested versions of the OQS libraries\n"
+                use_tested_version=1
+                shift
+                ;;
+
+            --set-speed-new-value=*)
+
+                # Set the user-defined speed flag and value
+                user_defined_speed_flag=1
+                user_defined_speed_value="${1#*=}"
+                shift
+                ;;
+
+            *)
+                echo "[ERROR] - Unknown option: $1"
+                echo "Valid options are:"
+                echo "  --safe-setup                  Use the last tested versions of the OQS libraries"
+                echo "  --set-speed-new-value=[int]   Set a new value to be set for the hardcoded MAX_KEM_NUM/MAX_SIG_NUM values in the OpenSSL speed.c file"
+                exit 1
+                ;;
+
+        esac
+
+    done
+
+    # Ensure that the user-defined value is a valid integer if the user-defined speed flag is set
+    if [ "$user_defined_speed_flag" -eq 1 ] && ! [[ "$user_defined_speed_value" =~ ^[0-9]+$ ]]; then
+        echo -e "[ERROR] - The user-defined speed value must be a valid integer, please verify the value and rerun the setup script"
+        exit 1
+    fi
+
+}
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function get_user_yes_no() {
@@ -273,7 +317,7 @@ function dependency_install() {
 
     # Install any missing dependency packages
     if [[ ${#not_installed[@]} -ne 0 ]]; then
-        sudo apt-get update && sudo apt upgrade -y
+        sudo apt-get update && sudo apt-get upgrade -y
         sudo apt-get install -y "${not_installed[@]}"
     fi
 
@@ -375,44 +419,33 @@ function dependency_install() {
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
-function handle_oqs_version() {
-    # Function for setting the version of the OQS libraries to be used in the setup process. This is to allow
-    # the user to set the version to the version last tested by the development team or to default to the latest version available. The 
-    # function will only be called if the "safe-setup" argument is passed with the setup script.
+function set_new_speed_values() {
+    # Helper function for setting the new values for the hardcoded MAX_KEM_NUM/MAX_SIG_NUM values in the OpenSSL speed.c file
 
-    # Check to see if user has passed argument to script
-    local script_arg="$1"
+    # Set the passed variables to local variables
+    local passed_filepath="$1"
+    local passed_value="$2"
 
-    if [ -n "$script_arg" ]; then
-    
-        # Check if the argument passed is valid and set the version of the OQS libraries to be used
-        if [ "$script_arg" == "--safe-setup" ]; then
-            echo -e "NOTICE: Safe-Setup selected, using the last tested versions of the OQS libraries\n"
-            use_tested_version=1
-    
-        else
+    # Modify the speed.c file to increase the MAX_KEM_NUM/MAX_SIG_NUM values
+    sed -i "s/#define MAX_SIG_NUM [0-9]\+/#define MAX_SIG_NUM $new_value/g" "$passed_filepath"
+    sed -i "s/#define MAX_KEM_NUM [0-9]\+/#define MAX_KEM_NUM $new_value/g" "$passed_filepath"
 
-            # Outputting argument error and help message
-            echo -e "\n[ERROR] - Argument Passed to setup script is invalid: $script_arg"
-            echo -e "If you are trying to use the last tested versions of the OQS libraries, please use the --safe-setup argument when calling the script\n"
-            exit 1
-
-        fi
-
-    else
-        # Configuring the setup script to use the latest version of the OQS libraries
-        use_tested_version=0
-
+    # Ensure that the MAX_KEM_NUM/MAX_SIG_NUM values were successfully modified before continuing
+    if ! grep -q "#define MAX_SIG_NUM $new_value" "$passed_filepath" || ! grep -q "#define MAX_KEM_NUM $new_value" "$passed_filepath"; then
+        echo -e "\n[ERROR] - Modifying the MAX_KEM_NUM/MAX_SIG_NUM values in the speed.c file failed, please verify the setup and run a clean install"
+        exit 1
     fi
-    
+
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function modify_openssl_src() {
+    # Function for modifying the OpenSSL speed.c source code to adjust the MAX_KEM_NUM and MAX_SIG_NUM values
 
-    # Set the default value for the new MAX_KEM_NUM/MAX_SIG_NUM values and the speed.c filepath
-    new_value=200
-    alg_padding=50
+    # Output the current task to the terminal
+    echo -e "[NOTICE] - Enable all disabled OQS-Provider algs flag is set, modifying the OpenSSL speed.c file to adjust the MAX_KEM_NUM/MAX_SIG_NUM values...\n"
+
+    # Set the speed.c filepath
     speed_c_filepath="$openssl_source/apps/speed.c"
 
     # Set the empty variable for the fail output message used in the initial file checks
@@ -459,73 +492,129 @@ function modify_openssl_src() {
 
     fi
 
-    # Determine how much the hardcoded MAX_KEM_NUM/MAX_SIG_NUM values need increased by
-    cd "$util_scripts"
-    util_output=$($python_bin "get_algorithms.py" "4" 2>&1)
-    py_exit_status=$?
+    # Extract the default values assigned to the MAX_KEM_NUM/MAX_SIG_NUM variables in the speed.c file
+    default_max_kem_num=$(grep -oP '(?<=#define MAX_KEM_NUM )\d+' "$speed_c_filepath")
+    default_max_sig_num=$(grep -oP '(?<=#define MAX_SIG_NUM )\d+' "$speed_c_filepath")
 
-    # Check if there were any errors with executing the python utility script
-    if [ "$py_exit_status" -eq 0 ]; then
+    # If the user-defined speed flag is set, use the user-defined value
+    if [ "$user_defined_speed_flag" -eq 1 ]; then
+        new_value=$user_defined_speed_value
+    fi
 
-        # Extract the number of algorithms from the Python script output
-        alg_count=$(echo "$util_output" | grep -oP '(?<=Total number of Algorithms: )\d+')
+    # Set the default fallback value and emergency padding value for the MAX_KEM_NUM/MAX_SIG_NUM values in case of automatic detection failure
+    fallback_value=200
+    emergency_padding=100
 
-        # Set the new alg_count value depending on how many algorithms were found
-        check_value=$((alg_count + $alg_padding))
+    # Determine highest value between the MAX_KEM_NUM and MAX_SIG_NUM values (they should be the same but just in case)
+    highest_default_value=$(($default_max_kem_num > $default_max_sig_num ? $default_max_kem_num : $default_max_sig_num))
 
-        # Check if the check value is greater than the default increase value
-        if [ "$check_value" -gt $new_value ]; then
-            new_value=$check_value
+    # Ensure that the fallback value is greater than the default MAX_KEM_NUM/MAX_SIG_NUM values
+    if [ "$highest_default_value" -gt "$fallback_value" ]; then
+
+        # Set the emergency fallback value and emergency value
+        fallback_value=$((highest_default_value + emergency_padding))
+
+        # Warn the user this has happened before continuing the setup process
+        echo "[WARNING] - The default fallback value for the MAX_KEM_NUM/MAX_SIG_NUM values is less than the default values in the speed.c file."
+        echo -e "The new fallback value with an emergency padding of $emergency_padding is $fallback_value.\n"
+        sleep 5
+
+    fi
+
+    # If the user-defined value is set, check that the supplied value is not lower than the current default values in the speed.c file
+    if [ "$user_defined_speed_flag" -eq 1 ] && [ "$new_value" -lt "$highest_default_value" ]; then
+
+        # Output the warning message to the user and get their choice for continuing with the setup process
+        echo -e "\n[WARNING] - The user-defined new value for the MAX_KEM_NUM/MAX_SIG_NUM variables are less than the default values in the speed.c file."
+        echo "The current values in the speed.c file is MAX_KEM_NUM: $default_max_kem_num and MAX_SIG_NUM: $default_max_sig_num."
+        echo -e "In this situation, the setup process can use the fallback value of $fallback_value instead of the user defined value of $new_value\n"
+        get_user_yes_no "Would you like to continue with the setup process using the default new value of $fallback_value instead?"
+
+        # If fallback should be used, modify the speed.c file to use the fallback value instead otherwise exit the setup script
+        if [ "$user_y_n_response" -eq 1 ]; then
+            new_value=$fallback_value
+        else
+            echo "Exiting setup script..."
+            exit 1
         fi
+
+    fi
+
+    # Perform automatic adjustment or user define adjustment of the MAX_KEM_NUM/MAX_SIG_NUM values
+    if [ "$user_defined_speed_flag" -eq 1 ]; then
+
+        # Set the new values using the user-defined value
+        set_new_speed_values "$speed_c_filepath" "$new_value"
 
     else
 
-        # Determine what the cause of the error was and output the appropriate message
-        if echo "$util_output" | grep -q "File not found:.*"; then
+        # Determine how much the hardcoded MAX_KEM_NUM/MAX_SIG_NUM values need increased by
+        cd "$util_scripts"
+        util_output=$($python_bin "get_algorithms.py" "4" 2>&1)
+        py_exit_status=$?
 
-            # Output the error message to the user
-            echo "[ERROR] - The Python script that extracts the number of algorithms from the OQS-Provider library could not find the required files."
-            echo "Please verify the installation of the OQS-Provider library and rerun the setup script."
-            exit 1
-        
-        elif echo "$util_output" | grep -q "Failed to parse processing file structure:.*"; then
+        # Check if there were any errors with executing the python utility script
+        if [ "$py_exit_status" -eq 0 ]; then
 
-            # Output the warning message to the user
-            echo "[WARNING] - There was an issue with the Python script that extracts the number of algorithms from the OQS-Provider library."
-            echo "The script returned the following error message occurred: $util_output"
+            # Extract the number of algorithms from the Python script output
+            alg_count=$(echo "$util_output" | grep -oP '(?<=Total number of Algorithms: )\d+')
 
-            # Present the options to the user and determine the next steps
-            echo -e "\nIt is possible to continue with the setup process using the fallback high values for the MAX_KEM_NUM and MAX_SIG_NUM values."
-            get_user_yes_no "Would you like to continue with the setup process using the fallback values?"
-
-            if [ "$user_y_n_response" -eq 1 ]; then
-                echo "Continuing setup process with fallback values..."
-            else
-                echo "Exiting setup script..."
+            # Check if alg_count is a valid number
+            if ! [[ "$alg_count" =~ ^[0-9]+$ ]]; then
+                echo "[ERROR] - Failed to extract a valid number of algorithms from the Python script output."
                 exit 1
             fi
 
+            # Determine the new value by adding the default value to the number of algorithms found
+            new_value=$((highest_default_value + alg_count))
+
         else
 
-            # Output the error message to the user
-            echo "[ERROR] - A wider error occurred within the Python get_algorithms utility script. This will cause larger errors in the setup process."
-            echo "Please verify the setup environment and rerun the setup script."
-            echo "The script returned the following error message: $util_output"
-            exit 1
+            # Determine what the cause of the error was and output the appropriate message
+            if echo "$util_output" | grep -q "File not found:.*"; then
 
+                # Output the error message to the user
+                echo "[ERROR] - The Python script that extracts the number of algorithms from the OQS-Provider library could not find the required files."
+                echo "Please verify the installation of the OQS-Provider library and rerun the setup script."
+                exit 1
+            
+            elif echo "$util_output" | grep -q "Failed to parse processing file structure:.*"; then
+
+                # Output the warning message to the user
+                echo "[WARNING] - There was an issue with the Python script that extracts the number of algorithms from the OQS-Provider library."
+                echo "The script returned the following error message: $util_output"
+
+                # Present the options to the user and determine the next steps
+                echo -e "It is possible to continue with the setup process using the fallback high values for the MAX_KEM_NUM and MAX_SIG_NUM values.\n"
+                get_user_yes_no "Would you like to continue with the setup process using the fallback values ($fallback_value algorithms)?"
+
+                if [ "$user_y_n_response" -eq 1 ]; then
+                    echo "Continuing setup process with fallback values..."
+                    new_value=$fallback_value
+                else
+                    echo "Exiting setup script..."
+                    exit 1
+                fi
+
+            else
+
+                # Output the error message to the user
+                echo "[ERROR] - A wider error occurred within the Python get_algorithms utility script. This will cause larger errors in the setup process."
+                echo "Please verify the setup environment and rerun the setup script."
+                echo "The script returned the following error message: $util_output"
+                exit 1
+
+            fi
+            
         fi
+
+        # Set the new values using the new_value variable
+        set_new_speed_values "$speed_c_filepath" "$new_value"
         
     fi
 
-    # Modify the speed.c file to increase the MAX_KEM_NUM/MAX_SIG_NUM values
-    sed -i "s/#define MAX_SIG_NUM [0-9]\+/#define MAX_SIG_NUM $new_value/g" "$speed_c_filepath"
-    sed -i "s/#define MAX_KEM_NUM [0-9]\+/#define MAX_KEM_NUM $new_value/g" "$speed_c_filepath"
-
-    # Ensure that the MAX_KEM_NUM/MAX_SIG_NUM values were successfully modified before continuing
-    if ! grep -q "#define MAX_SIG_NUM $new_value" "$speed_c_filepath" || ! grep -q "#define MAX_KEM_NUM $new_value" "$speed_c_filepath"; then
-        echo -e "\n[ERROR] - Modifying the MAX_KEM_NUM/MAX_SIG_NUM values in the speed.c file failed, please verify the setup and run a clean install"
-        exit 1
-    fi
+    # Output success message to the terminal
+    echo "[NOTICE] - The MAX_KEM_NUM/MAX_SIG_NUM values in the OpenSSL speed.c file have been successfully modified to $new_value"
 
 }
 
@@ -793,14 +882,25 @@ function oqs_provider_build() {
 function main() {
     # Function for building the specified test suite
 
-    # Determine which versions of the OQS libraries are to be used
-    handle_oqs_version "$1"
+    # Output the welcome message to the terminal
+    echo "#################################"
+    echo "PQC-Evaluation-Tools Setup Script"
+    echo -e "#################################\n"
+
+    # Set the default script wide flag values
+    use_tested_version=0
+    user_defined_speed_flag=0
+
+    # Parse arguments passed to the script
+    if [ "$#" -gt 0 ]; then
+        parse_args "$@"
+    fi
 
     # Getting setup options from user
     while true; do
 
         # Outputting options to user and getting input
-        echo -e "\nPlease Select one of the following build options"
+        echo "Please Select one of the following build options"
         echo "1 - Build Liboqs Library Only"
         echo "2 - Build OQS-Provider and Liboqs Library"
         echo "3 - Build OQS-Provider Library with previous Liboqs Install"
