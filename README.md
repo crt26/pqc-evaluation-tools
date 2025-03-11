@@ -3,7 +3,7 @@
 ## Notice: <!-- omit from toc --> 
 This is the **development branch**, it may not be in a fully functioning state and documentation may still need updated. The checkboxes below indicates whether the current development version is in a basic functioning state and if the documentation is accurate for its current functionality. Regardless please keep this in mind and use the main branch if possible, thank you.
 
-- [ ] Functioning State*
+- [x] Functioning State*
 - [x] Up to date documentation
 
 <!-- > *Dev branch Notice: Current functioning state works for both x86 and ARM machines. However, on ARM devices, memory profiling for Falcon algorithm variations is non-functioning. Please refer to [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761) for more details. Work is underway to resolve this issue but for now the repository has methods in place to account for this. Automated testing and parsing scripts can still be used to gather performance metrics for all other algorithms on ARM systems.  -->
@@ -52,6 +52,7 @@ Going forward, this project aims to incorporate other PQC libraries present in t
   - [Standard Setup](#standard-setup)
   - [Safe Setup](#safe-setup)
   - [Ensuring Root Dir Path Marker is Present](#ensuring-root-dir-path-marker-is-present)
+  - [Optional Setup flags](#optional-setup-flags)
 - [Automated Testing Tools](#automated-testing-tools)
   - [Tools Description](#tools-description)
   - [Liboqs Performance Testing](#liboqs-performance-testing)
@@ -163,6 +164,22 @@ To manually regenerate the file, move into the projects root directory and execu
 touch .pqc_eval_dir_marker.tmp
 ```
 
+### Optional Setup flags
+The setup script can accept additional flags when being called to configure certain steps in the setup process.
+
+#### Set MAX_KEM_NUM/MAX_SIG_NUM Value:
+When enabling all the algorithms supported by the `OQS-Provider` library, the automated TLS handshake performance testing will work with no issues but the TLS speed tests using the `OpenSSL speed` tool will fail. This tool is used to gather performance data for the cryptographic operations of digital signature and KEM algorithms when loaded into `OpenSSL`. However, when enabling all the disabled algorithms in `OQS-Provider` library, the tool fails and warns that an excessive number of algorithms has been registered with `OpenSSL`. This is caused by hardcoded variables in the `speed` tool's source code which are capped at a specific value.
+
+This project's setup script has built in mechanisms to determine the number of additional algorithms supplied to `OpenSSl` from `OQS-Provider` and will modify the source code before compiling `OpenSSL` to address this issue by increasing the hardcoded values. However, if for whatever reason this fails or the user wishes the supply a specific value, the setup supports the use of a custom value being used instead.
+
+To manually specify a custom value, use the `--set-speed-new-value` flag when calling the main setup script:
+
+```
+./setup.sh --set-speed-new-value=[integer]
+```
+
+Where `[integer]` is the desired value for the MAX_KEM_NUM and MAX_SIG_NUM variables when modifying the `OpenSSl speed` source code.
+
 ## Automated Testing Tools
 
 ### Tools Description
@@ -242,13 +259,22 @@ The current set of utility scripts includes:
 This is a utility script for cleaning the various project files produced from the compiling and benchmarking operations. The script provides functionality for either uninstalling the OQS and other dependency libraries from the system, clearing the old results and generated TLS keys, or both.
 
 ### get_algorithms.py <!-- omit from toc --> 
-This is a Python utility script which is used to dynamically determine the algorithms which are supported by the version of Liboqs and OQS-Provider libraries installed. These are then outputted accordingly to the `test-data/alg-lists` text files for the different algorithm and test types. The main usage of the script is to be called from the `setup.sh` script where it is passed an argument which dictates which install type is being performed in the setup process. There is also the option to call the `get_algorithms.py` manually to create the algorithm list files if required.
+This is a Python utility script which is used to dynamically determine the algorithms which are supported by the version of Liboqs and OQS-Provider libraries installed. These are then outputted accordingly to the `test-data/alg-lists` text files for the different algorithm and test types. 
+
+The main usage of the script is to be called from the `setup.sh` script where it is passed an argument which dictates which install type is being performed in the setup process. There is also the option to call the `get_algorithms.py` manually to create the algorithm list files if required.
+
+Additionally, the script parses the `ALGORITHMS.md` file from the OQS-Provider source directory to determine the total number of supported algorithms. This function is used internally by setup.sh when enabling all OQS-Provider algorithms. The extracted count is used to modify OpenSSL’s `speed.c` file to accommodate a large number of registered algorithms
 
 Based on the the install type that has been selected in the main setup script, the following integer arguments can be supplied to the utility script:
 
-- 1 - (Liboqs only)
-- 2 - (Liboqs and OQS-Provider)
-- 3 - (OQS-Provider only)
+| Argument | Functionality                                                                                                                 |
+|----------|-------------------------------------------------------------------------------------------------------------------------------|
+| `1`      | Extracts algorithms for **Liboqs only**.                                                                                      |
+| `2`      | Extracts algorithms for **both Liboqs and OQS-Provider**.                                                                     |
+| `3`      | Extracts algorithms for **OQS-Provider only**.                                                                                |
+| `4`      | Parses `ALGORITHMS.md` from **OQS-Provider** to determine the total number of supported algorithms (used only by `setup.sh`). |
+
+While running option `4` manually will work, it is not necessary. This function is used exclusively by the setup.sh script to modify OpenSSL’s speed.c when all OQS-Provider algorithms are enabled. Unlike the other arguments, it does not modify or create any files in the repository as it only returns the algorithm count for use during setup.
 
 
 Example usage when running manually:

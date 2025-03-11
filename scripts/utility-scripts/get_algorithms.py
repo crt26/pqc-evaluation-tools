@@ -11,6 +11,7 @@ The accepted arguments are:
     - 1 (Liboqs only)
     - 2 (Liboqs and OQS-Provider)
     - 3 (OQS-Provider only)
+    - 4 (OQS-Provider ALGORITHMS.md parsing)
 
 """
 
@@ -26,6 +27,7 @@ root_dir = ""
 liboqs_build_dir = ""
 openssl_path = ""
 openssl_lib_dir = ""
+oqs_provider_src_dir = ""
 
 #-----------------------------------------------------------------------------------------------------------
 def setup_base_env():
@@ -33,7 +35,7 @@ def setup_base_env():
         and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
         using this, determines the root directory of the project """
 
-    global root_dir, liboqs_build_dir, openssl_path, openssl_lib_dir
+    global root_dir, liboqs_build_dir, openssl_path, openssl_lib_dir, oqs_provider_src_dir
 
     # Get the script dir location, set current directory, and set the marker filename
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -74,6 +76,9 @@ def setup_base_env():
     old_ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
     new_ld_library_path = f"{openssl_lib_dir}:{old_ld_library_path}"
     os.environ['LD_LIBRARY_PATH'] = new_ld_library_path
+
+    # Set the path to the ALGORITHMS.md file
+    oqs_provider_src_dir = os.path.join(root_dir, "tmp", "oqs-provider-source")
 
     # Ensure that there are no previous list files present (mainly for if this script is ran manually, setup.sh will handle this)
     alg_list_dir = os.path.join(root_dir, "test-data", "alg-lists")
@@ -237,6 +242,69 @@ def set_tls_classic_algs():
     # Write out the classic algorithms to the list files
     write_to_file(classic_kems, kem_list_file)
     write_to_file(classic_sigs, sig_list_file)
+
+#-----------------------------------------------------------------------------------------------------------
+def parse_oqs_provider_algorithms_md():
+    """ Function for parsing the ALGORITHMS.md file of the OQS-Provider library to extract the total number of algorithms supported
+        This is only called when all algorithms are selected to be enabled by the main setup.sh script, as the OpenSSL speed.c source
+        file needs to be altered so that a larger number of algorithms can be supported. This function will return the total number of algorithms
+        supported by the OQS-Provider library and if parsing fails returns -1 to indicate that the hardcoded high value should be set in the speed.c file """
+
+    # Set the filepaths for the ALGORITHMS.md file and declare main_algs list
+    algs_md_filepath = os.path.join(oqs_provider_src_dir, "ALGORITHMS.md")
+    main_algs = []
+
+    # Set the in_table to its default value
+    in_table = False
+
+    # Try to open the ALGORITHMS.md file and extract the algorithms from the table
+    try:
+
+        # Ensure that the file is present
+        if not os.path.isfile(algs_md_filepath):
+            raise FileNotFoundError()
+                
+        # Open the ALGORITHMS.md file and extract the number of algorithms supported
+        with open (algs_md_filepath, "r", encoding='utf-8') as file:
+            for line in file:
+
+                # Determine if the script is currently in the table of algorithms
+                if "<!--- OQS_TEMPLATE_FRAGMENT_IDS_START -->" in line:
+                    in_table = True
+                    continue
+                
+                elif "<!--- OQS_TEMPLATE_FRAGMENT_IDS_END -->" in line:
+                    break
+                
+                # If in the table extract the algorithm names
+                if in_table:
+
+                    # Only extract the algorithms if not in the first lines of the table
+                    if "Algorithm" in line or "--" in line:
+                        continue
+
+                    else:
+
+                        # Extract the algorithm name from the row and store it in the main_algs list
+                        row = line.split("|")
+                        del row[0]
+                        main_algs.append(row[0].strip())
+
+        # Check that the table was found and the algorithm names were extracted
+        if not main_algs:
+            raise Exception("No algorithms found in the table")
+
+    except FileNotFoundError:
+        print(f"File not found: {algs_md_filepath}")
+        sys.exit(1)
+
+    except Exception as e:
+        print(f"Failed to parse processing file structure: {e}")
+        sys.exit(1)
+
+    # Print out the number of algorithms supported by the OQS-Provider library and exit successfully
+    print(f"Total number of Algorithms: {len(main_algs)}")
+    sys.exit(0)
     
 #-----------------------------------------------------------------------------------------------------------
 def main():
@@ -261,6 +329,9 @@ def main():
         elif sys.argv[1] == "3":
             get_tls_pqc_algs()
             set_tls_classic_algs()
+
+        elif sys.argv[1] == "4":
+            parse_oqs_provider_algorithms_md()
 
         else:
             print(f"\nInvalid argument has been passed to this utility script, please check the code of the setup.sh script, or if you are running this script manually, ensure you are passing the correct argument")

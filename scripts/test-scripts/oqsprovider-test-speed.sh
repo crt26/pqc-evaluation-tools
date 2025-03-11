@@ -138,12 +138,16 @@ function main() {
         classic_output_filename="$CLASSIC_SPEED/tls-speed-classic-$run_num.txt"
 
         # PQC sig and kem algs speed tests
-        "$open_ssl_path/bin/openssl" speed -seconds $TIME_NUM -provider-path $provider_path -provider oqsprovider  $kem_algs_string > $kem_output_filename
-        "$open_ssl_path/bin/openssl" speed -seconds $TIME_NUM -provider-path $provider_path -provider oqsprovider $sig_algs_string > $sig_output_filename
+        "$open_ssl_path/bin/openssl" speed -seconds $TIME_NUM -provider-path $provider_path \
+            -provider oqsprovider  $kem_algs_string > $kem_output_filename
+        "$open_ssl_path/bin/openssl" speed -seconds $TIME_NUM -provider-path $provider_path \
+            -provider oqsprovider $sig_algs_string > $sig_output_filename
 
         # PQC-Hybrid sig and kem algs speed tests
-        "$open_ssl_path/bin/openssl" speed -seconds $TIME_NUM -provider-path $provider_path -provider oqsprovider  $hybrid_kem_algs_string > $hybrid_kem_output_filename
-        "$open_ssl_path/bin/openssl" speed -seconds $TIME_NUM -provider-path $provider_path -provider oqsprovider $hybrid_sig_algs_string > $hybrid_sig_output_filename
+        "$open_ssl_path/bin/openssl" speed -seconds $TIME_NUM -provider-path $provider_path \
+            -provider oqsprovider  $hybrid_kem_algs_string > $hybrid_kem_output_filename
+        "$open_ssl_path/bin/openssl" speed -seconds $TIME_NUM -provider-path $provider_path \
+            -provider oqsprovider $hybrid_sig_algs_string > $hybrid_sig_output_filename
 
     done
 
