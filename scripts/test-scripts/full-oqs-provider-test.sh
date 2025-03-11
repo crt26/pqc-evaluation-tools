@@ -70,12 +70,62 @@ function parse_script_flags {
                 shift
                 ;;
 
+            --control-sleep-time=*)
+
+                # Store the custom control sleep time and set the custom control time flag
+                control_sleep_time="${1#*=}"
+                custom_control_time_flag="True"
+
+                # Check if the sleep timer is valid interger or float
+                if [[ ! $control_sleep_time =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+                    echo -e "\n[ERROR] - Invalid control sleep time: $control_sleep_time"
+                    exit 1
+                fi
+
+                # Check if the sleep timer is below the lowest tested value
+                if (( $(echo "$control_sleep_time < 0.25" | bc -l) )); then
+
+                    # Output warning to the user
+                    echo -e "\n[WARNING] - Control sleep time is below the lowest tested value of 0.25 seconds"
+                    echo "In most instances this should be fine, but some environments have shown testing to fail using lower values"
+
+
+                    # Ask the user if they wish to continue with the lower value
+                    while true; do
+
+                        read -p "Do you wish to continue with the sleep timer set to $control_sleep_time seconds? [y/n] - " user_response
+
+                        case $user_response in
+
+                            [Yy]* )
+                                break
+                                ;;
+
+                            [Nn]* )
+                                echo -e "\nExiting script..."
+                                exit 1
+                                ;;
+
+                            * )
+                                echo -e "Please enter a valid response [y/n]\n"
+                                ;;
+
+                        esac
+
+                    done
+
+
+                fi
+                shift
+                ;;
+
             *)
                 echo "[ERROR] - Unknown option: $1"
                 echo "Valid options are:"
-                echo "  --server-control-port=<PORT>    Set the server control port   (1024-65535)"
-                echo "  --client-control-port=<PORT>    Set the client control port   (1024-65535)"
-                echo "  --s-server-port=<PORT>          Set the OpenSSL S_Server port (1024-65535)"
+                echo "  --server-control-port=<PORT>    Set the server control port             (1024-65535)"
+                echo "  --client-control-port=<PORT>    Set the client control port             (1024-65535)"
+                echo "  --s-server-port=<PORT>          Set the OpenSSL S_Server port           (1024-65535)"
+                echo "  --control-sleep-time=<TIME>     Set the control sleep time in seconds   (integer or float)"
                 exit 1
                 ;;
 
@@ -245,6 +295,13 @@ function setup_base_env() {
     export CLIENT_CONTROL_PORT="$client_control_port"
     export S_SERVER_PORT="$s_server_port"
 
+    # Exporting the control sleep time variable
+    if [ -n "$custom_control_time_flag" ]; then
+        export CONTROL_SLEEP_TIME="$control_sleep_time"
+    else
+        export CONTROL_SLEEP_TIME="0.25"
+    fi
+
     # Define the flag and arrays used for the port checking
     skip_port_check="False"
     ports_to_check=("$server_control_port" "$client_control_port" "$s_server_port")
@@ -335,6 +392,7 @@ function clean_environment() {
     unset SERVER_CONTROL_PORT
     unset CLIENT_CONTROL_PORT
     unset S_SERVER_PORT
+    unset CONTROL_SLEEP_TIME
 
     # Clearing result types paths 
     for var in "${result_dir_paths[@]}"; do
