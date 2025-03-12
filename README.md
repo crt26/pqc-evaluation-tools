@@ -87,13 +87,13 @@ To install and configure the benchmarking suite there are two main options, Stan
 ### Standard Setup
 Clone the current stable version:
 ```
-git clone -b main https://github.com/crt26/pqc-eval-tools.git
+git clone -b main https://github.com/crt26/pqc-evaluation-tools.git
 ```
 
 Move into the cloned repository directory and execute the setup script:
 ```
-cd pqc-eval-tools
-./setup
+cd pqc-evaluation-tools
+./setup.sh
 ```
 
 You may need to change the permissions of the setup script, if that is the case, the setup can be done using the following commands:
@@ -112,7 +112,7 @@ When executing the setup script, you will be presented with three options:
 3. Build the OQS-Provider Library after a previous install of Liboqs
 
 
-The setup script will also handle the building of [OpenSSL 3.2.1](https://www.openssl.org/source/) within the pqc-eval-tools lib directory as this is required to utilise the OpenSSL provider functionality provided by OQS-Provider. This will be a separate build from the systems default OpenSSL installation and will not replace or interfere with those binaries.
+The setup script will also handle the building of [OpenSSL 3.2.1](https://www.openssl.org/source/) within the pqc-evaluation-tools lib directory as this is required to utilise the OpenSSL provider functionality provided by OQS-Provider. This will be a separate build from the systems default OpenSSL installation and will not replace or interfere with those binaries.
 
 Once all of the relevant options have been selected, the setup script will download, configure and build each of the libraries. Alongside, optimizing the builds for the current systems by automatically passing the relevant build parameters.
 
@@ -120,8 +120,8 @@ Once all of the relevant options have been selected, the setup script will downl
 If there are issues with this benchmarking suite when using the latest versions of the OQS libraries available, it is possible to perform the setup using the last tested versions of these dependencies. The instructions for installation remain the same, however, when calling the setup.sh script, the `--safe-setup` argument can be passed. This tells the setup script to use the last tested commits to the OQS project repositories and can be performed using the following commands:
 
 ```
-git clone -b main https://github.com/crt26/pqc-eval-tools.git
-cd pqc-eval-tools
+git clone -b main https://github.com/crt26/pqc-evaluation-tools.git
+cd pqc-evaluation-tools
 ./setup.sh --safe-setup
 ```
 
@@ -258,10 +258,10 @@ This script can change the configurations added to the OpenSSL 3.2.1 configurati
 The repository will contain default directories and files that are present when cloned and during operation will create various directories required for its functionality. In the following diagram and descriptions, directories and files that are created by the scripts are marked with a "*" next to their name wherever they appear in this section.
 
 ### Layout and Descriptions
-The pqc-eval-tools repository directories are organised as follows:
+The pqc-evaluation-tools repository directories are organised as follows:
 
 ```
-pqc-eval-tools/
+pqc-evaluation-tools/
 │
 ├── docs
 │   └── result-info
