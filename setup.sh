@@ -31,7 +31,26 @@ openssl_source="$tmp_dir/openssl-3.4.1"
 install_type=0 # 0=Liboqs-only, 1=Liboqs+OQS-Provider, 2=OQS-Provider-only
 
 #-------------------------------------------------------------------------------------------------------------------------------
+function output_help_message() {
+    # Helper function for outputting the help message to the user when called or when incorrect arguments are passed
+
+    # Output the supported options and their usage to the user
+    echo "Usage: setup.sh [options]"
+    echo "Options:"
+    echo "  --safe-setup                  Use the last tested versions of the OQS libraries"
+    echo "  --set-speed-new-value=[int]   Set a new value to be set for the hardcoded MAX_KEM_NUM/MAX_SIG_NUM values in the OpenSSL speed.c file"
+    echo "  --help                        Display the help message"
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
 function parse_args() {
+
+    # Check if the help flag is passed at any position
+    if [[ "$*" =~ --help ]]; then
+        output_help_message
+        exit 0
+    fi
 
     # Check if custom control port flags have been passed to the script
     while [[ $# -gt 0 ]]; do
@@ -51,26 +70,26 @@ function parse_args() {
                 # Set the user-defined speed flag and value
                 user_defined_speed_flag=1
                 user_defined_speed_value="${1#*=}"
+
+                # Ensure that the user-defined value is a valid integer if the user-defined speed flag is set
+                if [ "$user_defined_speed_flag" -eq 1 ] && ! [[ "$user_defined_speed_value" =~ ^[0-9]+$ ]]; then
+                    echo -e "[ERROR] - The user-defined speed value must be a valid integer, please verify the value and rerun the setup script\n"
+                    output_help_message
+                    exit 1
+                fi
+
                 shift
                 ;;
 
             *)
                 echo "[ERROR] - Unknown option: $1"
-                echo "Valid options are:"
-                echo "  --safe-setup                  Use the last tested versions of the OQS libraries"
-                echo "  --set-speed-new-value=[int]   Set a new value to be set for the hardcoded MAX_KEM_NUM/MAX_SIG_NUM values in the OpenSSL speed.c file"
+                output_help_message
                 exit 1
                 ;;
 
         esac
 
     done
-
-    # Ensure that the user-defined value is a valid integer if the user-defined speed flag is set
-    if [ "$user_defined_speed_flag" -eq 1 ] && ! [[ "$user_defined_speed_value" =~ ^[0-9]+$ ]]; then
-        echo -e "[ERROR] - The user-defined speed value must be a valid integer, please verify the value and rerun the setup script"
-        exit 1
-    fi
 
 }
 
@@ -932,7 +951,8 @@ function main() {
                 py_exit_status=$?
                 cd $root_dir
 
-                break;;
+                break
+                ;;
             
             2)
                 # Outputting selection choice
@@ -957,7 +977,9 @@ function main() {
                 $python_bin "get_algorithms.py" "2"
                 py_exit_status=$?
                 cd $root_dir
-                break;;
+
+                break
+                ;;
 
             3)
                 # Outputting selection choice
@@ -1002,7 +1024,9 @@ function main() {
                 $python_bin "get_algorithms.py" "$alg_list_flag"
                 py_exit_status=$?
                 cd $root_dir
-                break;;
+
+                break
+                ;;
 
             4)
                 echo "Exiting Setup!"

@@ -186,6 +186,7 @@ function hybrid_pqc_keygen() {
             -out "$hybrid_cert_dir/$sig-srv.crt" -CA "$hybrid_cert_dir/$sig-CA.crt" -CAkey "$hybrid_cert_dir/$sig-CA.key" -CAcreateserial -days 365
 
     done
+
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
@@ -199,7 +200,10 @@ function main() {
     get_algs
 
     # Modifying the OpenSSL conf file to temporarily remove the default groups configuration
-    "$util_scripts/configure-openssl-cnf.sh" 0
+    if ! "$util_scripts/configure-openssl-cnf.sh" 0; then
+        echo "[ERROR] - Failed to modify OpenSSL configuration."
+        exit 1
+    fi
 
     # Removing old keys if present and creating key directories
     if [ -d "$keys_dir" ]; then
@@ -220,7 +224,10 @@ function main() {
     hybrid_pqc_keygen
 
     # Restoring OpenSSL conf file to have configuration needed for testing scripts
-    "$util_scripts/configure-openssl-cnf.sh" 1
+    if ! "$util_scripts/configure-openssl-cnf.sh" 1; then
+        echo "[ERROR] - Failed to modify OpenSSL configuration."
+        exit 1
+    fi
 
 }
 main

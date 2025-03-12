@@ -42,6 +42,22 @@ function get_user_yes_no() {
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
+function output_help_message() {
+    # Helper function for outputting the help message to the user when called or when incorrect arguments are passed
+
+    # Output the supported options and their usage to the user
+    echo "Usage: full-oqs-provider-test.sh [options]"
+    echo "Options:"
+    echo "  --server-control-port=<PORT>       Set the server control port             (1024-65535)"
+    echo "  --client-control-port=<PORT>       Set the client control port             (1024-65535)"
+    echo "  --s-server-port=<PORT>             Set the OpenSSL S_Server port           (1024-65535)"
+    echo "  --control-sleep-time=<TIME>        Set the control sleep time in seconds   (integer or float)"
+    echo "  --disable-control-sleep            Disable the control signal sleep time"
+    echo "  --help                             Display the help message"
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
 function is_valid_port() {
     # Helper function called by parse_script_flags to check if the custom port passed to the script when called is a valid TCP port number
 
@@ -58,6 +74,12 @@ function is_valid_port() {
 #-------------------------------------------------------------------------------------------------------------------------------
 function parse_script_flags {
     # Function for parsing the flags passed to the script when called
+
+    # Check if the help flag is passed at any position
+    if [[ "$*" =~ --help ]]; then
+        output_help_message
+        exit 0
+    fi
 
     # Check if custom control port flags have been passed to the script
     while [[ $# -gt 0 ]]; do
@@ -138,12 +160,7 @@ function parse_script_flags {
 
             *)
                 echo "[ERROR] - Unknown option: $1"
-                echo "Valid options are:"
-                echo "  --server-control-port=<PORT>       Set the server control port             (1024-65535)"
-                echo "  --client-control-port=<PORT>       Set the client control port             (1024-65535)"
-                echo "  --s-server-port=<PORT>             Set the OpenSSL S_Server port           (1024-65535)"
-                echo "  --control-sleep-time=<TIME>        Set the control sleep time in seconds   (integer or float)"
-                echo "  --disable-control-sleep            Disable the control signal sleep time"
+                output_help_message
                 exit 1
                 ;;
 
