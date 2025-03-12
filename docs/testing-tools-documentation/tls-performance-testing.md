@@ -9,6 +9,9 @@
   - [Testing Options](#testing-options)
   - [Single Machine Testing](#single-machine-testing)
   - [Separate Server and Client Machine Testing](#separate-server-and-client-machine-testing)
+- [Testing Customisation](#testing-customisation)
+  - [Customising TCP Ports](#customising-tcp-ports)
+  - [Adjusting Control Signalling](#adjusting-control-signalling)
 - [Outputted Results](#outputted-results)
 - [Included Testing Scripts](#included-testing-scripts)
 - [Useful Documentation](#useful-documentation)
@@ -42,17 +45,7 @@ Before running the automated TLS performance benchmarking scripts, ensure that y
 
 The server machine must accept incoming traffic on the OpenSSL S_Server port to allow TLS handshake testing. Ensure your firewall settings permit communication on the above ports for both local and remote testing.
 
-#### Using Custom Ports
-
-If the default testing suite TCP ports are **not suitable** for the testing environment, you can specify custom ports when executing the `full-oqs-provider-test.sh` script. This can be done for either the server, the client, or both machines by including the following flags:
-
-```
---server-control-port=<PORT>    Set the server control port   (1024-65535)
---client-control-port=<PORT>    Set the client control port   (1024-65535)
---s-server-port=<PORT>          Set the OpenSSL S_Server port (1024-65535)
-```
-
-When testing between two physical machines, it is essential to specify the same custom ports on both the server and client by including these flags when executing the script on each machine.
+If the default TCP ports do not suite the testing environment in which the scripts are being executed, instructions on using custom ports can be found in the [Test Customisation Section](#testing-customisation).
 
 ### Generating Required Certificates and Private Keys
 It is necessary to first generate the required server certificate and private key files needed for the TLS performance testing tools before running the automated testing. This can be done by executing the following command from within the `scripts/testing-scripts` directory:
@@ -127,6 +120,30 @@ When utilising two separate machines for testing, one machine will be set up as 
 3. Follow the prompts to enter the test parameters.
 
 4. When asked for the other machine's IP, provide the IP address of the server machine.
+
+## Testing Customisation
+The automated PQC TLS benchmarking tool allows users to customise certain parameters used in the testing automation process. This allows greater user configurability in adapting the tool to different network environments and performance requirements. The primary customisable options include TCP ports and control signalling behaviour.
+
+### Customising TCP Ports
+If the default testing suite TCP ports are **not suitable** for the testing environment, you can specify custom ports when executing the `full-oqs-provider-test.sh` script. This can be done for either the server, the client, or both machines by including the following flags:
+
+```
+--server-control-port=<PORT>    Set the server control port   (1024-65535)
+--client-control-port=<PORT>    Set the client control port   (1024-65535)
+--s-server-port=<PORT>          Set the OpenSSL S_Server port (1024-65535)
+```
+
+When testing between two physical machines, it is essential to specify the same custom ports on both the server and client by including these flags when executing the script on each machine.
+
+### Adjusting Control Signalling
+If the default control signalling behaviour is **not suitable** for the testing environment, you can customise the control sleep time or disable it entirely when executing the `full-oqs-provider-test.sh` script. By default, a sleep time of 0.25 seconds is used when handshakes occur between testing machines. You can adjust this by including the following flags:
+
+```
+--control-sleep-time=<TIME>     Set the control sleep time in seconds (integer or float)
+--disable-control-sleep         Disable the control signal sleep time
+```
+
+Note that the `--control-sleep-time` flag cannot be used together with the `--disable-control-sleep` flag.
 
 ## Outputted Results
 The results from the Full PQC TLS Test will be stored in the `test-data/up-results/ops-provider/machine-x` directory, which can be found within the code's root directory. The results include handshake and speed test results for both PQC and classic ciphersuites. This directory is used to store all of the unparsed results from the automated testing tools.

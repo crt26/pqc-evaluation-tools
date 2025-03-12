@@ -10,6 +10,38 @@
 # If executing both server and client on the same machine, this is not needed as the client can access the keys directly.
 
 #-------------------------------------------------------------------------------------------------------------------------------
+function get_user_yes_no() {
+    # Helper function for getting a yes or no response from the user for a given question regarding the setup process
+
+    local user_prompt="$1"
+
+    # Get the user input for the yes or no question
+    while true; do
+        read -p "$user_prompt (y/n): " user_input
+
+        case $user_input in
+
+            [Yy]* )
+                user_y_n_response=1
+                return 0
+                ;;
+
+            [Nn]* )
+                user_y_n_response=0
+                return 1
+                ;;
+
+            * )
+                echo -e "Please answer y or n\n"
+                ;;
+
+        esac
+
+    done
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
 function is_valid_port() {
     # Helper function called by parse_script_flags to check if the custom port passed to the script when called is a valid TCP port number
 
@@ -38,7 +70,7 @@ function parse_script_flags {
 
                 # Check if the port number is valid
                 if ! is_valid_port "$server_control_port"; then
-                    echo -e "[ERROR] - Invalid server control port number: $server_control_port"
+                    echo "[ERROR] - Invalid server control port number: $server_control_port"
                     exit 1
                 fi
                 shift
@@ -51,7 +83,7 @@ function parse_script_flags {
 
                 # Check if the port number is valid
                 if ! is_valid_port "$client_control_port"; then
-                    echo -e "[ERROR] - Invalid client control port number: $client_control_port"
+                    echo "[ERROR] - Invalid client control port number: $client_control_port"
                     exit 1
                 fi
                 shift
@@ -64,18 +96,54 @@ function parse_script_flags {
 
                 # Check if the port number is valid
                 if ! is_valid_port "$s_server_port"; then
-                    echo -e "[ERROR] - Invalid s_server port number: $s_server_port"
+                    echo "[ERROR] - Invalid s_server port number: $s_server_port"
                     exit 1
                 fi
                 shift
                 ;;
 
+            --control-sleep-time=*)
+
+                # Check to see if the disable control sleep flag has been set
+                if [ "$disable_control_sleep" == "True" ]; then
+                    echo "[ERROR] - Cannot use the --control-sleep-time flag when the --disable-control-sleep flag has been set"
+                    exit 1
+                fi
+
+                # Store the custom control sleep time and set the custom control time flag
+                control_sleep_time="${1#*=}"
+                custom_control_time_flag="True"
+
+                # Check if the sleep timer is valid integer or float
+                if [[ ! $control_sleep_time =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+                    echo "[ERROR] - Invalid control sleep time: $control_sleep_time"
+                    exit 1
+                fi
+                shift
+                ;;
+
+            --disable-control-sleep)
+
+                # Check if the custom sleep time flag has been
+                if [ "$custom_control_time_flag" == "True" ]; then
+                    echo "[ERROR] - Cannot use the --disable-control-sleep flag when the --control-sleep-time flag has been set"
+                    exit 1
+                fi
+
+                # Set the disable control sleep flag and shift
+                disable_control_sleep="True"
+                shift
+                ;;
+
+
             *)
                 echo "[ERROR] - Unknown option: $1"
                 echo "Valid options are:"
-                echo "  --server-control-port=<PORT>    Set the server control port   (1024-65535)"
-                echo "  --client-control-port=<PORT>    Set the client control port   (1024-65535)"
-                echo "  --s-server-port=<PORT>          Set the OpenSSL S_Server port (1024-65535)"
+                echo "  --server-control-port=<PORT>       Set the server control port             (1024-65535)"
+                echo "  --client-control-port=<PORT>       Set the client control port             (1024-65535)"
+                echo "  --s-server-port=<PORT>             Set the OpenSSL S_Server port           (1024-65535)"
+                echo "  --control-sleep-time=<TIME>        Set the control sleep time in seconds   (integer or float)"
+                echo "  --disable-control-sleep            Disable the control signal sleep time"
                 exit 1
                 ;;
 
@@ -87,6 +155,43 @@ function parse_script_flags {
     if [ "$server_control_port" == "$client_control_port" ] || [ "$server_control_port" == "$s_server_port" ] || [ "$client_control_port" == "$s_server_port" ]; then
         echo -e "[ERROR] - Custom TCP ports cannot be the same"
         exit 1
+    fi
+
+    # If the custom control sleep time flag has been set, perform additional checks
+    if [ "$custom_control_time_flag" == "True" ]; then
+
+        # Check if the set sleep time value falls into given special cases
+        if (( $(echo "$control_sleep_time > 0 && $control_sleep_time < 0.25" | bc -l) )); then
+
+            # Output warning to the user
+            echo "[WARNING] - Control sleep time is below the lowest tested value of 0.25 seconds"
+            echo "In most instances this should be fine, but some environments have shown testing to fail using lower values"
+
+            # Ask the user if they wish to continue with the lower value
+            get_user_yes_no "Do you wish to continue with the sleep timer set to $control_sleep_time seconds?"
+
+            # Check the user response
+            if [ $user_y_n_response -eq 0 ]; then
+                echo -e "\nExiting script..."
+                exit 1
+            fi
+
+        elif (( $(echo "$control_sleep_time == 0" | bc -l) )); then
+
+            # Output the situation to the user and get their response
+            echo "[NOTICE] - You have set the control sleep time to 0 seconds"
+            get_user_yes_no "Do you wish to disable the control signal sleep statement?"
+
+            # Check the user response
+            if [ $user_y_n_response -eq 1 ]; then
+                disable_control_sleep="True"
+            else
+                echo -e "\nExiting script..."
+                exit 1
+            fi
+
+        fi
+    
     fi
 
 }
@@ -245,6 +350,18 @@ function setup_base_env() {
     export CLIENT_CONTROL_PORT="$client_control_port"
     export S_SERVER_PORT="$s_server_port"
 
+    # Determine what control signal parameters to export
+    if [ "$disable_control_sleep" == "False" ] && [ "$custom_control_time_flag" == "False" ]; then
+        export CONTROL_SLEEP_TIME="0.25"
+
+    elif [ "$disable_control_sleep" == "False" ] && [ "$custom_control_time_flag" == "True" ]; then
+        export CONTROL_SLEEP_TIME="$control_sleep_time"
+    
+    elif [ "$disable_control_sleep" == "True" ]; then
+        export DISABLE_CONTROL_SLEEP="True"
+
+    fi
+
     # Define the flag and arrays used for the port checking
     skip_port_check="False"
     ports_to_check=("$server_control_port" "$client_control_port" "$s_server_port")
@@ -335,6 +452,12 @@ function clean_environment() {
     unset SERVER_CONTROL_PORT
     unset CLIENT_CONTROL_PORT
     unset S_SERVER_PORT
+    unset CONTROL_SLEEP_TIME
+
+    # Clearing DISABLE_CONTROL_SLEEP variable if set
+    if [ -z $DISABLE_CONTROL_SLEEP ]; then
+        unset DISABLE_CONTROL_SLEEP
+    fi
 
     # Clearing result types paths 
     for var in "${result_dir_paths[@]}"; do
@@ -508,7 +631,7 @@ function configure_test_options {
 
     # Outputting option parameter title
 
-    echo -e "\n#########################"
+    echo -e "#########################"
     echo "Configure Test Parameters"
     echo -e "#########################\n"
 
@@ -651,7 +774,7 @@ function run_tests() {
     # Function that will call the relevant benchmarking utility scripts for the TLS handshake and speed tests
    
     # Setting regex variable for checking IP address format entered by user
-    ipv4_regex_check="^([0-9]{1,3}\.){3}[0-9]{1,3}$"
+    ipv4_regex_check="^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$"
 
     # Getting the IP address of the other machine from the user
     while true; do
@@ -665,11 +788,19 @@ function run_tests() {
 
         # Checking if the IP address entered is in the correct format
         if [[ $ip_address =~ $ipv4_regex_check ]]; then
-            echo "Other test machine set to - $ip_address"
-            machine_ip=$ip_address
-            break
+
+            # Ensure that the IP address is not set to 0.0.0.0 or 255.255.255.255 before continuing
+            if [[ "$ip_address" == "0.0.0.0" || "$ip_address" == "255.255.255.255" ]]; then
+                echo "Invalid IP address: $ip_address. Please enter a valid IP address."
+            else
+                echo "Other test machine set to - $ip_address"
+                machine_ip=$ip_address
+                break
+            fi
+
         else
             echo "Invalid IP format, please try again"
+
         fi
     
     done
@@ -681,7 +812,6 @@ function run_tests() {
 
     # Calling key transfer check and clearing output to tidy terminal output
     check_transferred_keys
-    clear
 
     # Running handshake test script based on machine type selected
     if [ $machine_type == "Server" ]; then
@@ -722,6 +852,10 @@ function run_tests() {
 #-------------------------------------------------------------------------------------------------------------------------------
 function main() {
     # Main function for controlling OQS-Provider TLS performance testing
+
+    # Set the default global flag variables
+    custom_control_time_flag="False"
+    disable_control_sleep="False"
 
     # Set default TCP port values
     server_control_port="25000"

@@ -79,6 +79,12 @@ function setup_base_env() {
     classic_algs=( "RSA_2048" "RSA_3072" "RSA_4096" "prime256v1" "secp384r1" "secp521r1")
     ciphers=("TLS_AES_256_GCM_SHA384" "TLS_CHACHA20_POLY1305_SHA256" "TLS_AES_128_GCM_SHA256")
 
+    # Ensure that a control sleep time env variables has been passed if not disabled
+    if [ -z "$CONTROL_SLEEP_TIME" ] && [ -z "$DISABLE_CONTROL_SLEEP" ]; then
+        echo "[ERROR] - Control sleep time env variable not set, this indicates a wider issue with the full-oqs-provider-test.sh script"
+        exit 1
+    fi
+
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
@@ -169,8 +175,10 @@ function check_control_port() {
         :
     done
 
-    # Small delay before sending signal to allow target device to open port and listen
-    sleep 0.25
+    # Perform small delay before sending signal to allow target device to open port and listen
+    if [ -v $DISABLE_CONTROL_SLEEP ]; then
+        sleep $CONTROL_SLEEP_TIME
+    fi
 
 }
 
@@ -452,9 +460,6 @@ function main() {
 
     # Setting up the base environment for the test suite
     setup_base_env
-
-    # Import algorithms and clear terminal
-    get_algs
     clear
 
     # Checking if custom ports have been used and if so, outputting a warning message
