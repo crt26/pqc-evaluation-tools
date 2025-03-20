@@ -125,7 +125,10 @@ function main() {
     hybrid_sig_algs_string="${hybrid_sig_algs[@]}"
 
     # Modifying the OpenSSL conf file to temporarily remove the default groups configuration
-    "$util_scripts/configure-openssl-cnf.sh" 0
+    if ! "$util_scripts/configure-openssl-cnf.sh" 0; then
+            echo "[ERROR] - Failed to modify OpenSSL configuration."
+            exit 1
+    fi
 
     # Performing TLS speed tests for the various test types
     for run_num in $(seq 1 $NUM_RUN); do
@@ -152,7 +155,10 @@ function main() {
     done
 
     # Restoring OpenSSL conf file to have configuration needed for testing scripts
-    "$util_scripts/configure-openssl-cnf.sh" 1
+    if ! "$util_scripts/configure-openssl-cnf.sh" 1; then
+            echo "[ERROR] - Failed to modify OpenSSL configuration."
+            exit 1
+    fi
 
 }
 main

@@ -30,6 +30,19 @@ openssl_lib_dir = ""
 oqs_provider_src_dir = ""
 
 #-----------------------------------------------------------------------------------------------------------
+def output_help_message():
+    """ # Helper function for outputting the help message to the user when called or when incorrect arguments are passed """
+
+    # Output the supported options and their usage to the user
+    print("get_algorithms.py [options]")
+    print("\nOptions:")
+    print("1        Get the algorithms supported by the Liboqs library")
+    print("2        Get the algorithms supported by the Liboqs library and the OQS-Provider library")
+    print("3        Get the algorithms supported by the OQS-Provider library")
+    print("4        Parse the ALGORITHMS.md file of the OQS-Provider library to get the total number of algorithms supported")
+    print("--help   Output the help message to the user")
+
+#-----------------------------------------------------------------------------------------------------------
 def setup_base_env():
     """ Function for setting up the basic global variables for the test suite. This includes setting the root directory
         and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
@@ -310,6 +323,11 @@ def parse_oqs_provider_algorithms_md():
 def main():
     """ Main function for controlling the utility script. The function will determine which algorithms 
         are required based on the argument passed to the script """
+    
+    # Check if the help flag was passed before continuing
+    if "--help" in sys.argv:
+        output_help_message()
+        sys.exit(0)
 
     # Ensure a valid argument was passed to the utility script
     if len(sys.argv) == 2:

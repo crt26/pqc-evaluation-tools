@@ -123,7 +123,10 @@ function set_test_env() {
         current_group="${current_group:1}"
 
         # Set configurations in openssl.cnf file for PQC testing
-        "$util_scripts/configure-openssl-cnf.sh" $configure_mode
+        if ! "$util_scripts/configure-openssl-cnf.sh" $configure_mode; then
+            echo "[ERROR] - Failed to modify OpenSSL configuration."
+            exit 1
+        fi
 
     elif [ "$test_type" -eq 1 ]; then
 
@@ -148,7 +151,10 @@ function set_test_env() {
         current_group="${current_group:1}"
 
         # Set configurations in openssl.cnf file for PQC testing
-        "$util_scripts/configure-openssl-cnf.sh" $configure_mode
+        if ! "$util_scripts/configure-openssl-cnf.sh" $configure_mode; then
+            echo "[ERROR] - Failed to modify OpenSSL configuration."
+            exit 1
+        fi
 
     elif [ "$test_type" -eq 2 ]; then
 
@@ -156,7 +162,10 @@ function set_test_env() {
         current_group="ffdhe2048:ffdhe3072:ffdhe4096:prime256v1:secp384r1:secp521r1"
 
         # Set configurations in openssl.cnf file for Classic testing
-        "$util_scripts/configure-openssl-cnf.sh" $configure_mode
+        if ! "$util_scripts/configure-openssl-cnf.sh" $configure_mode; then
+            echo "[ERROR] - Failed to modify OpenSSL configuration."
+            exit 1
+        fi
 
     fi
 

@@ -8,6 +8,78 @@
 # comment out the default groups in the configuration file to allow for the use of the scheme groups included with the OQS-Provider library.
 
 #-------------------------------------------------------------------------------------------------------------------------------
+function output_help_message() {
+    # Helper function for outputting the help message to the user when called or when incorrect arguments are passed
+
+    # Output the supported options and their usage to the user
+    echo "Usage: configure-openssl-cnf.sh [options]"
+    echo "Options:"
+    echo "  0                     Configure OpenSSL for standard mode"
+    echo "  1                     Configure OpenSSL for PQC testing mode"
+    echo "  --help                Display this help message and exit"
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
+function parse_args() {
+    # Function for parsing the flags passed to the script when called
+
+    # Check if the help flag is passed at any position
+    if [[ "$*" =~ --help ]]; then
+        output_help_message
+        exit 0
+    fi
+
+    # Set the default option selected flag 
+    mode_selected="False"
+
+    # Check if custom control port flags have been passed to the script
+    while [[ $# -gt 0 ]]; do
+
+        case "$1" in
+
+            0)
+
+                # Set the configure mode if no mode has been yet
+                if [ "$mode_selected" == "False" ]; then
+                    configure_mode=0
+                    mode_selected="True"
+
+                else
+                    echo "[ERROR] - Only one mode can be selected at a time"
+                    exit 1
+                fi
+
+                shift
+                ;;
+
+            1)
+                # Set the configure mode if no mode has been yet
+                if [ "$mode_selected" == "False" ]; then
+                    configure_mode=1
+                    mode_selected="True"
+
+                else
+                    echo "[ERROR] - Only one mode can be selected at a time"
+                    exit 1
+                fi
+
+                shift
+                ;;
+
+            *)
+                echo -e "[ERROR] - Invalid argument passed to configure-openssl-cnf.sh"
+                output_help_message
+                exit 1
+                ;;
+
+        esac
+
+    done
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
 function setup_base_env() {
     # Function for setting up the basic global variables for the test suite. This includes setting the root directory
     # and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
@@ -67,7 +139,6 @@ function configure_conf_statements() {
 
     # Declare required local variables
     local conf_path="$openssl_path/openssl.cnf"
-    local configure_mode="$1"
 
     # Set the configurations based on the configuration mode passed
     if [ "$configure_mode" -eq 0 ]; then
@@ -92,18 +163,25 @@ function configure_conf_statements() {
 function main() {
     # Main function for controlling the utility script
 
+    # Declare the configuration mode variable
+    configure_mode=""
+
+    # Ensure that arguments have been passed to the script and parse them
+    if [[ $# -gt 0 ]]; then
+        parse_args "$@"
+
+    else
+        echo "[ERROR] - No arguments passed to configure-openssl-cnf.sh"
+        output_help_message
+        exit 1
+
+    fi
+
     # Setting up the base environment for the test suite
     setup_base_env
 
-    # Check if the correct number of arguments is passed
-    if [ "$#" -ne 1 ]; then
-        echo -e "\nerror in script, incorrect number of arguments passed to configure-openssl-cnf.sh\n"
-        sleep 1
-        exit 1
-    fi
-
     # Call configure conf file function and pass mode
-    configure_conf_statements "$1"
+    configure_conf_statements
 
 }
 main "$@"
