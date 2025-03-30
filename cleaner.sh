@@ -55,6 +55,12 @@ function setup_base_env() {
     oqs_provider_source="$tmp_dir/oqs-provider-source"
     openssl_source="$tmp_dir/openssl-3.4.1"
 
+    # Declaring global test-data path files
+    test_data_results="$test_data_dir/results"
+    test_data_up_results="$test_data_dir/up-results"
+    test_data_keys="$test_data_dir/keys"
+    test_data_alg_lists_dir="$test_data_dir/alg-lists"
+
 }
 
 #------------------------------------------------------------------------------
@@ -83,12 +89,15 @@ function select_uninstall_mode() {
             1)
                 # Uninstall Liboqs only
                 rm -rf "$liboqs_path"
+                rm $test_data_alg_lists_dir/kem-algs.txt
+                rm $test_data_alg_lists_dir/sig-algs.txt
                 echo -e "\nLiboqs Uninstalled"
                 break;;
             
             2)
                 # Uninstal OQS-Provider only
                 rm -rf "$oqs_provider_path"
+                rm $test_data_alg_lists_dir/*tls*.txt
                 echo -e "\nOQS-Provider Uninstalled"
                 break;;
 
@@ -102,6 +111,7 @@ function select_uninstall_mode() {
                 # Uninstall all dependency libraries
                 rm -rf "$libs_dir" && rm -rf "$tmp_dir" && rm -rf "$dependency_dir"
                 rm -rf "$root_dir/.pqc_eval_dir_marker.tmp"
+                rm -rf "$test_data_alg_lists_dir"
                 echo -e "\nAll Libraries Uninstalled"
                 break;;
 
@@ -146,9 +156,9 @@ function remove_old_results() {
     done
 
     # Remove all relevant directories
-    rm -rf "$test_data_dir/results"
-    rm -rf "$test_data_dir/up-results"
-    rm -rf "$test_data_dir/keys"
+    rm -rf "$test_data_results"
+    rm -rf "$test_data_up_results"
+    rm -rf "$test_data_keys"
     rm -rf "$tmp_dir/*"
     echo -e "\nAll results and generated keys cleared\n"
 
