@@ -12,7 +12,6 @@
 #-------------------------------------------------------------------------------------------------------------------------------
 # Declare the global main directory path variables
 root_dir=$(pwd)
-dependency_dir="$root_dir/dependency-libs"
 libs_dir="$root_dir/lib"
 tmp_dir="$root_dir/tmp"
 test_data_dir="$root_dir/test-data"
@@ -144,7 +143,7 @@ function configure_dirs() {
     # Function for creating the required directory structure for the automated tools alongside setting the root directory path tmp file.
 
     # Declare required directories array used in the directory check and creation
-    required_dirs=("$libs_dir" "$dependency_dir" "$oqs_provider_source" "$tmp_dir" "$test_data_dir" "$alg_lists_dir")
+    required_dirs=("$libs_dir" "$oqs_provider_source" "$tmp_dir" "$test_data_dir" "$alg_lists_dir")
 
     # Set the default value for the previous install flag
     previous_install=0
