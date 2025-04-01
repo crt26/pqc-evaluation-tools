@@ -1,29 +1,6 @@
 // SPDX-License-Identifier: MIT
-//
-// This file has been modified by Callum Turino on 05/06/2023.
-//
-// -------------------------------------------------------------------
-//
-// Copyright (c) 2016-2021 Open Quantum Safe project
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
 
+// This file has been modified by Callum Turino on 01/04/2025.
 
 #if defined(_WIN32)
 #pragma warning(disable : 4244 4293)
@@ -64,10 +41,10 @@ static OQS_STATUS sig_test_correctness(const char *method_name, SIG_OPS op) {
 	switch (op) {
 	case SIG_KEYGEN:
 
-		public_key = malloc(sig->length_public_key);
-		secret_key = malloc(sig->length_secret_key);
+		public_key = OQS_MEM_malloc(sig->length_public_key);
+		secret_key = OQS_MEM_malloc(sig->length_secret_key);
 		if ((public_key == NULL) || (secret_key == NULL)) {
-			fprintf(stderr, "ERROR: malloc failed\n");
+			fprintf(stderr, "ERROR: OQS_MEM_malloc failed\n");
 			goto err;
 		}
 		rc = OQS_SIG_keypair(sig, public_key, secret_key);
@@ -86,13 +63,13 @@ static OQS_STATUS sig_test_correctness(const char *method_name, SIG_OPS op) {
 
 	case SIG_SIGN:
 
-		public_key = malloc(sig->length_public_key);
-		secret_key = malloc(sig->length_secret_key);
-		message = malloc(message_len);
-		signature = malloc(sig->length_signature);
+		public_key = OQS_MEM_malloc(sig->length_public_key);
+		secret_key = OQS_MEM_malloc(sig->length_secret_key);
+		message = OQS_MEM_malloc(message_len);
+		signature = OQS_MEM_malloc(sig->length_signature);
 
 		if ((public_key == NULL) || (secret_key == NULL) || (message == NULL) || (signature == NULL)) {
-			fprintf(stderr, "ERROR: malloc failed\n");
+			fprintf(stderr, "ERROR: OQS_MEM_malloc failed\n");
 			goto err;
 		}
 		if (oqs_fload("pk", method_name, public_key, sig->length_public_key, &signature_len) != OQS_SUCCESS) {
@@ -120,13 +97,13 @@ static OQS_STATUS sig_test_correctness(const char *method_name, SIG_OPS op) {
 
 	case SIG_VERIFY:
 
-		public_key = malloc(sig->length_public_key);
-		secret_key = malloc(sig->length_secret_key);
-		message = malloc(message_len);
-		signature = malloc(sig->length_signature);
+		public_key = OQS_MEM_malloc(sig->length_public_key);
+		secret_key = OQS_MEM_malloc(sig->length_secret_key);
+		message = OQS_MEM_malloc(message_len);
+		signature = OQS_MEM_malloc(sig->length_signature);
 
 		if ((public_key == NULL) || (secret_key == NULL) || (message == NULL) || (signature == NULL)) {
-			fprintf(stderr, "ERROR: malloc failed\n");
+			fprintf(stderr, "ERROR: OQS_MEM_malloc failed\n");
 			goto err;
 		}
 		if (oqs_fload("pk", method_name, public_key, sig->length_public_key, &signature_len) != OQS_SUCCESS) {

@@ -307,7 +307,7 @@ function download_libraries() {
 
     # Download the required version of the OQS-Provider library
     if [ "$user_opt" == "2" ] || [ "$user_opt" == "3" ]; then
-
+        
         # Clone the OQS-Provider library repository based on the version needed
         if [ "$use_tested_version" -eq 0 ]; then
 
@@ -1066,14 +1066,10 @@ function main() {
 
                 # Check if a Liboqs install is already present and install if not
                 if [ ! -d "$liboqs_path" ]; then
-                    echo -e "\n!!!Liboqs not installed, will install now!!!"
-                    install_type=1
-                    liboqs_build
-                fi
-
-                # Re-clone the Liboqs repo for algorithm docs if missing as needed for enabling all disabled algorithms in OQS-Provider
-                if [ ! -d "$liboqs_source" ]; then
-                    git clone https://github.com/open-quantum-safe/liboqs.git $liboqs_source >/dev/null
+                    echo -e "\n[ERROR] - The Liboqs Install source could not be found."
+                    echo -e "Please select option 2 instead to install both Liboqs and OQS-Provider libraries\n"
+                    echo "Exiting Script..."
+                    exit 1
                 fi
 
                 # Build the OQS-Provider library
