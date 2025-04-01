@@ -947,7 +947,7 @@ function oqs_provider_build() {
         # Run the generate.py script to enable all disabled signature algorithms in the OQS-Provider library
         export LIBOQS_SRC_DIR="$liboqs_source"
         cd $oqs_provider_source
-        /usr/bin/python3 $oqs_provider_source/oqs-template/generate.py
+        $python_bin $oqs_provider_source/oqs-template/generate.py
         cd $root_dir
 
     fi
