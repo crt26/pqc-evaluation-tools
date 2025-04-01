@@ -2,15 +2,13 @@
 Copyright (c) 2025 Callum Turino
 SPDX-License-Identifier: MIT
 
-This script provides the classes and methods for generating the average metric files for the various Liboqs and OQS-Provider results.
-The script will take in the provided results and generate an average for all the runs for that current machine. The script will output
-the average metric files for the various results passed to it. The classes are called by the relevant parsing script and is not intended
-to be run as a standalone script.
-
+Result averaging module for PQC benchmarking tools. Defines classes for calculating average metrics 
+from multi-run benchmarking outputs  produced by the Liboqs and OQS-Provider test suites. This module is 
+used internally by the main parsing scripts and is not intended to be run standalone. It computes per-algorithm averages 
+for memory, CPU speed, and TLS handshake results, and exports the aggregated values in structured CSV format.
 """
 
 #-----------------------------------------------------------------------------------------------------------
-from pdb import run
 import pandas as pd
 import os
 
@@ -19,10 +17,12 @@ class LiboqsResultAverager:
 
     #------------------------------------------------------------------------------
     def __init__(self, dir_paths, kem_algs, sig_algs, num_runs, alg_operations):
-        """ A class that contains needed for creating the metric average files for the various Liboqs 
-            memory and CPU benchmarking results"""
+        """ Class for generating average metrics from Liboqs performance results.
+            Computes per-algorithm averages across multiple benchmarking runs for both 
+            memory usage and CPU speed results. Called by the Liboqs parsing script after 
+            results have been processed into structured CSVs. """
 
-        # Setting class variables for use in the class methods
+        # Set the global class variables used in the class methods
         self.dir_paths = dir_paths
         self.num_runs = num_runs
         self.kem_algs = kem_algs
@@ -35,90 +35,90 @@ class LiboqsResultAverager:
             results and generating an average for all the runs for
             that current machine """
 
-        # Declaring filepath prefix variables
+        # Declare the filepath prefix variables
         kem_mem_file_prefix = os.path.join(self.dir_paths['type_mem_dir'], "kem-mem-metrics-")
         sig_mem_file_prefix = os.path.join(self.dir_paths['type_mem_dir'], "sig-mem-metrics-")
 
-        # Declaring dataframes and fieldnames
+        # Declare the dataframes and fieldnames
         mem_fieldnames = ["Algorithm", "Operation", "intits", "maxBytes", "maxHeap", "extHeap", "maxStack"]
         kem_mem_avg = pd.DataFrame(columns=mem_fieldnames)
         sig_mem_avg = pd.DataFrame(columns=mem_fieldnames)
 
-        """ Calculating KEM Memory Averages """
-        # Looping through the kem algorithms
+        """ Calculate KEM Memory Averages """
+        # Loop through the KEM algorithms
         for kem_alg in self.kem_algs:
 
-            # Creating combined operations dataframe for current algorithm
+            # Create the combined operations dataframe for the current algorithm
             combined_operations = pd.DataFrame(columns=mem_fieldnames)
 
-            # Looping through the results files for the number of test runs
+            # Loop through the results files for the number of test runs
             for run_count in range(1, self.num_runs+1):
 
-                # Setting filename and reading csv into dataframe
+                # Set the filename and read the csv into dataframe
                 kem_mem_filename = kem_mem_file_prefix + str(run_count) + ".csv"
                 temp_df = pd.read_csv(kem_mem_filename)
 
-                # Getting the operations for the current algorithm across all files into one
+                # Get the operations for the current algorithm across all files into one
                 if run_count == 1:
                     combined_operations = temp_df.loc[temp_df["Algorithm"].str.contains(kem_alg, regex=False)]
                 else:
                     temp_df = temp_df.loc[temp_df["Algorithm"].str.contains(kem_alg, regex=False)]
                     combined_operations = pd.concat([temp_df, combined_operations], ignore_index=True, sort=False)
             
-            # Getting the averages for each kem operation
+            # Get the averages for each KEM cryptographic operation
             for operation in self.alg_operations['kem_operations']:
                 
-                # Getting a list of the operation metric averages 
+                # Get a list of the cryptographic operation metric averages 
                 operation_average = combined_operations.loc[combined_operations["Operation"].str.contains(operation)]
                 operation_average = operation_average[mem_fieldnames[2:]]
 
-                # Calculating Averages for kem results
+                # Calculate the averages for the KEM results
                 operation_average = (operation_average.mean(axis=0)).to_frame()
                             
-                # Creating new row and exporting to main kem memory average dataframe
+                # Create a new row and export to the main KEM speed average dataframe
                 row = operation_average.iloc[:, 0].to_list()
                 row.insert(0, kem_alg)
                 row.insert(1, operation)
                 kem_mem_avg.loc[len(kem_mem_avg)] = row
 
-        """ Calculating Digital Signature Memory Averages """
-        # Looping through digital signature algorithms
+        """ Calculate the Digital Signature Memory Averages """
+        # Loop through the digital signature algorithms
         for sig_alg in self.sig_algs:
 
-            # Creating combined operations dataframe for current algorithm
+            # Create the combined cryptographic operations dataframe for the current algorithm
             combined_operations = pd.DataFrame(columns=mem_fieldnames)
 
-            # Looping through run files
+            # Loop through the run files
             for run_count in range(1, self.num_runs+1):
 
-                # Setting the filename and reading csv into dataframe
+                # Set the filename and read the csv into dataframe
                 sig_mem_filename = sig_mem_file_prefix + str(run_count) + ".csv"
                 temp_df = pd.read_csv(sig_mem_filename)
 
-                # Getting the operations for the current algorithm across all files into one
+                # Get the cryptographic operations for the current algorithm across all files into one
                 if run_count == 1:
                     combined_operations = temp_df.loc[temp_df["Algorithm"].str.contains(sig_alg, regex=False)]
                 else:
                     temp_df = temp_df.loc[temp_df["Algorithm"].str.contains(sig_alg, regex=False)]
                     combined_operations = pd.concat([temp_df, combined_operations], ignore_index=True, sort=False)
 
-            # Getting the averages for each signature operation
+            # Get the averages for each signature cryptographic operation
             for operation in self.alg_operations['sig_operations']:
 
-                # Creating a list of the operation metric averages
+                # Create a list of the operation metric averages
                 operation_average = combined_operations.loc[combined_operations["Operation"].str.contains(operation, regex=False)]
                 operation_average = operation_average[mem_fieldnames[2:]]
 
-                # Calculating averages
+                # Calculate the averages
                 operation_average = (operation_average.mean(axis=0)).to_frame()
 
-                # Creating new row and exporting to main digital signature memory average dataframe
+                # Create a new row and export to the main digital signature memory average dataframe
                 row = operation_average.iloc[:, 0].to_list()
                 row.insert(0, sig_alg)
                 row.insert(1, operation)
                 sig_mem_avg.loc[len(sig_mem_avg)] = row
 
-        # Exporting average csv files
+        # Export the average csv files
         kem_csv_name = os.path.join(self.dir_paths['type_mem_dir'], "kem-mem-avg.csv")
         kem_mem_avg.to_csv(kem_csv_name, index=False)
         sig_csv_name = os.path.join(self.dir_paths['type_mem_dir'], "sig-mem-avg.csv")
@@ -130,98 +130,98 @@ class LiboqsResultAverager:
             results and generating an average for all the runs for
             that current machine """
 
-        # Declaring filepath prefix variables and fieldnames list
+        # Declare the filepath prefix variables and fieldnames list
         kem_filename_prefix = os.path.join(self.dir_paths['type_speed_dir'], "test-kem-speed-")
         sig_filename_prefix = os.path.join(self.dir_paths['type_speed_dir'], "test-sig-speed-")
         speed_fieldnames = []
 
-        # Getting fieldnames through first file
+        # Get the fieldnames from first file
         test_filename = "test-kem-speed-1.csv"
         test_filename = os.path.join(self.dir_paths['type_speed_dir'], test_filename)
 
-        # Loading test file into dataframe and getting headers into list
+        # Load the test file into dataframe and put the headers into a list
         check_df = pd.read_csv(test_filename)
         speed_fieldnames = check_df.columns.to_list()
 
-        # Setting output dataframe headers
+        # Set the output dataframe headers
         kem_speed_avg = pd.DataFrame(columns=speed_fieldnames)
         sig_speed_avg = pd.DataFrame(columns=speed_fieldnames)
 
-        """ Calculating KEM Speed Averages """
-        # Looping through kem algorithms
+        """ Calculate the KEM Speed Averages """
+        # Loop through the KEM algorithms
         for kem_alg in self.kem_algs:
 
-            # Creating combined averages dataframe
+            # Create the combined averages dataframe
             combined_operations = pd.DataFrame(columns=speed_fieldnames)
 
-            # Looping through run files
+            # Loop through the run files
             for run_count in range(1, self.num_runs+1):
 
-                # Setting filename and reading csv into dataframe
+                # Set the filename and read the csv into dataframe
                 kem_filename = kem_filename_prefix + str(run_count) + ".csv"
                 temp_df = pd.read_csv(kem_filename)
 
-                # Getting the algorithm operations across all files into one
+                # Get the algorithm cryptographic operations across all files into one
                 if run_count == 1:
                     combined_operations = temp_df.loc[temp_df["Algorithm"].str.contains(kem_alg, regex=False)]
                 else:
                     temp_df = temp_df.loc[temp_df["Algorithm"].str.contains(kem_alg, regex=False)]
                     combined_operations = pd.concat([temp_df, combined_operations], ignore_index=True, sort=False)
 
-            # Getting the average for each operation
+            # Get the average for each cryptographic operation
             for operation in self.alg_operations['kem_operations']:
 
-                # Creating a list of operation metric averages
+                # Create a list of cryptographic operation metric averages
                 operation_average = combined_operations.loc[combined_operations["Operation"].str.contains(operation, regex=False)]
                 operation_average = operation_average[speed_fieldnames[2:]]
 
-                # Calculating average for the operation
+                # Calculate the average for the cryptographic operation
                 operation_average = (operation_average.mean(axis=0)).to_frame()
 
-                # Creating new row and exporting to main kem speed average dataframe
+                # Create a new row and exporting to main KEM speed average dataframe
                 row = operation_average.iloc[:, 0].to_list()
                 row.insert(0, kem_alg)
                 row.insert(1, operation)
                 kem_speed_avg.loc[len(kem_speed_avg)] = row
 
-        """ Calculating Digital Signature Speed Averages """
-        # Looping through sig algorithms
+        """ Calculate the Digital Signature Speed Averages """
+        # Loop through the digital signature algorithms
         for sig_alg in self.sig_algs:
 
-            # Creating combined averages dataframe
+            # Create the combined averages dataframe
             combined_operations = pd.DataFrame(columns=speed_fieldnames)
 
-            # Looping through run files
+            # Loop through the run files
             for run_count in range(1, self.num_runs+1):
 
-                # Setting filename and reading csv into dataframe
+                # Set the filename and read the csv into dataframe
                 sig_filename = sig_filename_prefix + str(run_count) + ".csv"
                 temp_df = pd.read_csv(sig_filename)
 
-                # Getting the algorithm operations across all files into one
+                # Get the algorithm cryptographic operations across all files into one
                 if run_count == 1:
                     combined_operations = temp_df.loc[temp_df["Algorithm"].str.contains(sig_alg, regex=False)]
                 else:
                     temp_df = temp_df.loc[temp_df["Algorithm"].str.contains(sig_alg, regex=False)]
                     combined_operations = pd.concat([temp_df, combined_operations], ignore_index=True, sort=False)
             
-            # Getting the average for each operation
+            # Get the average for each cryptographic operation
             for operation in self.alg_operations['sig_operations']:
 
-                # Creating a list of operation metric averages
+                # Create a list of cryptographic operation metric averages
                 operation_average = combined_operations.loc[combined_operations["Operation"].str.contains(operation, regex=False)]
                 operation_average = operation_average[speed_fieldnames[2:]]
 
-                # Calculating average for the operation
+                # Calculate the average for the cryptographic operation
                 operation_average = (operation_average.mean(axis=0)).to_frame()
 
-                # Creating new row and exporting to main digital signature speed average dataframe
+                # Create a new row and export to the main digital signature speed average dataframe
                 row = operation_average.iloc[:, 0].to_list()
                 row.insert(0, sig_alg)
                 row.insert(1, operation)
                 sig_speed_avg.loc[len(sig_speed_avg)] = row
 
-        # Exporting average csv files
+        # Export the average csv files
         kem_csv_name = os.path.join(self.dir_paths['type_speed_dir'], "kem-speed-avg.csv")
         kem_speed_avg.to_csv(kem_csv_name, index=False)
         sig_csv_name = os.path.join(self.dir_paths['type_speed_dir'], "sig-speed-avg.csv")
@@ -232,10 +232,12 @@ class OqsProviderResultAverager:
 
     #------------------------------------------------------------------------------
     def __init__(self, dir_paths, num_runs, algs_dict, pqc_type_vars, col_headers):
-        """ A class that contains needed for creating the metric average files for the various OQS-Provider 
-            TLS benchmarking results"""
+        """ Class for generating average metrics from OQS-Provider TLS benchmarking results.
+            Supports PQC, PQC-Hybrid, and classic handshake results, as well as OpenSSL speed tests.
+            Computes per-algorithm averages across multiple runs and outputs them to CSV format. 
+            Called by the oqs-provider parsing script. """
         
-        # Setting class variables for use in the class methods
+        # Set the global class variables used in the class methods
         self.dir_paths = dir_paths
         self.num_runs = num_runs
         self.algs_dict = algs_dict
@@ -248,39 +250,39 @@ class OqsProviderResultAverager:
             results and generating an average for all the runs for
             that current machine """
        
-        # Process result averages for both PQC (0) and PQC-Hybrid (1) TLS test types
+        # Process the result averages for both PQC (0) and PQC-Hybrid (1) TLS test types
         for type_index in range (0,2):
 
-            # Looping through each signing algorithm
+            # Loop through each signing algorithm
             for sig in self.algs_dict[self.pqc_type_vars["sig_alg_type"][type_index]]:
 
-                # Getting current signing algorithm from sig_path
+                # Get the current signing algorithm from sig_path
                 sig_path = os.path.join(self.dir_paths[self.pqc_type_vars['results_type'][type_index]], sig)
 
-                # Creating dataframes and filepaths
+                # Create the dataframe and filepaths
                 sig_avg_df = pd.DataFrame(columns=self.col_headers['pqc_based_headers'])
                 
-                # Getting sig/kem averages by reading in the average for specific kem across all runs
+                # Get the sig/kem averages by reading in the average for specific kem across all runs
                 for kem in self.algs_dict[self.pqc_type_vars["kem_alg_type"][type_index]]:
 
-                    # Resetting combined sig dataframe
+                    # Reset the combined sig dataframe
                     sig_first_combined_df = pd.DataFrame(columns=self.col_headers['pqc_based_headers'])
                     sig_reused_combined_df = pd.DataFrame(columns=self.col_headers['pqc_based_headers'])
 
-                    # Looping through runs
+                    # Loop through the runs
                     for current_run in range(1, self.num_runs+1):
 
-                        # Setting current run filepath
+                        # Set the current run filepath
                         current_run_filename = f"tls-handshake-{sig}-run-{current_run}.csv"
                         current_run_filepath = os.path.join(sig_path, current_run_filename)
 
-                        # Reading in current run csv to get metrics
+                        # Read in the current run csv to get metrics
                         current_run_df = pd.read_csv(current_run_filepath)
 
-                        # Extracting the data for the current kem
+                        # Extract the data for the current KEM
                         kem_df = current_run_df[current_run_df["KEM Algorithm"].str.contains(kem, regex=False)]
 
-                        # Separating the data into combined dataframes
+                        # Separate the data into combined dataframes
                         if current_run == 1:
                             sig_first_combined_df = kem_df.iloc[0:1]
                             sig_reused_combined_df = kem_df.iloc[1:2]
@@ -288,11 +290,11 @@ class OqsProviderResultAverager:
                             sig_first_combined_df = pd.concat([sig_first_combined_df, kem_df.iloc[0:1]])
                             sig_reused_combined_df = pd.concat([sig_reused_combined_df, kem_df.iloc[1:2]])
     
-                        # Defining the average rows
+                        # Define the average rows
                         sig_first_average_row = [sig, kem, ""]
                         sig_reused_average_row = [sig, kem, "*"]
                     
-                    # Get average value for each column and append to new row var
+                    # Get the average value for each column and append to new row var
                     for column in self.col_headers['pqc_based_headers']:
                         if column in self.col_headers['pqc_based_headers'][:3]:
                             continue
@@ -300,11 +302,11 @@ class OqsProviderResultAverager:
                             sig_first_average_row.append(float(sig_first_combined_df[column].mean()))
                             sig_reused_average_row.append(float(sig_reused_combined_df[column].mean()))
                     
-                    # Append average rows onto the average dataframe
+                    # Append the average rows onto the averages dataframe
                     sig_avg_df.loc[len(sig_avg_df)] = sig_first_average_row
                     sig_avg_df.loc[len(sig_avg_df)] = sig_reused_average_row
 
-                # Output averages for the current signing algorithm to csv file
+                # Output the averages for the current signing algorithm to csv file
                 avg_out_filename = f"tls-handshake-{sig}-avg.csv"
                 avg_out_filepath = os.path.join(sig_path, avg_out_filename)
                 sig_avg_df.to_csv(avg_out_filepath, index=False)
@@ -389,50 +391,50 @@ class OqsProviderResultAverager:
         """ Method for taking in the provided TLS speed results 
             and generating an average for all the runs for the current machine """
         
-        # Defining alg_types list for average processing
+        # Define the alg_types list for average processing
         alg_types = ["kem", "sig"]
 
-        # Loop through test types and process averages for speed metrics
+        # Loop through the test types and process averages for speed metrics
         for test_type, dir_list in self.dir_paths["speed_types_dirs"].items():
 
-            # Set file prefix depending on test type
+            # Set the file prefix depending on test type
             pqc_fileprefix = "tls-speed" if test_type == "pqc" else "tls-speed-hybrid"
 
-            # Process both KEM and Sig averages for the current test type
+            # Process both the KEM and Sig averages for the current test type
             for alg_type in alg_types:
 
-                # Getting algorithms present in for current test/alg type being processed
+                # Get the algorithms present for the current test/alg type being processed
                 temp_filename = f"{pqc_fileprefix}-{alg_type}-1.csv"
                 algs = self.get_speed_algs(temp_filename, dir_list)
 
-                # Setting headers used in csv files based on alg_type and creating dataframe
+                # Set the headers used in the csv files based on alg_type and creating dataframe
                 headers = speed_headers[0] if alg_type == "kem" else speed_headers[1]
                 speed_avg_df = pd.DataFrame(columns=headers)
 
-                # Looping through the algs to get combined average dataframes
+                # Loop through the algs to get combined average dataframes
                 for alg in algs:
 
-                    # Setting clean combined alg speed dataframe
+                    # Set the clean combined alg speed dataframe
                     combined_df = pd.DataFrame(columns=headers)
 
-                    # Looping through the runs to get averages for alg type
+                    # Loop through the runs to get averages for the alg type
                     for run_num in range(1, self.num_runs+1):
 
-                        # Setting filename and path for current type and run
+                        # Set the filename and path for current type and run
                         current_filename = f"{pqc_fileprefix}-{alg_type}-{run_num}.csv"
                         current_filepath = os.path.join(dir_list[1], current_filename)
                     
-                        # Pulling in the algorithm values for the current run and alg
+                        # Pull in the algorithm values for the current run and alg
                         current_run_df = pd.read_csv(current_filepath)
                         current_run_df = current_run_df[current_run_df["Algorithm"].str.contains(alg, regex=False)]
 
-                        # Adding algorithm values to the combined dataframe that will be used to get averages for the alg across runs
+                        # Add  algorithm values to the combined dataframe that will be used to get averages for the alg across runs
                         if run_num == 1:
                             combined_df = current_run_df.loc[current_run_df['Algorithm'].str.contains(alg, regex=False)]
                         else:
                             combined_df = pd.concat([combined_df, current_run_df.iloc[0:1]])
 
-                    # Get average value for each column and append to new row var
+                    # Get the average value for each column and append to new row var
                     speed_avg_row = []
                     
                     for column in headers:
@@ -441,11 +443,11 @@ class OqsProviderResultAverager:
                         else:
                             speed_avg_row.append(float(combined_df[column].mean()))
 
-                    # Appending row to main average dataframe
+                    # Append the row to main average dataframe
                     speed_avg_row.insert(0, alg)
                     speed_avg_df.loc[len(speed_avg_df)] = speed_avg_row
 
-                # Exporting TLS speed averages to csv file
+                # Export the TLS speed averages to csv file
                 speed_avg_filename = f"{pqc_fileprefix}-{alg_type}-avg.csv"
                 speed_avg_filepath = os.path.join(dir_list[1], speed_avg_filename)
                 speed_avg_df.to_csv(speed_avg_filepath, index=False)

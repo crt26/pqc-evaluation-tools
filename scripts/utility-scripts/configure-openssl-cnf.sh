@@ -3,13 +3,13 @@
 # Copyright (c) 2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
-# This is a utility script used to configure the openssl.cnf file for the OpenSSL library 
-# to allow for the generation of post-quantum cryptographic keys. The script is used to 
-# comment out the default groups in the configuration file to allow for the use of the scheme groups included with the OQS-Provider library.
+# Utility script for toggling the OpenSSL configuration settings in the openssl.cnf file to enable or 
+# disable post-quantum cryptographic key generation. It comments or uncomments default group directives #
+# required for compatibility with scheme groups supported by the OQS-Provider when integrated with OpenSSL 3.4.1.
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function output_help_message() {
-    # Helper function for outputting the help message to the user when called or when incorrect arguments are passed
+    # Helper function for outputting the help message to the user when the --help flag is present or when incorrect arguments are passed
 
     # Output the supported options and their usage to the user
     echo "Usage: configure-openssl-cnf.sh [options]"
@@ -22,9 +22,10 @@ function output_help_message() {
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function parse_args() {
-    # Function for parsing the flags passed to the script when called
+    # Function for parsing the command line arguments passed to the script. Based on the detected arguments, the function will 
+    # set the relevant global flags and parameter variables that are used throughout the test control process.
 
-    # Check if the help flag is passed at any position
+    # Check if the help flag is passed at any position in the command line arguments
     if [[ "$*" =~ --help ]]; then
         output_help_message
         exit 0
@@ -33,9 +34,10 @@ function parse_args() {
     # Set the default option selected flag 
     mode_selected="False"
 
-    # Check if custom control port flags have been passed to the script
+    # Loop through the passed command line arguments and check for the supported options
     while [[ $# -gt 0 ]]; do
 
+        # Check if the argument is a valid option, then shift to the next argument
         case "$1" in
 
             0)
@@ -68,6 +70,8 @@ function parse_args() {
                 ;;
 
             *)
+
+                # Output the error message for unknown options and display the help message
                 echo -e "[ERROR] - Invalid argument passed to configure-openssl-cnf.sh"
                 output_help_message
                 exit 1
@@ -81,16 +85,16 @@ function parse_args() {
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function setup_base_env() {
-    # Function for setting up the basic global variables for the test suite. This includes setting the root directory
-    # and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
-    # using this, determines the root directory of the project.
+    # Function for setting up the global environment variables for the test suite. This includes determining the root directory 
+    # by tracing the script's location, and configuring paths for libraries, test data, and temporary files.
 
-    # Determine directory that the script is being run from
+    # Determine the directory that the script is being executed from
     script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-    # Try and find the .dir_marker.tmp file to determine the root directory
+    # Try and find the .dir_marker.tmp file to determine the project's root directory
     current_dir="$script_dir"
 
+    # Continue moving up the directory tree until the .pqc_eval_dir_marker.tmp file is found
     while true; do
 
         # Check if the .pqc_eval_dir_marker.tmp file is present
@@ -99,10 +103,10 @@ function setup_base_env() {
             break
         fi
 
-        # Move up a directory and check again
+        # Move up a directory and store the new path
         current_dir=$(dirname "$current_dir")
 
-        # If the root directory is reached and the file is not found, exit the script
+        # If the system's root directory is reached and the file is not found, exit the script
         if [ "$current_dir" == "/" ]; then
             echo -e "Root directory path file not present, please ensure the path is correct and try again."
             exit 1
@@ -110,34 +114,42 @@ function setup_base_env() {
 
     done
 
-    # Declaring main dir path variables based on root dir
+    # Declare the main directory path variables based on the project's root dir
     libs_dir="$root_dir/lib"
     tmp_dir="$root_dir/tmp"
     test_data_dir="$root_dir/test-data"
     test_scripts_path="$root_dir/scripts/test-scripts"
 
-    # Declaring global library path files
+    # Declare the global library directory path variables
     openssl_path="$libs_dir/openssl_3.4"
     liboqs_path="$libs_dir/liboqs"
     oqs_provider_path="$libs_dir/oqs-provider"
 
-    # Exporting OpenSSL lib path
+    # Ensure that the OpenSSL library is present before proceeding
+    if [ ! -d "$openssl_path" ]; then
+        echo "[ERROR] - OpenSSL library not found in $libs_dir"
+        exit 1
+    fi
+
+    # Check the OpenSSL library directory path
     if [[ -d "$openssl_path/lib64" ]]; then
         openssl_lib_path="$openssl_path/lib64"
     else
         openssl_lib_path="$openssl_path/lib"
     fi
 
+    # Export the OpenSSL library filepath
     export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
 
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function configure_conf_statements() {
-    # Function for commenting out additional lines in the OpenSSL to temporarily remove the default groups configuration
-    # used in testing scripts to allow key generation to be performed
+    # Function to modify the OpenSSL configuration (openssl.cnf) between standard and PQC testing modes. 
+    # Standard mode comments out custom group settings, while PQC mode enables them for post-quantum 
+    # key generation with the OQS-Provider.
 
-    # Declare required local variables
+    # Declare the required local variables
     local conf_path="$openssl_path/openssl.cnf"
 
     # Set the configurations based on the configuration mode passed
@@ -150,7 +162,7 @@ function configure_conf_statements() {
 
     elif [ "$configure_mode" -eq 1 ]; then 
 
-        # Uncomment configurations for PQC testing
+        # Uncomment the required configurations for PQC testing
         sed -i 's/^#ssl_conf = ssl_sect/ssl_conf = ssl_sect/' $conf_path
         sed -i 's/^#system_default = system_default_sect/system_default = system_default_sect/' $conf_path
         sed -i 's/^#Groups = \$ENV::DEFAULT_GROUPS/Groups = \$ENV::DEFAULT_GROUPS/' $conf_path
@@ -163,7 +175,7 @@ function configure_conf_statements() {
 function main() {
     # Main function for controlling the utility script
 
-    # Declare the configuration mode variable
+    # Declare the global configuration mode flag
     configure_mode=""
 
     # Ensure that arguments have been passed to the script and parse them
@@ -177,10 +189,10 @@ function main() {
 
     fi
 
-    # Setting up the base environment for the test suite
+    # Setup the base environment for the utility script
     setup_base_env
 
-    # Call configure conf file function and pass mode
+    # Configure the OpenSSL configuration file based on the selected mode
     configure_conf_statements
 
 }
