@@ -3,7 +3,7 @@
 ## Repository Overview <!-- omit from toc -->
 
 ### Project Description
-This repository is an automated and comprehensive evaluation framework for benchmarking Post-Quantum Cryptography (PQC) algorithms. It is designed for researchers and developers looking to evaluate the feasibility of integrating PQC into their environments. It simplifies the setup, testing, and parsing of PQC computational and networking performance data across x86 and ARM systems.
+This repository provides an automated and comprehensive evaluation framework for benchmarking Post-Quantum Cryptography (PQC) algorithms. It is designed for researchers and developers looking to evaluate the feasibility of integrating PQC into their environments. It simplifies the setup, testing, and parsing of PQC computational and networking performance data across x86 and ARM systems.
 
 The framework includes scripts to automate dependency building, test execution, and result parsing. It currently utilises the [Open Quantum Safe (OQS)](https://openquantumsafe.org/) project's `Liboqs` and `OQS-Provider` libraries to gather this performance data, with future goals to integrate additional PQC libraries. It also provides automated mechanisms for testing PQC TLS handshake performance across physical or virtual networks, providing valuable insight into real-world environment testing. Results are outputted as raw CSV files that can be parsed using the provided Python parsing scripts to provide detailed metrics and averages ready for analysis.
 
