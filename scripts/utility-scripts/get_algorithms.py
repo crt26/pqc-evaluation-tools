@@ -1,17 +1,19 @@
 """
-Copyright (c) 2024 Callum Turino
+Copyright (c) 2025 Callum Turino
 SPDX-License-Identifier: MIT
 
-This is a utility script which is used to get the algorithms which are supported by the Liboqs library and the OQS-Provider library.
-The script will output the algorithms to a text file which can be used by the benchmarking and parsing scripts to determine which algorithms to
-test and parse. The main purpose of the script is to be called from the main setup.sh script and be passed an argument which dictates which the install type
-so it knows what algorithms are required to be outputted to the text files. The script can also be ran manually if required.
+Utility script for retrieving supported cryptographic algorithms from the Liboqs and OQS-Provider libraries. 
+It outputs these algorithms to text files used by benchmarking and parsing scripts to determine which 
+algorithms to test and evaluate.
 
-The accepted arguments are:
-    - 1 (Liboqs only)
-    - 2 (Liboqs and OQS-Provider)
-    - 3 (OQS-Provider only)
+Primarily intended to be called by the main setup.sh script, this utility accepts an argument that specifies 
+the installation type and determines which algorithm lists should be generated. It can also be executed manually.
 
+Accepted arguments:
+    1 - Liboqs only
+    2 - Liboqs and OQS-Provider
+    3 - OQS-Provider only
+    4 - Parse ALGORITHMS.md in OQS-Provider source to count supported algorithms
 """
 
 #-----------------------------------------------------------------------------------------------------------
@@ -25,55 +27,72 @@ root_dir = ""
 # Set the path to the liboqs build directory and the openssl path
 liboqs_build_dir = ""
 openssl_path = ""
+oqs_provider_path = ""
 openssl_lib_dir = ""
+oqs_provider_src_dir = ""
+
+#-----------------------------------------------------------------------------------------------------------
+def output_help_message():
+    """ Helper function for outputting the help message to the user when the --help flag is present 
+        or when incorrect arguments are passed """
+
+    # Output the supported options and their usage to the user
+    print("get_algorithms.py [options]")
+    print("\nOptions:")
+    print("1        Get the algorithms supported by the Liboqs library")
+    print("2        Get the algorithms supported by the Liboqs library and the OQS-Provider library")
+    print("3        Get the algorithms supported by the OQS-Provider library")
+    print("4        Parse the ALGORITHMS.md file of the OQS-Provider library to get the total number of algorithms supported")
+    print("--help   Output the help message to the user")
 
 #-----------------------------------------------------------------------------------------------------------
 def setup_base_env():
-    """ Function for setting up the basic global variables for the test suite. This includes setting the root directory
-        and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
-        using this, determines the root directory of the project """
+    """ Function for setting up the global environment variables for the test suite. This includes determining the root directory 
+        by tracing the script's location, and configuring paths for libraries, test data, and temporary files. """
 
-    global root_dir, liboqs_build_dir, openssl_path, openssl_lib_dir
+    global root_dir, liboqs_build_dir, openssl_path, openssl_lib_dir, oqs_provider_path, oqs_provider_src_dir
 
-    # Get the script dir location, set current directory, and set the marker filename
+    # Determine the directory that the script is being executed from and set the marker filename
     script_dir = os.path.dirname(os.path.abspath(__file__))
     current_dir = script_dir
     marker_filename = ".pqc_eval_dir_marker.tmp"
 
-    # Loop until the project's root directory is found or the system root directory is reached
+    # Continue moving up the directory tree until the .pqc_eval_dir_marker.tmp file is found
     while True:
 
-        # Check if the marker file is present in the current directory and break if found
-        marker_path = os.path.join(current_dir, marker_filename)
-
-        if os.path.isfile(marker_path):
+        # Check if the .pqc_eval_dir_marker.tmp file is present
+        if os.path.isfile(os.path.join(current_dir, marker_filename)):
             root_dir = current_dir
             break
 
-        # Move up one directory and check again for 
+        # Move up a directory and store the new path
         current_dir = os.path.dirname(current_dir)
 
-        # If the root directory is reached and the file is not found, exit the script
+        # If the system's root directory is reached and the file is not found, exit the script
         if current_dir == "/":
             print("Root directory path file not present, please ensure the path is correct and try again.")
             sys.exit(1)
 
-    # Set the path to the liboqs build directory and the openssl path
+    # Declare the global library directory path variables
     liboqs_build_dir = os.path.join(root_dir, "lib", "liboqs", "build", "tests")
-    openssl_path = os.path.join(root_dir, "lib", "openssl_3.2")
+    openssl_path = os.path.join(root_dir, "lib", "openssl_3.4")
+    oqs_provider_path = os.path.join(root_dir, "lib", "oqs-provider")
     openssl_lib_dir = ""
 
-    # Check which OpenSSL lib directory to use depending on the system
+    # Check the OpenSSL library directory path
     if os.path.isdir(os.path.join(openssl_path, "lib64")):
         openssl_lib_dir = os.path.join(openssl_path, "lib64")
 
     else:
         openssl_lib_dir= os.path.join(openssl_path, "lib")
 
-    # Export the path to the OpenSSL library directory
+    # Export the OpenSSL library filepath
     old_ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
     new_ld_library_path = f"{openssl_lib_dir}:{old_ld_library_path}"
     os.environ['LD_LIBRARY_PATH'] = new_ld_library_path
+
+    # Set the path to the ALGORITHMS.md file
+    oqs_provider_src_dir = os.path.join(root_dir, "tmp", "oqs-provider-source")
 
     # Ensure that there are no previous list files present (mainly for if this script is ran manually, setup.sh will handle this)
     alg_list_dir = os.path.join(root_dir, "test-data", "alg-lists")
@@ -87,7 +106,7 @@ def setup_base_env():
 #-----------------------------------------------------------------------------------------------------------
 def write_to_file(alg_list, file_name):
     """ Helper function to write the algorithms to a specified text file. The function 
-        takes the algorithm list and filename as arguments """
+        takes the algorithm list and filename as arguments. """
 
     # Write the algorithms to the specified text file
     with open(file_name, "w") as f:
@@ -96,36 +115,58 @@ def write_to_file(alg_list, file_name):
 
 #-----------------------------------------------------------------------------------------------------------
 def liboqs_extract_algs(output_str):
-    """ Helper function to extract the algorithms from the output string of the liboqs test binaries """
+    """ Helper function to extract the algorithms from the output string of the liboqs test binaries. 
+        The function parses the output string to identify and extract algorithm names. """
 
-    # Determine the index of where the algorithms start in the output string
-    alg_start_index = output_str.find("algname:") + len("algname:")
-    
-    # Use the index to get the string of algorithms
-    alg_str = output_str[alg_start_index:].strip()
-    
-    # Create a list of the algorithms from the string and remove commas
-    algs = alg_str.split(", ")
-    
-    return algs
+    # Initialise the extracted algorithms variable
+    extracted_algs = None
+
+    # Split the output string into individual lines for processing
+    lines = output_str.splitlines()
+
+    # Iterate through each line to search for algorithm names
+    for line in lines:
+
+        # Check if the line contains the "algname:" keyword, which indicates algorithm names
+        if "algname:" in line:
+
+            # Split the line at the first occurrence of "algname:" to isolate the algorithm names
+            line_split = line.split("algname:", 1)
+
+            # Ensure the split result contains at least two parts (valid format)
+            if len(line_split) < 2:
+                continue
+
+            # Extract the algorithm names, strip any whitespace, and split by commas
+            alg_list_str = line_split[1].strip()
+            extracted_algs = [alg.strip() for alg in alg_list_str.split(",") if alg.strip()]
+
+    # Verify that algorithms were successfully extracted; otherwise, output an error message
+    if extracted_algs is None:
+        print("[ERROR] - No algorithms found in the output string.")
+        sys.exit(1)
+
+    return extracted_algs
 
 #-----------------------------------------------------------------------------------------------------------
 def get_liboqs_algs():
     """ Function to get the algorithms supported by the Liboqs library. The function will run the test
-        binaries with no arguments to trigger the help output which will contain the algorithms supported """
-
+        binaries with no arguments to trigger the help output which will contain the algorithms supported. """
+    
     # Set the test_bins and output directory for algorithm lists
     test_bins = [f"{liboqs_build_dir}/test_kem", f"{liboqs_build_dir}/test_sig"]
     output_dir = os.path.join(root_dir, "test-data", "alg-lists")
 
-    # Loop through the different test type binaries
+    # Loop through the different test type binaries (KEM and SIG) and run them
     for bin in test_bins:
 
         # Check if the test binary exists before running
         if os.path.isfile(bin):
 
+            # Attempt to run the test binary and capture the output
             try:
-                # Run relevant test binary and capture the output
+
+                # Run the relevant test binary and capture the output
                 process = subprocess.Popen(bin, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
                 stdout, stderr = process.communicate()
 
@@ -142,18 +183,18 @@ def get_liboqs_algs():
                 write_to_file(algs, alg_list_file)
 
             except Exception as e:
-                print(f"An error occurred: {e}")
+                print(f"[ERROR] - {e}")
             
         else:
-            print(f"Test binary '{bin}' not found.")
+            print(f"[ERROR] - Test binary '{bin}' not found.")
             return
 
 #-----------------------------------------------------------------------------------------------------------
 def oqs_provider_extract_algs(output_str):
     """ Helper function to extract the algorithms from the output string of the OpenSSL binary. The binary is passed 
-        the algorithm type and the OQS-Provider flags so that it prints out the algorithms supported for that type in OQS-Provider """
+        the algorithm type and the OQS-Provider flags so that it prints out the algorithms supported for that type in OQS-Provider. """
 
-    # Set the lists used for the PQC and Hybrid-PQC algorithms
+    # Set the algorithm lists used for the PQC and Hybrid-PQC algorithms
     algs = []
     hybrid_algs = []
 
@@ -182,7 +223,7 @@ def oqs_provider_extract_algs(output_str):
 #-----------------------------------------------------------------------------------------------------------
 def get_tls_pqc_algs():
     """ Function to get the PQC and Hybrid-PQC algorithms supported by 
-        the OQS-Provider library for the TLS benchmarking """
+        the OQS-Provider library for the TLS benchmarking. """
 
     # Set required path variables and algorithm categories
     openssl_bin = os.path.join(openssl_path, "bin","openssl")
@@ -194,9 +235,9 @@ def get_tls_pqc_algs():
 
         # Run the openssl binary with the required flags to get the algorithms supported and capture the output
         process = subprocess.Popen(
-            [openssl_bin, "list", f"-{alg_type}-algorithms", "-provider", "oqsprovider"], 
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.PIPE, 
+            [openssl_bin, "list", f"-{alg_type}-algorithms", "-provider", "oqsprovider"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             universal_newlines=True
         )
         stdout, stderr = process.communicate()
@@ -206,14 +247,14 @@ def get_tls_pqc_algs():
 
         # Set the various output filenames depending on the current algorithm type
         if alg_type == "kem":
-            alg_list_file = os.path.join(output_dir, "ssl-kem-algs.txt")
-            speed_list_file = os.path.join(output_dir, "ssl-speed-kem-algs.txt")
-            hybrid_alg_list_file = os.path.join(output_dir, "ssl-hybr-kem-algs.txt")
+            alg_list_file = os.path.join(output_dir, "tls-kem-algs.txt")
+            speed_list_file = os.path.join(output_dir, "tls-speed-kem-algs.txt")
+            hybrid_alg_list_file = os.path.join(output_dir, "tls-hybr-kem-algs.txt")
         
         else:
-            alg_list_file = os.path.join(output_dir, "ssl-sig-algs.txt")
-            speed_list_file = os.path.join(output_dir, "ssl-speed-sig-algs.txt")
-            hybrid_alg_list_file = os.path.join(output_dir, "ssl-hybr-sig-algs.txt")
+            alg_list_file = os.path.join(output_dir, "tls-sig-algs.txt")
+            speed_list_file = os.path.join(output_dir, "tls-speed-sig-algs.txt")
+            hybrid_alg_list_file = os.path.join(output_dir, "tls-hybr-sig-algs.txt")
 
         # Write out the algorithms to the list file
         write_to_file(algs, alg_list_file)
@@ -223,7 +264,7 @@ def get_tls_pqc_algs():
 #-----------------------------------------------------------------------------------------------------------
 def set_tls_classic_algs():
     """ Function to set the classic algorithm lists for the TLS benchmarking. The classic algorithms are not subject 
-        to change, so they can be set in the script and then outputted to text files for the benchmarking and parsing scripts """
+        to change, so they can be set in the script and then outputted to text files for the benchmarking and parsing scripts. """
 
     # Set the classic algorithms for the TLS benchmarking
     classic_kems = ["prime256v1", "secp384r1", "secp521r1"]
@@ -231,17 +272,85 @@ def set_tls_classic_algs():
 
     # Set the output directory and text file names
     output_dir = os.path.join(root_dir, "test-data", "alg-lists")
-    kem_list_file = os.path.join(output_dir, "classic-ssl-kem-algs.txt")
-    sig_list_file = os.path.join(output_dir, "classic-ssl-sig-algs.txt")
+    kem_list_file = os.path.join(output_dir, "classic-tls-kem-algs.txt")
+    sig_list_file = os.path.join(output_dir, "classic-tls-sig-algs.txt")
     
     # Write out the classic algorithms to the list files
     write_to_file(classic_kems, kem_list_file)
     write_to_file(classic_sigs, sig_list_file)
+
+#-----------------------------------------------------------------------------------------------------------
+def parse_oqs_provider_algorithms_md():
+    """ Function for parsing the ALGORITHMS.md file of the OQS-Provider library to extract the total number of algorithms supported
+        This is only called when all algorithms are selected to be enabled by the main setup.sh script, as the OpenSSL speed.c source
+        file needs to be altered so that a larger number of algorithms can be supported. This function will return the total number of algorithms
+        supported by the OQS-Provider library and if parsing fails returns -1 to indicate that the hardcoded high value should be set in the speed.c file. """
+
+    # Set the filepaths for the ALGORITHMS.md file and declare main_algs list
+    algs_md_filepath = os.path.join(oqs_provider_src_dir, "ALGORITHMS.md")
+    main_algs = []
+
+    # Set the in_table to its default value
+    in_table = False
+
+    # Try to open the ALGORITHMS.md file and extract the algorithms from the table
+    try:
+
+        # Ensure that the file is present
+        if not os.path.isfile(algs_md_filepath):
+            raise FileNotFoundError()
+                
+        # Open the ALGORITHMS.md file and extract the number of algorithms supported
+        with open (algs_md_filepath, "r", encoding='utf-8') as file:
+            for line in file:
+
+                # Determine if the script is currently in the table of algorithms
+                if "<!--- OQS_TEMPLATE_FRAGMENT_IDS_START -->" in line:
+                    in_table = True
+                    continue
+                
+                elif "<!--- OQS_TEMPLATE_FRAGMENT_IDS_END -->" in line:
+                    break
+                
+                # If in the table extract the algorithm names
+                if in_table:
+
+                    # Only extract the algorithms if not in the first lines of the table
+                    if "Algorithm" in line or "--" in line:
+                        continue
+
+                    else:
+
+                        # Extract the algorithm name from the row and store it in the main_algs list
+                        row = line.split("|")
+                        del row[0]
+                        main_algs.append(row[0].strip())
+
+        # Check that the table was found and the algorithm names were extracted
+        if not main_algs:
+            raise Exception("No algorithms found in the table")
+
+    except FileNotFoundError:
+        print(f"File not found: {algs_md_filepath}")
+        sys.exit(1)
+
+    except Exception as e:
+        print(f"Failed to parse processing file structure: {e}")
+        sys.exit(1)
+
+    # Print out the number of algorithms supported by the OQS-Provider library and exit successfully
+    print(f"Total number of Algorithms: {len(main_algs)}")
+    sys.exit(0)
     
 #-----------------------------------------------------------------------------------------------------------
 def main():
     """ Main function for controlling the utility script. The function will determine which algorithms 
-        are required based on the argument passed to the script """
+        are required based on the argument passed to the script. """
+    
+    # Check if the help flag was passed before continuing
+    if "--help" in sys.argv:
+        output_help_message()
+        sys.exit(0)
 
     # Ensure a valid argument was passed to the utility script
     if len(sys.argv) == 2:
@@ -251,24 +360,73 @@ def main():
 
         # Determine which algorithm lists are required based on the argument passed and create them
         if sys.argv[1] == "1":
+
+            # Ensure that the Liboqs library is present before continuing
+            if not os.path.isdir(liboqs_build_dir):
+                print("[ERROR]- Liboqs library not found")
+                sys.exit(1)
+            
+            # Get the algorithms supported by the Liboqs library
             get_liboqs_algs()
 
         elif sys.argv[1] == "2":
+
+            #Ensure that the Liboqs, OpenSSL, and OQS-Provider libraries are present before continuing
+            if not os.path.isdir(liboqs_build_dir):
+                print("[ERROR]- Liboqs library not found")
+                sys.exit(1)
+
+            elif not os.path.isdir(oqs_provider_path):
+                print("[ERROR]- OQS-Provider library not found")
+                sys.exit(1)
+
+            elif not os.path.isdir(openssl_path):
+                print("[ERROR]- OpenSSL library not found")
+                sys.exit(1)
+
+            # Get the algorithms supported by the Liboqs library
             get_liboqs_algs()
+
+            # Get the algorithms supported by the OQS-Provider library and set the classic TLS algorithms
             get_tls_pqc_algs()
             set_tls_classic_algs()
 
         elif sys.argv[1] == "3":
+
+            # Ensure that the OQS-Provider and OpenSSL libraries are present before continuing
+            if not os.path.isdir(oqs_provider_path):
+                print("[ERROR]- OQS-Provider library not found")
+                sys.exit(1)
+
+            elif not os.path.isdir(openssl_path):
+                print("[ERROR]- OpenSSL library not found")
+                sys.exit(1)
+            
+            # Get the algorithms supported by the OQS-Provider library and set the classic TLS algorithms
             get_tls_pqc_algs()
             set_tls_classic_algs()
 
+        elif sys.argv[1] == "4":
+
+            # Ensure that the OQS-Provider source directory is present before continuing
+            if not os.path.isdir(oqs_provider_src_dir):
+                print("[ERROR]- OQS-Provider source directory not found")
+                sys.exit(1)
+
+            # Parse the ALGORITHMS.md file in the OQS-Provider source directory to get the total number of algorithms supported
+            parse_oqs_provider_algorithms_md()
+
         else:
+
+            # Output an error message if an invalid argument was passed
             print(f"\nInvalid argument has been passed to this utility script, please check the code of the setup.sh script, or if you are running this script manually, ensure you are passing the correct argument")
             print("Required arguments are: 1 (Liboqs only), 2 (liboqs and OQS-Provider), or 3(OQS-Provider only)")
             print(f"\nArgument passed - ", sys.argv[1])
             sys.exit(1)
     
     else:
+
+        # Output an error message if an invalid number of arguments were passed
         print("Invalid number of arguments passed to the utility script, please check the code of the setup.sh script, or if you are running this script manually, ensure you are passing the correct number of arguments")
         sys.exit(1)
 
