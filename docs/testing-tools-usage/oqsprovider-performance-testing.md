@@ -41,7 +41,7 @@ Please make sure your firewall allows traffic on the following ports:
 | Client Control TCP Port   | 25001                |
 | OpenSSL S_Server TCP Port | 4433                 |
 
-If the default TCP ports are unsuitable for your environment, please see the [Test Customisation](#advanced-testing-customisation) section for further instructions on configuring custom TCP ports.
+If the default TCP ports are unsuitable for your environment, please see the [Advanced Testing Customisation](#advanced-testing-customisation) section for further instructions on configuring custom TCP ports.
 
 ### Generating Required Certificates and Private Keys
 To perform the TLS handshake performance tests, the server certificate and private-key files must first be generated. The generated keys and certificates will be saved to the `test-data/keys` directory in the project root. This can be done by executing the following command from within the `scripts/testing-scripts` directory:

@@ -153,7 +153,7 @@ touch .pqc_eval_dir_marker.tmp
 ```
 
 ### Optional Setup Flags
-For advanced setup options, including `safe-mode` for using the last tested versions of the dependency libraries, custom `OpenSSL speed.c` limits, and additional build features, please refer to the [Advanced Setup Configuration Guide](docs/advanced-setup-configuration.md).
+For advanced setup options, including `safe-mode` for using the last tested versions of the dependency libraries, custom OpenSSL `speed.c` limits, and additional build features, please refer to the [Advanced Setup Configuration Guide](docs/advanced-setup-configuration.md).
 
 ## Automated Testing Tools - fix titles of internal usage documents later
 The repository provides two categories of automated benchmarking:

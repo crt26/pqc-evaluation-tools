@@ -72,7 +72,7 @@ The script is run interactively but supports the following optional arguments fo
 --set-speed-new-value=<int>    Manually set MAX_KEM_NUM/MAX_SIG_NUM in speed.c  
 ```
 
-For further information on the main setup script's usage, please refer to the [main README](../../README.md) file.
+For further information on the main setup script's usage, please refer to the main [README](../../README.md) file.
 
 ### cleaner.sh
 This is a utility script for cleaning the various project files from the compiling and benchmarking operations. The script provides functionality for either uninstalling the OQS and other dependency libraries from the system, clearing the old results, algorithm list files, and generated TLS keys, or both.
@@ -165,7 +165,7 @@ This script is the main controller for executing the full TLS performance test s
 
 It is important to note that when conducting testing, the `full-oqs-provider.sh` script will prompt the user for parameters regarding the handling of storing and managing test results if the machine or current shell has been designated as the client (depending on whether single machine or separate machine testing is being performed).
 
-The script accepts the passing of various arguments when called, which allows the user to configure components of the automated testing functionality. For further information on their usage, please refer to the [tls-performance-testing](./tls-performance-testing.md) documentation file.
+The script accepts the passing of various arguments when called, which allows the user to configure components of the automated testing functionality. For further information on their usage, please refer to the [TLS Performance Testing Instructions](../testing-tools-usage/oqsprovider-performance-testing.md) documentation file.
 
 **Accepted Script Arguments:**
 
