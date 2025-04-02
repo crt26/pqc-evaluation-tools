@@ -1,12 +1,12 @@
 # Repository Directory Structure - fix and update directory listing
 
 ## Overview
-This document outlines the directory structure of the `pqc-evaluation-tools` repository. It includes both the default contents available upon cloning and the directories/files that are dynamically generated during operation. 
+This document outlines the directory structure of the `PQC-Evaluation-Tools` repository. It includes both the default contents available upon cloning and the directories that are dynamically generated during operation. 
 
-Directories and files created by scripts during execution are marked with an asterisk (`*`) in the directory layout diagram.
+Directories created by scripts during execution are marked with an asterisk (`*`) in the directory layout diagram.
 
 ## Layout and Descriptions
-The `pqc-evaluation-tools` repository directories are organised as follows:
+The `PQC-Evaluation-Tools` repository directories are organised as follows:
 
 ```
 pqc-evaluation-tools/
@@ -29,8 +29,6 @@ pqc-evaluation-tools/
     ├── results*
     └── up-results*
 ```
-
-### Directory Descriptions
 
 ### Directory Descriptions
 
