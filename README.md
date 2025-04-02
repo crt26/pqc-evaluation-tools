@@ -1,18 +1,5 @@
 # PQC Evaluation Tools <!-- omit from toc -->
 
-## Notice: <!-- omit from toc -->
-This is the **development branch**, it may not be in a fully functioning state and documentation may still need updated. The checkboxes below indicates whether the current development version is in a basic functioning state and if the documentation is accurate for its current functionality. Regardless please keep this in mind and use the main branch if possible, thank you.
-
-- [x] Functioning State*
-- [x] Up to date documentation
-
-<!-- > *Dev branch Notice: Current functioning state works for both x86 and ARM machines. However, on ARM devices, memory profiling for Falcon algorithm variations is non-functioning. Please refer to [bug-report-on-liboqs-repo](https://github.com/open-quantum-safe/liboqs/issues/1761) for more details. Work is underway to resolve this issue but for now the repository has methods in place to account for this. Automated testing and parsing scripts can still be used to gather performance metrics for all other algorithms on ARM systems.  -->
-
-## Main Development Branch Task Tracking
-For full details on the project's development and the current development task lists, please refer to the repositories Github Projects Page here:
-
-[PQC-Evaluation-Tools Project Page](https://github.com/users/crt26/projects/2)
-
 ## Repository Overview <!-- omit from toc -->
 
 ### Project Description
@@ -39,10 +26,6 @@ For details on the project's development and upcoming features, see the project'
 [PQC-Evaluation-Tools Project Page](https://github.com/users/crt26/projects/2)
 
 ## Contents <!-- omit from toc -->
-- [Main Development Branch Task Tracking](#main-development-branch-task-tracking)
-  - [Project Description](#project-description)
-  - [Supported Automation Functionality](#supported-automation-functionality)
-  - [Project Development](#project-development)
 - [Supported Hardware and Software](#supported-hardware-and-software)
 - [Installation Instructions](#installation-instructions)
   - [Cloning the Repository](#cloning-the-repository)
