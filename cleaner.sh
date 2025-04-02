@@ -3,23 +3,23 @@
 # Copyright (c) 2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
-# This is a utility script for cleaning the various project files produced from compiling and benchmarking. The script 
-# provides functionality for either uninstalling the OQS-Provider libraries from the system, clearing the old results and generated TLS keys, or both. 
-# When uninstalling, the script will remove the liboqs, OQS-Provider, and OpenSSL 3.4.1 libraries from the system. When clearing the old results and keys,
-# the script will remove the old test results and generated keys directories from the test-data directory.
+# Utility script for cleaning up project files produced during PQC benchmarking.
+# Provides options to uninstall the OQS-Provider libraries, clear old benchmarking results and generated TLS keys, or perform both actions.
+# Uninstalling will remove the Liboqs, OQS-Provider, and OpenSSL 3.4.1 installations from the system.
+# Clearing results will remove test outputs and key material under the test-data directory.
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function setup_base_env() {
-    # Function for setting up the basic global variables for the test suite. This includes setting the root directory
-    # and the global library paths for the test suite. The function establishes the root path by determining the path of the script and 
-    # using this, determines the root directory of the project.
+    # Function for setting up the global environment variables for the test suite. This includes determining the root directory 
+    # by tracing the script's location, and configuring paths for libraries, test data, and temporary files.
 
-    # Determine directory that the script is being run from
+    # Determine the directory that the script is being executed from
     script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-    # Try and find the .dir_marker.tmp file to determine the root directory
+    # Try and find the .dir_marker.tmp file to determine the project's root directory
     current_dir="$script_dir"
 
+    # Continue moving up the directory tree until the .pqc_eval_dir_marker.tmp file is found
     while true; do
 
         # Check if the .pqc_eval_dir_marker.tmp file is present
@@ -28,10 +28,10 @@ function setup_base_env() {
             break
         fi
 
-        # Move up a directory and check again
+        # Move up a directory and store the new path
         current_dir=$(dirname "$current_dir")
 
-        # If the root directory is reached and the file is not found, exit the script
+        # If the system's root directory is reached and the file is not found, exit the script
         if [ "$current_dir" == "/" ]; then
             echo -e "Root directory path file not present, please ensure the path is correct and try again."
             exit 1
@@ -39,56 +39,70 @@ function setup_base_env() {
 
     done
 
-    # Declaring main dir path variables based on root dir
+    # Declare the main directory path variables based on the project's root dir
     dependency_dir="$root_dir/dependency-libs"
     libs_dir="$root_dir/lib"
     tmp_dir="$root_dir/tmp"
     test_data_dir="$root_dir/test-data"
 
-    # Declaring global library path files
+    # Declare the global library directory path variables
     openssl_path="$libs_dir/openssl_3.4"
     liboqs_path="$libs_dir/liboqs"
     oqs_provider_path="$libs_dir/oqs-provider"
 
-    # Declaring global source-code path files
+    # Declaring the global source-code directory path variables
     liboqs_source="$tmp_dir/liboqs-source"
     oqs_provider_source="$tmp_dir/oqs-provider-source"
     openssl_source="$tmp_dir/openssl-3.4.1"
+
+    # Declaring the global test-data directory path variables
+    test_data_results="$test_data_dir/results"
+    test_data_up_results="$test_data_dir/up-results"
+    test_data_keys="$test_data_dir/keys"
+    test_data_alg_lists_dir="$test_data_dir/alg-lists"
 
 }
 
 #------------------------------------------------------------------------------
 function select_uninstall_mode() {
-    # Function for selecting the uninstall option for the currently installed OQS libraries
+    # Function for selecting the uninstall option for the currently installed dependency libraries. 
+    # The function will also remove the generated algorithms lists from the test-data directory
+    # depending on the user's uninstall choice.
 
+    # Output the current task to the terminal
     echo -e "\n########################"
     echo "Uninstalling Libraries"
     echo -e "########################"
 
-    # Loop for setup option selection
+    # Prompt the user for their choice until a valid response is given
     while true; do
 
-        # Outputting options to user and getting input
+        # Output the choices for uninstalling the libraries
         echo -e "\nPlease Select one of the following uninstall options"
         echo "1 - Uninstall Liboqs Library Only"
         echo "2 - Uninstall OQS-Provider Library only"
         echo "3 - Uninstall OpenSSL 3.4.1 Only"
         echo "4 - Uninstall all Libraries"
         echo "5 - Exit Setup"
+
+        # Read in the user's response
         read -p "Enter your choice (1-5): " user_opt
 
-        # Determining action from user input
+        # Determine the action based on the user's response
         case "$user_opt" in 
 
             1)
                 # Uninstall Liboqs only
                 rm -rf "$liboqs_path"
+                rm "$test_data_alg_lists_dir/kem-algs.txt"
+                rm "$test_data_alg_lists_dir/sig-algs.txt"
                 echo -e "\nLiboqs Uninstalled"
                 break;;
             
             2)
                 # Uninstal OQS-Provider only
                 rm -rf "$oqs_provider_path"
+                rm $test_data_alg_lists_dir/*tls*.txt
                 echo -e "\nOQS-Provider Uninstalled"
                 break;;
 
@@ -102,15 +116,20 @@ function select_uninstall_mode() {
                 # Uninstall all dependency libraries
                 rm -rf "$libs_dir" && rm -rf "$tmp_dir" && rm -rf "$dependency_dir"
                 rm -rf "$root_dir/.pqc_eval_dir_marker.tmp"
+                rm -rf "$test_data_alg_lists_dir"
                 echo -e "\nAll Libraries Uninstalled"
                 break;;
 
             5)
+
+                # Exit the script
                 echo "Exiting Uninstall Script!"
                 exit 1
                 ;;
 
             *)
+
+                # Output to the user that the input is invalid and prompt again
                 echo -e "\nInvalid option, please select valid option value (1-4)\n"
                 ;;
             
@@ -124,6 +143,7 @@ function select_uninstall_mode() {
 function remove_old_results() {
     # Function for removing old test results and generated keys directories from the test-data directory
 
+    # Output the current task to the terminal
     echo -e "\n###############################"
     echo "Clearing Results and TLS Keys"
     echo -e "\n###############################\n"
@@ -146,9 +166,9 @@ function remove_old_results() {
     done
 
     # Remove all relevant directories
-    rm -rf "$test_data_dir/results"
-    rm -rf "$test_data_dir/up-results"
-    rm -rf "$test_data_dir/keys"
+    rm -rf "$test_data_results"
+    rm -rf "$test_data_up_results"
+    rm -rf "$test_data_keys"
     rm -rf "$tmp_dir/*"
     echo -e "\nAll results and generated keys cleared\n"
 
@@ -158,10 +178,10 @@ function remove_old_results() {
 function main() {
     # Main function for controlling the uninstall utility script
 
-    # Setting up the base environment for the test suite
+    # Setup the base environment for the utility script
     setup_base_env
     
-    # Outputting script title to the terminal
+    # Output the welcome message to the terminal
     echo "#################################"
     echo "Project Cleaner Utility Script"
     echo "#################################"
@@ -169,14 +189,17 @@ function main() {
     # Determine what clearing action the user would like to perform
     while true; do
 
+        # Output the uninstall options to the user
         echo -e "\nPlease select what clearing action you would like to perform"
         echo "1 - Uninstall Libraries Only"
         echo "2 - Clear old test results and generated TLS Keys Only"
         echo "3 - Uninstall libraries and clear old test results/generated TLS keys"
         echo "4 - Exit Cleaning Script"
+
+        # Read in the user's response
         read -p "Enter your choice (1-4): " user_opt
 
-        # Calling relevant cleaning functions based on user input
+        # Determine the action based on the user's response
         case "$user_opt" in 
 
             1)
@@ -193,17 +216,21 @@ function main() {
 
             3)
                 # Uninstall both OQS libraries and clear old test results and generated keys
-                echo -e "\nOption 4 Selected: Uninstall Libraries and Clear Old Test Results/Generated TLS Keys"
+                echo -e "\nOption 3 Selected: Uninstall Libraries and Clear Old Test Results/Generated TLS Keys"
                 select_uninstall_mode
                 remove_old_results
                 break;;
 
             4)
+
+                # Exit the script
                 echo "Exiting Uninstall Script!"
                 exit 1
                 ;;
 
             *)
+
+                # Output to the user that the input is invalid and prompt again
                 echo -e "\nInvalid option, please select valid option value (1-4)\n"
                 ;;
             

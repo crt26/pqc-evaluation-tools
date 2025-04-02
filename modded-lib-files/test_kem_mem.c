@@ -1,30 +1,6 @@
 // SPDX-License-Identifier: MIT
-//
-// This file has been modified by Callum Turino on 05/06/2023.
-//
-// -------------------------------------------------------------------
-//
-// Copyright (c) 2016-2021 Open Quantum Safe project
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
 
-// SPDX-License-Identifier: MIT
+// This file has been modified by Callum Turino on 01/04/2025.
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -35,15 +11,7 @@
 
 #include "system_info.c"
 #include "tmp_store.c"
-
-/* Displays hexadecimal strings */
-static void OQS_print_hex_string(const char *label, const uint8_t *str, size_t len) {
-	printf("%-20s (%4zu bytes):  ", label, len);
-	for (size_t i = 0; i < (len); i++) {
-		printf("%02X", str[i]);
-	}
-	printf("\n");
-}
+#include "test_helpers.h"
 
 typedef struct magic_s {
 	uint8_t val[32];
@@ -76,11 +44,11 @@ static OQS_STATUS kem_test_correctness(const char *method_name, KEM_OPS op) {
 	switch (op) {
 	case KEM_KEYGEN:
 
-		public_key = malloc(kem->length_public_key);
-		secret_key = malloc(kem->length_secret_key);
+		public_key = OQS_MEM_malloc(kem->length_public_key);
+		secret_key = OQS_MEM_malloc(kem->length_secret_key);
 
 		if ((public_key == NULL) || (secret_key == NULL)) {
-			fprintf(stderr, "ERROR: malloc failed\n");
+			fprintf(stderr, "ERROR: OQS_MEM_malloc failed\n");
 			goto err;
 		}
 
@@ -100,13 +68,13 @@ static OQS_STATUS kem_test_correctness(const char *method_name, KEM_OPS op) {
 
 	case KEM_ENCAPS:
 
-		public_key = malloc(kem->length_public_key);
-		secret_key = malloc(kem->length_secret_key);
-		ciphertext = malloc(kem->length_ciphertext);
-		shared_secret_e = malloc(kem->length_shared_secret);
+		public_key = OQS_MEM_malloc(kem->length_public_key);
+		secret_key = OQS_MEM_malloc(kem->length_secret_key);
+		ciphertext = OQS_MEM_malloc(kem->length_ciphertext);
+		shared_secret_e = OQS_MEM_malloc(kem->length_shared_secret);
 
 		if ((public_key == NULL) || (secret_key == NULL) || (ciphertext == NULL) || (shared_secret_e == NULL)) {
-			fprintf(stderr, "ERROR: malloc failed\n");
+			fprintf(stderr, "ERROR: OQS_MEM_malloc failed\n");
 			goto err;
 		}
 
@@ -132,14 +100,14 @@ static OQS_STATUS kem_test_correctness(const char *method_name, KEM_OPS op) {
 
 	case KEM_DECAPS:
 
-		public_key = malloc(kem->length_public_key);
-		secret_key = malloc(kem->length_secret_key);
-		ciphertext = malloc(kem->length_ciphertext);
-		shared_secret_e = malloc(kem->length_shared_secret);
-		shared_secret_d = malloc(kem->length_shared_secret);
+		public_key = OQS_MEM_malloc(kem->length_public_key);
+		secret_key = OQS_MEM_malloc(kem->length_secret_key);
+		ciphertext = OQS_MEM_malloc(kem->length_ciphertext);
+		shared_secret_e = OQS_MEM_malloc(kem->length_shared_secret);
+		shared_secret_d = OQS_MEM_malloc(kem->length_shared_secret);
 
 		if ((public_key == NULL) || (secret_key == NULL) || (ciphertext == NULL) || (shared_secret_e == NULL) || (shared_secret_d == NULL)) {
-			fprintf(stderr, "ERROR: malloc failed\n");
+			fprintf(stderr, "ERROR: OQS_MEM_malloc failed\n");
 			goto err;
 		}
 		if (oqs_fload("pk", method_name, public_key, kem->length_public_key, &retlen) != OQS_SUCCESS) {
