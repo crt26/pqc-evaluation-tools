@@ -32,7 +32,7 @@ For details on the project's development and upcoming features, see the project'
   - [Choosing Installation Mode](#choosing-installation-mode)
   - [Ensuring Root Dir Path Marker is Present](#ensuring-root-dir-path-marker-is-present)
   - [Optional Setup Flags](#optional-setup-flags)
-- [Automated Testing Tools - fix titles of internal usage documents later](#automated-testing-tools---fix-titles-of-internal-usage-documents-later)
+- [Automated Testing Tools](#automated-testing-tools)
   - [Liboqs Performance Testing](#liboqs-performance-testing)
   - [OQS-Provider TLS Performance Testing](#oqs-provider-tls-performance-testing)
   - [Testing Output Files](#testing-output-files)
@@ -138,7 +138,7 @@ touch .pqc_eval_dir_marker.tmp
 ### Optional Setup Flags
 For advanced setup options, including `safe-mode` for using the last tested versions of the dependency libraries, custom OpenSSL `speed.c` limits, and additional build features, please refer to the [Advanced Setup Configuration Guide](docs/advanced-setup-configuration.md).
 
-## Automated Testing Tools - fix titles of internal usage documents later
+## Automated Testing Tools
 The repository provides two categories of automated benchmarking:
 
 - **Liboqs Performance Testing** - Used for gathering PQC computational performance data
