@@ -1,4 +1,4 @@
-# Repository Directory Structure - fix and update directory listing
+# Repository Directory Structure
 
 ## Overview
 This document outlines the directory structure of the `PQC-Evaluation-Tools` repository. It includes both the default contents available upon cloning and the directories that are dynamically generated during operation. 
