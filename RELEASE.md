@@ -1,4 +1,4 @@
-# Release v0.3..
+# Version v0.3.0 Release
 Welcome to the version 0.3.0 release of the PQC-Evaluation-Tools project!
 
 ##  Release Overview
