@@ -20,6 +20,7 @@ Accepted arguments:
 import os
 import subprocess
 import sys
+import re
 
 # Set the root directory path variable
 root_dir = ""
@@ -198,6 +199,9 @@ def oqs_provider_extract_algs(output_str):
     algs = []
     hybrid_algs = []
 
+    # Set the regex pattern to match hybrid algorithm prefixes
+    hybrid_prefix_pattern = re.compile(r'^(rsa[0-9]+|p[0-9]+|x[0-9]+)_|^(X25519|SecP256r1|SecP384r1|SecP521r1)[A-Za-z0-9]+$')
+
     # Pre-format the output string to remove newlines and split into a list
     pre_algs = output_str.split("\n")
     pre_algs = pre_algs[:-1]
@@ -210,9 +214,7 @@ def oqs_provider_extract_algs(output_str):
         alg = alg.split(" @ ")[0]
 
         # Determine if the is a hybrid algorithm or not and add to the appropriate list
-        hybrid_prefix = alg.split("_")
-        
-        if len(hybrid_prefix) > 1:
+        if hybrid_prefix_pattern.match(alg):
             hybrid_algs.append(alg.strip())
 
         else:
