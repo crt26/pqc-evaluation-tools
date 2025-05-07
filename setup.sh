@@ -423,7 +423,7 @@ function dependency_install() {
                         2 )
 
                             # Output the message to the user and exit the setup script
-                            echo -e "Exiting setup script, please handle the install of the following pip packages manually:"
+                            echo -e "\nExiting setup script, please handle the install of the following pip packages manually:"
                             echo "${missing_pip_packages[@]}"
                             exit 1
                             ;;
