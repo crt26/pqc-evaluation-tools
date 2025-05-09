@@ -697,6 +697,10 @@ function openssl_build() {
     echo "Building OpenSSL-3.4.1"
     echo -e "######################\n"
 
+    # Output warning message this make take a while to the user
+    echo -e "Starting OpenSSL 3.4.1 build process. This may take a while, and no progress bar will be shown...\n"
+    sleep 2
+
     # Setting CPU thread count for the build process
     threads=$(nproc)
 
