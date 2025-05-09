@@ -831,6 +831,9 @@ function liboqs_build() {
 
         elif [[ "$(uname -m)" = arm* || "$(uname -m)" == aarch* ]]; then
 
+            # Set the default value for the enabled_pmu flag
+            enabled_pmu=0
+
             # Enable user space access to the ARM PMU if needed
             if lsmod | grep -q 'enable_ccr'; then
                 echo "The enable_ccr module is already enabled, skipping build."
