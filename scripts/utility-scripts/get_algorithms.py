@@ -217,7 +217,7 @@ def oqs_provider_extract_algs(output_str):
         alg = alg.split(" @ ")[0]
 
         # Determine if the algorithm is one that should be included in the generated list
-        if not uov_pattern.match(alg):
+        if not uov_pattern.match(alg) or alg == "CROSSrsdp256small":
 
             # Determine if the is a hybrid algorithm or not and add to the appropriate list
             if hybrid_prefix_pattern.match(alg):
