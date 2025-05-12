@@ -423,7 +423,7 @@ function dependency_install() {
                         2 )
 
                             # Output the message to the user and exit the setup script
-                            echo -e "Exiting setup script, please handle the install of the following pip packages manually:"
+                            echo -e "\nExiting setup script, please handle the install of the following pip packages manually:"
                             echo "${missing_pip_packages[@]}"
                             exit 1
                             ;;
@@ -697,6 +697,10 @@ function openssl_build() {
     echo "Building OpenSSL-3.4.1"
     echo -e "######################\n"
 
+    # Output warning message this make take a while to the user
+    echo -e "Starting OpenSSL 3.4.1 build process. This may take a while, and no progress bar will be shown...\n"
+    sleep 2
+
     # Setting CPU thread count for the build process
     threads=$(nproc)
 
@@ -830,6 +834,9 @@ function liboqs_build() {
             threads=$(nproc)
 
         elif [[ "$(uname -m)" = arm* || "$(uname -m)" == aarch* ]]; then
+
+            # Set the default value for the enabled_pmu flag
+            enabled_pmu=0
 
             # Enable user space access to the ARM PMU if needed
             if lsmod | grep -q 'enable_ccr'; then

@@ -186,6 +186,12 @@ For detailed usage instructions, please refer to:
 
 [Automated OQS-Provider TLS Performance Testing Instructions](docs/testing-tools-usage/oqsprovider-performance-testing.md)
 
+**Note:** The following signature algorithms are excluded from the automated TLS benchmarking due to known incompatibilities with [RFC 8446](https://datatracker.ietf.org/doc/html/rfc8446):
+- UOV-based schemes (e.g., OV_Is, OV_III, and their hybrid variants)
+- CROSSrsdp256small
+
+These algorithms remain available for computational benchmarking using the Liboqs tools.
+
 ### Testing Output Files
 After the testing has been completed, unparsed results will be stored in the `test-data/up-results` directory:
 
