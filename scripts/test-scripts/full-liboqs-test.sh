@@ -10,6 +10,93 @@
 # directories based on the assigned machine number.
 
 #-------------------------------------------------------------------------------------------------------------------------------
+function enable_arm_pmu() {
+    # Function for enabling the ARM PMU and allowing it to be used in user space. The function will also check if the system is a Raspberry-Pi
+    # and install the Pi kernel headers if they are not already installed. The function will then enable the PMU and set the enabled_pmu flag.
+
+    # Checking if the system is a Raspberry-Pi and install the Pi kernel headers
+    if ! dpkg -s "raspberrypi-kernel-headers" >/dev/null 2>&1; then
+        sudo apt-get update
+        sudo apt-get install raspberrypi-kernel-headers
+    fi
+
+    # Clean the previous build files before cloning the repository
+    if [ -d "$libs_dir/pqax" ]; then
+        rm -rf "$libs_dir/pqax"
+    fi
+
+    # Move into the libs directory and clone the pqax repository if missing
+    cd "$libs_dir"
+    git clone --branch main https://github.com/mupq/pqax.git
+    cd "$libs_dir/pqax/enable_ccr"
+
+    # Ensure that the clone was successful
+    if [ ! -d "$libs_dir/pqax" ]; then
+        echo -e "\n[ERROR] - PQAX clone failed, to ensure a clean environment, it is best to re-run the main setup script\n"
+        exit 1
+    fi
+
+    # Enable user space access to the ARM PMU
+    make
+    make_status=$?
+    make install
+    make_install_status=$?
+    cd $root_dir
+
+    echo "make status: $make_status"
+    echo "make install status: $make_install_status"
+
+    # Check if the make and make install commands were successful
+    if [ "$make_status" -ne 0 ] || [ "$make_install_status" -ne 0 ]; then
+        echo -e "\nPMU build failed, please check the system and try again\n"
+        exit 1
+    fi
+
+    # Ensure that the system has user access to the ARM PMU
+    if ! lsmod | grep -q 'enable_ccr'; then
+
+        # Output to the user that the PMU access was not enabled
+        echo "[ERROR] - The enable_ccr module is not loaded, could not enable PMU access"
+        echo "Please re-run the main setup script to ensure a clean environment"
+        exit 1
+
+    fi
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
+function resolve_arm_pmu_access() {
+
+    # Check if a PQAX install is already present and if not call the function to enable it
+    if [ -d "$libs_dir/pqax" ]; then
+
+        # Output the current task to the terminal
+        echo -e "\nPQAX already built, attempting to enable PMU access"
+
+        # Attempt to reload the PQAX kernel module
+        cd "$libs_dir/pqax/enable_ccr"
+        sudo rmmod enable_ccr 2>/dev/null
+        sudo insmod enable_ccr.ko 2>/dev/null
+        cd "$root_dir"
+
+        # Ensure that the system has user access to the ARM PMU
+        if lsmod | grep -q 'enable_ccr'; then
+            echo -e "\nPMU access enabled successfully\n"
+        else
+            echo -e "\n[WARNING] - ARM PMU access not enabled using current build, attempting to resolve the issue with a clean install..." && sleep 2
+            enable_arm_pmu
+        fi
+
+    else
+
+        # If PQAX is not present, call the function to enable it
+        enable_arm_pmu
+
+    fi
+    
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
 function setup_base_env() {
     # Function for setting up the global environment variables for the test suite. This includes determining the root directory 
     # by tracing the script's location, and configuring paths for libraries, test data, and temporary files.
@@ -45,6 +132,18 @@ function setup_base_env() {
     tmp_dir="$root_dir/tmp"
     test_data_dir="$root_dir/test-data"
     test_scripts_path="$root_dir/scripts/test-scripts"
+
+    # Check if the system is ARM based and if PMU checks are required
+    if [[ "$(uname -m)" = arm* || "$(uname -m)" == aarch* ]]; then
+
+        # Ensure that the system still has user access to the ARM PMU
+        if ! lsmod | grep -q 'enable_ccr'; then
+            echo -e "[WARNING] - ARM PMU access not enabled, attempting to resolve the issue..."
+            sleep 2
+            resolve_arm_pmu_access
+        fi
+
+    fi
 
     # Declare the global library directory path variables
     liboqs_path="$libs_dir/liboqs"
