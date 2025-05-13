@@ -795,13 +795,22 @@ function enable_arm_pmu() {
     make
     make_status=$?
     make install
+    make_install_status=$?
     cd $root_dir
 
-    # Setting the enabled PMU flag if the make command was successful
-    if [ "$make_status" -eq 0 ]; then
+    # Check if the make and make install commands were successful
+    if [ "$make_status" -ne 0 ] || [ "$make_install_status" -ne 0 ]; then
+        echo -e "\nPMU build failed, please check the system and try again\n"
+        exit 1
+    fi
+
+    # Ensure that the system has user access to the ARM PMU
+    if lsmod | grep -q 'enable_ccr'; then
         enabled_pmu=1
     else
+        echo "[ERROR] - The enable_ccr module is not loaded, please verify the installation and rerun the setup script"
         enabled_pmu=0
+        exit 1
     fi
 
 }
