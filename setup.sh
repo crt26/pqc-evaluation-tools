@@ -74,29 +74,34 @@ function get_user_yes_no() {
 #-------------------------------------------------------------------------------------------------------------------------------
 function confirm_enable_hqc_algs() {
     # Temporary helper function for warning the user about the disabled HQC KEM algorithms as discussed in issue 
-    # (https://github.com/crt26/pqc-evaluation-tools/issues/46). The function will warn the user about the disabled HQC KEM algorithms
-    # and why this is has been done, before offering to enable them if the user wishes to do so. This function will be removed in the future
-    # when Liboqs version 0.14.0 is released and the HQC KEM algorithms are enabled by default.
+    # (https://github.com/crt26/pqc-evaluation-tools/issues/46). The function will display a security warning and provide 
+    # background information about why HQC KEM algorithms are disabled by default in Liboqs. It then prompts the user to 
+    # decide whether to proceed with enabling HQC for benchmarking purposes. This function will be removed in the future 
+    # when Liboqs version 0.14.0 is released and the HQC KEM algorithms are re-enabled by default.
 
     # Output the current task and the warning message to the terminal
     echo -e "\nEnable HQC KEM Algorithms Flag Detected:\n"
-    echo -e "[WARNING] - The Liboqs library has disabled the HQC KEM algorithms by default due to a recently disclosed"
-    echo "security vulnerability affecting IND-CCA2 security guarantees. As this projects primary focus is on benchmarking"
-    echo -e "rather than PQC algorithm deployment, the HQC algorithms can be enabled for testing purposes.\n"
-    echo "Please note, that is is done at your own risk and the project does not take any responsibility for any issues that may arise from this."
-    echo -e "\nFor further information on this, please refer to:"
-    echo "- Liboqs issue: https://github.com/open-quantum-safe/liboqs/issues/2118"
+
+    echo -e "[WARNING] - The Liboqs library disables HQC KEM algorithms by default due to a recently disclosed"
+    echo -e "security vulnerability that compromises their IND-CCA2 security guarantees. Since this project's primary"
+    echo -e "focus is benchmarking (not production deployment), HQC can be still be enabled for performance testing purposes.\n"
+
+    echo -e "For more details, see:"
+    echo -e "- Liboqs issue: https://github.com/open-quantum-safe/liboqs/issues/2118"
     echo -e "- pqc-evaluation-tools issue: https://github.com/crt26/pqc-evaluation-tools/issues/46\n"
+
+    echo -e "Please note: Enabling HQC is done at your own risk. This project assumes no responsibility for"
+    echo -e "any consequences that may result from using these algorithms.\n"
 
     # Determine if the user wishes to continue with enabling the HQC KEM algorithms
     get_user_yes_no "Would you like continue with enabling the HQC KEM algorithms in the Liboqs library?"
 
     # Check the user response and set the enable_hqc flag accordingly
     if [ "$user_y_n_response" -eq 1 ]; then
-        echo -e "[NOTICE] - HQC KEM algorithms will be enabled in the Liboqs library build process\n"
+        echo -e "\n[NOTICE] - HQC KEM algorithms will be enabled in the Liboqs library build process\n"
         enable_hqc=1
     else
-        echo -e "[NOTICE] - HQC KEM algorithms will not be enabled in the Liboqs library build process\n"
+        echo -e "\n[NOTICE] - HQC KEM algorithms will not be enabled in the Liboqs library build process\n"
         enable_hqc=0
     fi
 
@@ -111,7 +116,7 @@ function output_help_message() {
     echo "Options:"
     echo "  --safe-setup                  Use the last tested versions of the OQS libraries"
     echo "  --set-speed-new-value=[int]   Set a new value to be set for the hardcoded MAX_KEM_NUM/MAX_SIG_NUM values in the OpenSSL speed.c file"
-    echo "  --enable-hqc-algs             Enable HQC KEM algorithms in Liboqs (default: disabled due to security concerns)"
+    echo "  --enable-hqc-algs             Enable HQC KEM algorithms in Liboqs (default: disabled due to security concerns)" # temp option for hqc bug fix
     echo "  --help                        Display the help message"
 
 }
@@ -1047,12 +1052,16 @@ function main() {
     if [ "$#" -gt 0 ]; then
         parse_args "$@"
     fi
+
+    # Output current task to the terminal
+    echo "######################"
+    echo "Install Type Selection"
+    echo -e "######################\n"
     
     # Get the install type selection from the user
     while true; do
 
         # Output the install type options to the user
-        echo -e "Install Type Selection: \n"
         echo "Please Select one of the following build options"
         echo "1 - Build Liboqs Library Only"
         echo "2 - Build OQS-Provider and Liboqs Library"
