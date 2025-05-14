@@ -68,7 +68,7 @@ The automated testing tool is currently only supported in the following environm
 ### Tested Dependency Libraries <!-- omit from toc -->
 This version of the repository has been fully tested with the following library versions:
 
-- Liboqs Version 0.12.0
+- Liboqs Version 0.13.0
 
 - OQS Provider Version 0.8.0
 
@@ -78,7 +78,9 @@ The repository is configured to pull the latest versions of the OQS projects whi
 
 However, as the OQS libraries are still developing projects, if any major changes have occurred to their code bases, this project's automation scripts may not be able to accommodate this. If this does happen, please report an issue to this repositories GitHub page where it will be addressed as soon as possible. In the meantime, it is possible to change the versions of the OQS libraries used by the benchmarking suite. This is detailed further in the [Installation Instructions](#installation-instructions) section.
 
-> Notice: Memory profiling for Falcon algorithm variants is currently non-functional on **ARM** systems due to issues with the scheme and the Valgrind Massif tool. Please see the [bug report](https://github.com/open-quantum-safe/liboqs/issues/1761) for details. Testing and parsing remain fully functional for all other algorithms.
+> **Notice 1:** The HQC KEM algorithms are disabled by default in recent Liboqs versions due to a disclosed IND-CCA2 vulnerability. For benchmarking purposes, the setup process includes an optional flag to enable HQC, accompanied by a user confirmation prompt and warning. For instructions on enabling HQC, see the [Advanced Setup Configuration Guide](docs/advanced-setup-configuration.md), and refer to the [Disclaimer Document](./DISCLAIMER.md) for more information on this issue.
+
+> **Notice 2:** Memory profiling for Falcon algorithm variants is currently non-functional on **ARM** systems due to issues with the scheme and the Valgrind Massif tool. Please see the [bug report](https://github.com/open-quantum-safe/liboqs/issues/1761) for details. Testing and parsing remain fully functional for all other algorithms.
 
 ## Installation Instructions
 The standard setup process uses the latest versions of the OQS libraries and performs automatic system detection and installation of the benchmarking suite. It supports various installation modes that determine which OQS libraries are downloaded and built, depending on your environment.
@@ -148,7 +150,12 @@ touch .pqc_eval_dir_marker.tmp
 ```
 
 ### Optional Setup Flags
-For advanced setup options, including `safe-mode` for using the last tested versions of the dependency libraries, custom OpenSSL `speed.c` limits, and additional build features, please refer to the [Advanced Setup Configuration Guide](docs/advanced-setup-configuration.md).
+For advanced setup options, including:
+- `safe-mode` for using the last tested versions of the dependency libraries,
+- Custom OpenSSL `speed.c` limits, 
+- Enabling HQC algorithms in Liboqs
+ 
+Please refer to the [Advanced Setup Configuration Guide](docs/advanced-setup-configuration.md).
 
 ## Automated Testing Tools
 The repository provides two categories of automated benchmarking:
@@ -162,14 +169,11 @@ The testing tools are located in the `scripts/test-scripts` directory and are fu
 ### Liboqs Performance Testing
 This tool benchmarks CPU and memory usage for various PQC algorithms supported by the Liboqs library. It produces detailed performance metrics for each tested algorithm.
 
-The test script can be executed using the following command:
-```
-./full-liboqs-test.sh
-```
-
 For detailed usage instructions, please refer to:
 
 [Automated Liboqs Performance Testing Instructions](docs/testing-tools-usage/liboqs-performance-testing.md)
+
+**Note:** HQC KEM algorithms are disabled by default in the latest Liboqs version due to a known vulnerability. The main setup script provides an option to enable HQC for benchmarking if required. Please refer to the [Advanced Setup Configuration Guide](docs/advanced-setup-configuration.md) for more information.
 
 ### OQS-Provider TLS Performance Testing
 This tool is focused on benchmarking the performance of PQC and Hybrid-PQC algorithms when integrated within OpenSSL (3.4.1) via the OQS-Provider library.

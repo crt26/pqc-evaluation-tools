@@ -6,18 +6,20 @@ This guide provides detailed instructions for using the automated Post-Quantum C
 The tool outputs raw performance metrics in CSV and text formats, which are later parsed using Python scripts for easier interpretation and analysis.
 
 ### Contents <!-- omit from toc -->
-- [Supported Hardware](#supported-hardware)
+- [Supported Hardware and Software](#supported-hardware-and-software)
 - [Performing PQC Computational Performance Testing](#performing-pqc-computational-performance-testing)
   - [Running the Liboqs Testing Tool](#running-the-liboqs-testing-tool)
   - [Configuring Testing Parameters](#configuring-testing-parameters)
 - [Outputted Results](#outputted-results)
 - [Useful External Documentation](#useful-external-documentation)
 
-## Supported Hardware
+## Supported Hardware and Software
 The automated testing tool is currently only supported on the following devices:
 
 - x86 Linux Machines using a Debian-based operating system
 - ARM Linux devices using a 64-bit Debian based Operating System
+
+**Notice:** The HQC KEM algorithms are disabled by default in recent Liboqs versions due to a disclosed IND-CCA2 vulnerability. For benchmarking purposes, the setup process includes an optional flag to enable HQC, accompanied by a user confirmation prompt and warning. For instructions on enabling HQC, see the [Advanced Setup Configuration Guide](../advanced-setup-configuration.md), and refer to the [Disclaimer Document](../../DISCLAIMER.md) for more information on this issue.
 
 ## Performing PQC Computational Performance Testing
 
