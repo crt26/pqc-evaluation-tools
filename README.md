@@ -53,7 +53,8 @@ For details on the project's development and upcoming features, see the project'
   - [Parsing Script Usage](#parsing-script-usage)
   - [Parsed Results Output](#parsed-results-output)
 - [Additional Documentation](#additional-documentation)
-- [License](#license)
+  - [Project Wiki Page](#project-wiki-page)
+- [Licence](#licence)
 - [Acknowledgements](#acknowledgements)
 
 ## Supported Hardware and Software
@@ -245,6 +246,12 @@ Please refer to the [Performance Metrics Guide](docs/performance-metrics-guide.m
 - [Project Scripts](docs/developer-information/project-scripts.md)
 - [Repository Structure](docs/developer-information/repository-directory-structure.md)
 - [Performance Metrics Guide](docs/performance-metrics-guide.md)
+- [Project Disclaimer](./DISCLAIMER.md)
+
+### Project Wiki Page
+The information provided in the internal documentation is also available through the project's GitHub Wiki:
+
+[PQC-Evaluation-Tools Wiki](https://github.com/crt26/pqc-evaluation-tools/wiki)
 
 ### Helpful External Documentation Links <!-- omit from toc -->
 - [Liboqs Webpage](https://openquantumsafe.org/liboqs/)
@@ -256,17 +263,19 @@ Please refer to the [Performance Metrics Guide](docs/performance-metrics-guide.m
 - [OpenSSL(3.4.1) Documentation](https://docs.openssl.org/3.4/)
 - [TLS 1.3 RFC 8446](https://www.rfc-editor.org/rfc/rfc8446)
 
-## License
+## Licence
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE)
+This project is licensed under the MIT License – see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgements
-This project depends on:
 
-1. [Liboqs](https://github.com/open-quantum-safe/liboqs) - This project includes modified versions of files from the `liboqs` project. These modified files are subject to the `liboqs` MIT license, which can be found at the top of each modified file.
+This project depends on the following third-party software and libraries:
 
-2. [OQS-Provider](https://github.com/open-quantum-safe/openssl) - This project relies on the OpenSSL provider created by the `OQS-Provider` project. The project is subject to a MIT licence, details of which can be found in the projects repositories root directory. 
+1. **[Liboqs](https://github.com/open-quantum-safe/liboqs)** – Used to provide standalone implementations of post-quantum key encapsulation mechanisms (KEMs) and digital signature algorithms for computational performance testing. This project includes modified versions of the `test_kem_mem.c` and `test_sig_mem.c` files in order to collect detailed memory usage metrics during benchmarking with minimal terminal output. These modifications remain under the original MIT License, which is noted at the top of each modified file.
 
-3. [OpenSSL](https://github.com/openssl/openssl) - This project utilises the OpenSSL library through its own scripts and the libraries provided by the OQS Project. The OpenSSL project is  under the Apache 2.0 license, details of which can be found in the projects repositories root directory.
+2. **[OQS-Provider](https://github.com/open-quantum-safe/oqs-provider)** – Used to integrate post-quantum algorithms from `Liboqs` into OpenSSL via the provider interface, enabling TLS-based performance testing. Modifications include dynamically altering the `generate.yml` template to optionally enable all signature algorithms that are disabled by default. The provider is built locally and dynamically linked into OpenSSL. It is licensed under the MIT License.
 
-4. [pqax](https://github.com/mupq/pqax/tree/main) - This project uses the pqax library to enable arm PMU on Raspberry Pi devices. The pqax library is licensed under the Creative Commons Zero v1.0 Universal license, which dedicates the work to the public domain.
+3. **[OpenSSL](https://github.com/openssl/openssl)** – Used as the core cryptographic library for TLS testing and benchmarking. This project applies runtime modifications during the build process to increase the hardcoded algorithm limits in `speed.c` (`MAX_KEM_NUM` and `MAX_SIG_NUM`) to support benchmarking of a broader algorithm set, and to append configuration directives to `openssl.cnf` to register and activate the `oqsprovider`. OpenSSL is licensed under the Apache License 2.0.
+
+4. **[pqax](https://github.com/mupq/pqax)** – Used to enable access to the ARM Performance Monitor Unit (PMU) on ARM-based systems such as Raspberry Pi. This allows precise benchmarking of CPU cycles. No modifications are made to the original source code. Pqax is licensed under the Creative Commons Zero v1.0 Universal (CC0) license, placing it in the public domain.
+
