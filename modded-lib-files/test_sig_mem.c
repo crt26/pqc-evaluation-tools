@@ -1,6 +1,13 @@
-// SPDX-License-Identifier: MIT
-
-// This file has been modified by Callum Turino on 01/04/2025.
+/*
+ * This is a modified version of a file originally from the liboqs project:
+ * https://github.com/open-quantum-safe/liboqs
+ *
+ * Original copyright:
+ *   Copyright (c) 2016-2024 The Open Quantum Safe project authors
+ *
+ * Modifications by Callum Turino on 01/04/2025.
+ * SPDX-License-Identifier: MIT
+ */
 
 #if defined(_WIN32)
 #pragma warning(disable : 4244 4293)
