@@ -804,15 +804,17 @@ function openssl_build() {
             exit 1
         fi
 
-        # Modify the OpenSSL conf file to include OQS-Provider as a provider
-        cd $openssl_path && rm -f openssl.conf && cp "$root_dir/modded-lib-files/openssl.cnf" "$openssl_path/"
+        # Set the OpenSSL configuration file path
+        openssl_conf_path="$openssl_path/openssl.cnf"
 
+        # Modify the OpenSSL conf file to include OQS-Provider as a provider
         for conf_change in "${conf_changes[@]}"; do
-            echo $conf_change >> "$openssl_path/openssl.cnf"
+            echo $conf_change >> "$openssl_conf_path"
         done
 
     else
         echo "openssl build present, skipping build"
+
     fi
 
 }
