@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2025 Callum Turino
+# Copyright (c) 2023-2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
 # Script for generating all the server certificates and keys required for the TLS handshake benchmarking suite. 

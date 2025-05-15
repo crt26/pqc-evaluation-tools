@@ -1,5 +1,5 @@
 """
-Copyright (c) 2025 Callum Turino
+Copyright (c) 2023-2025 Callum Turino
 SPDX-License-Identifier: MIT
 
 Utility script for retrieving supported cryptographic algorithms from the Liboqs and OQS-Provider libraries. 

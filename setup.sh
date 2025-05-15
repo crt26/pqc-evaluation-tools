@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2025 Callum Turino
+# Copyright (c) 2023-2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
 # This script automates the setup process for the PQC-evaluation-tools benchmarking suite. It provides options to build and configure
