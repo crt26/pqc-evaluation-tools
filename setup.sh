@@ -331,7 +331,7 @@ function download_libraries() {
 
             # Clone Liboqs and checkout to the last tested version
             git clone https://github.com/open-quantum-safe/liboqs.git $liboqs_source
-            cd $liboqs_source && git checkout "f4b96220e4bd208895172acc4fedb5a191d9f5b1"
+            cd $liboqs_source && git checkout "b75bfb8c56d23a92227b04c096f0264b992de874"
             cd $root_dir
 
         else
@@ -363,7 +363,7 @@ function download_libraries() {
 
             # Clone OQS-Provider and checkout to the last tested version
             git clone https://github.com/open-quantum-safe/oqs-provider.git $oqs_provider_source >> /dev/null
-            cd $oqs_provider_source && git checkout "ec1e8431f92b52e5d437107a37dbe3408649e8c3"
+            cd $oqs_provider_source && git checkout "c5d19140a23d40d472881370c04cb2ddd7279f01"
             cd $root_dir
 
         else
