@@ -5,6 +5,13 @@ This tool provides automated benchmarking for PQC-enabled TLS 1.3 handshakes and
 
 The relevant PQC TLS Performance testing scripts can be found in the `scripts/test-scripts` directory from the project's root.
 
+**Note:** The following signature algorithms are excluded from the automated TLS benchmarking due to known incompatibilities with [RFC 8446](https://datatracker.ietf.org/doc/html/rfc8446):
+
+- UOV-based schemes (e.g., OV_Is, OV_III, and their hybrid variants)
+- CROSSrsdp256small
+
+These algorithms remain available for computational benchmarking using the Liboqs tools.
+
 ### Contents <!-- omit from toc -->
 - [Supported Hardware](#supported-hardware)
 - [Preparing the Testing Environment](#preparing-the-testing-environment)

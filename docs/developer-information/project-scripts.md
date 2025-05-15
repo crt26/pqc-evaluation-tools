@@ -69,7 +69,8 @@ The script is run interactively but supports the following optional arguments fo
 
 ```
 --safe-setup                   Use last-tested commits of all libraries  
---set-speed-new-value=<int>    Manually set MAX_KEM_NUM/MAX_SIG_NUM in speed.c  
+--set-speed-new-value=<int>    Manually set MAX_KEM_NUM/MAX_SIG_NUM in speed.c
+--enable-hqc-algs              Enable HQC KEM algorithms in Liboqs (default: disabled due to security concerns)  
 ```
 
 For further information on the main setup script's usage, please refer to the main [README](../../README.md) file.

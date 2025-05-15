@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2025 Callum Turino
+# Copyright (c) 2023-2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
 # Script executed from the client machine to benchmark the computational performance of PQC, Hybrid-PQC, and 

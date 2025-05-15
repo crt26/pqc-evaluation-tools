@@ -1,5 +1,5 @@
 """
-Copyright (c) 2025 Callum Turino
+Copyright (c) 2023-2025 Callum Turino
 SPDX-License-Identifier: MIT
 
 Liboqs result parsing script for PQC performance benchmarking.  

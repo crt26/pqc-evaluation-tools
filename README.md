@@ -41,7 +41,8 @@ For details on the project's development and upcoming features, see the project'
   - [Parsing Script Usage](#parsing-script-usage)
   - [Parsed Results Output](#parsed-results-output)
 - [Additional Documentation](#additional-documentation)
-- [License](#license)
+  - [Project Wiki Page](#project-wiki-page)
+- [Licence](#licence)
 - [Acknowledgements](#acknowledgements)
 
 ## Supported Hardware and Software
@@ -56,7 +57,7 @@ The automated testing tool is currently only supported in the following environm
 ### Tested Dependency Libraries <!-- omit from toc -->
 This version of the repository has been fully tested with the following library versions:
 
-- Liboqs Version 0.12.0
+- Liboqs Version 0.13.0
 
 - OQS Provider Version 0.8.0
 
@@ -66,7 +67,9 @@ The repository is configured to pull the latest versions of the OQS projects whi
 
 However, as the OQS libraries are still developing projects, if any major changes have occurred to their code bases, this project's automation scripts may not be able to accommodate this. If this does happen, please report an issue to this repositories GitHub page where it will be addressed as soon as possible. In the meantime, it is possible to change the versions of the OQS libraries used by the benchmarking suite. This is detailed further in the [Installation Instructions](#installation-instructions) section.
 
-> Notice: Memory profiling for Falcon algorithm variants is currently non-functional on **ARM** systems due to issues with the scheme and the Valgrind Massif tool. Please see the [bug report](https://github.com/open-quantum-safe/liboqs/issues/1761) for details. Testing and parsing remain fully functional for all other algorithms.
+> **Notice 1:** The HQC KEM algorithms are disabled by default in recent Liboqs versions due to a disclosed IND-CCA2 vulnerability. For benchmarking purposes, the setup process includes an optional flag to enable HQC, accompanied by a user confirmation prompt and warning. For instructions on enabling HQC, see the [Advanced Setup Configuration Guide](docs/advanced-setup-configuration.md), and refer to the [Disclaimer Document](./DISCLAIMER.md) for more information on this issue.
+
+> **Notice 2:** Memory profiling for Falcon algorithm variants is currently non-functional on **ARM** systems due to issues with the scheme and the Valgrind Massif tool. Please see the [bug report](https://github.com/open-quantum-safe/liboqs/issues/1761) for details. Testing and parsing remain fully functional for all other algorithms.
 
 ## Installation Instructions
 The standard setup process uses the latest versions of the OQS libraries and performs automatic system detection and installation of the benchmarking suite. It supports various installation modes that determine which OQS libraries are downloaded and built, depending on your environment.
@@ -136,7 +139,12 @@ touch .pqc_eval_dir_marker.tmp
 ```
 
 ### Optional Setup Flags
-For advanced setup options, including `safe-mode` for using the last tested versions of the dependency libraries, custom OpenSSL `speed.c` limits, and additional build features, please refer to the [Advanced Setup Configuration Guide](docs/advanced-setup-configuration.md).
+For advanced setup options, including:
+- `safe-mode` for using the last tested versions of the dependency libraries,
+- Custom OpenSSL `speed.c` limits, 
+- Enabling HQC algorithms in Liboqs
+ 
+Please refer to the [Advanced Setup Configuration Guide](docs/advanced-setup-configuration.md).
 
 ## Automated Testing Tools
 The repository provides two categories of automated benchmarking:
@@ -150,14 +158,11 @@ The testing tools are located in the `scripts/test-scripts` directory and are fu
 ### Liboqs Performance Testing
 This tool benchmarks CPU and memory usage for various PQC algorithms supported by the Liboqs library. It produces detailed performance metrics for each tested algorithm.
 
-The test script can be executed using the following command:
-```
-./full-liboqs-test.sh
-```
-
 For detailed usage instructions, please refer to:
 
 [Automated Liboqs Performance Testing Instructions](docs/testing-tools-usage/liboqs-performance-testing.md)
+
+**Note:** HQC KEM algorithms are disabled by default in the latest Liboqs version due to a known vulnerability. The main setup script provides an option to enable HQC for benchmarking if required. Please refer to the [Advanced Setup Configuration Guide](docs/advanced-setup-configuration.md) for more information.
 
 ### OQS-Provider TLS Performance Testing
 This tool is focused on benchmarking the performance of PQC and Hybrid-PQC algorithms when integrated within OpenSSL (3.4.1) via the OQS-Provider library.
@@ -173,6 +178,12 @@ Testing can be performed on a single machine or across two machines connected vi
 For detailed usage instructions, please refer to:
 
 [Automated OQS-Provider TLS Performance Testing Instructions](docs/testing-tools-usage/oqsprovider-performance-testing.md)
+
+**Note:** The following signature algorithms are excluded from the automated TLS benchmarking due to known incompatibilities with [RFC 8446](https://datatracker.ietf.org/doc/html/rfc8446):
+- UOV-based schemes (e.g., OV_Is, OV_III, and their hybrid variants)
+- CROSSrsdp256small
+
+These algorithms remain available for computational benchmarking using the Liboqs tools.
 
 ### Testing Output Files
 After the testing has been completed, unparsed results will be stored in the `test-data/up-results` directory:
@@ -223,6 +234,12 @@ Please refer to the [Performance Metrics Guide](docs/performance-metrics-guide.m
 - [Project Scripts](docs/developer-information/project-scripts.md)
 - [Repository Structure](docs/developer-information/repository-directory-structure.md)
 - [Performance Metrics Guide](docs/performance-metrics-guide.md)
+- [Project Disclaimer](./DISCLAIMER.md)
+
+### Project Wiki Page
+The information provided in the internal documentation is also available through the project's GitHub Wiki:
+
+[PQC-Evaluation-Tools Wiki](https://github.com/crt26/pqc-evaluation-tools/wiki)
 
 ### Helpful External Documentation Links <!-- omit from toc -->
 - [Liboqs Webpage](https://openquantumsafe.org/liboqs/)
@@ -234,17 +251,19 @@ Please refer to the [Performance Metrics Guide](docs/performance-metrics-guide.m
 - [OpenSSL(3.4.1) Documentation](https://docs.openssl.org/3.4/)
 - [TLS 1.3 RFC 8446](https://www.rfc-editor.org/rfc/rfc8446)
 
-## License
+## Licence
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE)
+This project is licensed under the MIT License – see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgements
-This project depends on:
 
-1. [Liboqs](https://github.com/open-quantum-safe/liboqs) - This project includes modified versions of files from the `liboqs` project. These modified files are subject to the `liboqs` MIT license, which can be found at the top of each modified file.
+This project depends on the following third-party software and libraries:
 
-2. [OQS-Provider](https://github.com/open-quantum-safe/openssl) - This project relies on the OpenSSL provider created by the `OQS-Provider` project. The project is subject to a MIT licence, details of which can be found in the projects repositories root directory. 
+1. **[Liboqs](https://github.com/open-quantum-safe/liboqs)** – Used to provide standalone implementations of post-quantum key encapsulation mechanisms (KEMs) and digital signature algorithms for computational performance testing. This project includes modified versions of the `test_kem_mem.c` and `test_sig_mem.c` files in order to collect detailed memory usage metrics during benchmarking with minimal terminal output. These modifications remain under the original MIT License, which is noted at the top of each modified file.
 
-3. [OpenSSL](https://github.com/openssl/openssl) - This project utilises the OpenSSL library through its own scripts and the libraries provided by the OQS Project. The OpenSSL project is  under the Apache 2.0 license, details of which can be found in the projects repositories root directory.
+2. **[OQS-Provider](https://github.com/open-quantum-safe/oqs-provider)** – Used to integrate post-quantum algorithms from `Liboqs` into OpenSSL via the provider interface, enabling TLS-based performance testing. Modifications include dynamically altering the `generate.yml` template to optionally enable all signature algorithms that are disabled by default. The provider is built locally and dynamically linked into OpenSSL. It is licensed under the MIT License.
 
-4. [pqax](https://github.com/mupq/pqax/tree/main) - This project uses the pqax library to enable arm PMU on Raspberry Pi devices. The pqax library is licensed under the Creative Commons Zero v1.0 Universal license, which dedicates the work to the public domain.
+3. **[OpenSSL](https://github.com/openssl/openssl)** – Used as the core cryptographic library for TLS testing and benchmarking. This project applies runtime modifications during the build process to increase the hardcoded algorithm limits in `speed.c` (`MAX_KEM_NUM` and `MAX_SIG_NUM`) to support benchmarking of a broader algorithm set, and to append configuration directives to `openssl.cnf` to register and activate the `oqsprovider`. OpenSSL is licensed under the Apache License 2.0.
+
+4. **[pqax](https://github.com/mupq/pqax)** – Used to enable access to the ARM Performance Monitor Unit (PMU) on ARM-based systems such as Raspberry Pi. This allows precise benchmarking of CPU cycles. No modifications are made to the original source code. Pqax is licensed under the Creative Commons Zero v1.0 Universal (CC0) license, placing it in the public domain.
+
