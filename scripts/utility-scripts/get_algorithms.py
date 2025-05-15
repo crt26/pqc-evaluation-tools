@@ -1,5 +1,5 @@
 """
-Copyright (c) 2025 Callum Turino
+Copyright (c) 2023-2025 Callum Turino
 SPDX-License-Identifier: MIT
 
 Utility script for retrieving supported cryptographic algorithms from the Liboqs and OQS-Provider libraries. 
@@ -179,6 +179,10 @@ def get_liboqs_algs():
                     alg_list_file = os.path.join(output_dir, "kem-algs.txt")
                 else:
                     alg_list_file = os.path.join(output_dir, "sig-algs.txt")
+
+                # Filter out HQC KEM algorithms from the list if the HQC enabled flag is not set (temp fix for HQC bug)
+                if not os.path.exists(os.path.join(root_dir, "tmp", ".hqc_enabled.flag")):
+                    algs = [alg for alg in algs if not alg.startswith("HQC")]
                 
                 # Write out the algorithms to the list file
                 write_to_file(algs, alg_list_file)
