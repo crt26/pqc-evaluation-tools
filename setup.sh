@@ -18,15 +18,29 @@ test_data_dir="$root_dir/test-data"
 alg_lists_dir="$test_data_dir/alg-lists"
 util_scripts="$root_dir/scripts/utility-scripts"
 
+# Declare the global dependency library version variables
+#liboqs_version="0.13.0"
+#oqs_provider_version="0.8.0"
+openssl_version="3.5.0"
+
+# Declare the global library download URL variables
+#liboqs_download_url=""
+#oqs_provider_download_url=""
+openssl_download_url="https://github.com/openssl/openssl/releases/download/openssl-3.5.0/openssl-3.5.0.tar.gz"
+
+# Declare the global safe library download URL variables
+#liboqs_safe_download_url=""
+#oqs_provider_safe_download_url=""
+
 # Declare the global library directory path variables
-openssl_path="$libs_dir/openssl_3.4"
+openssl_path="$libs_dir/openssl_$openssl_version"
 liboqs_path="$libs_dir/liboqs"
 oqs_provider_path="$libs_dir/oqs-provider"
 
 # Declare the global source-code directory path variables
 liboqs_source="$tmp_dir/liboqs-source"
 oqs_provider_source="$tmp_dir/oqs-provider-source"
-openssl_source="$tmp_dir/openssl-3.4.1"
+openssl_source="$tmp_dir/openssl-$openssl_version"
 
 # Set the global flag variables
 install_type=0 # 0=Liboqs-only, 1=Liboqs+OQS-Provider, 2=OQS-Provider-only
@@ -308,9 +322,9 @@ function download_libraries() {
     echo -e "##############################\n"
 
     # Download OpenSSL 3.4.1 and extract it into the tmp directory
-    wget -O "$tmp_dir/openssl-3.4.1.tar.gz" https://github.com/openssl/openssl/releases/download/openssl-3.4.1/openssl-3.4.1.tar.gz
-    tar -xf "$tmp_dir/openssl-3.4.1.tar.gz" -C $tmp_dir
-    rm "$tmp_dir/openssl-3.4.1.tar.gz"
+    wget -O "$tmp_dir/openssl-$openssl_version.tar.gz" "$openssl_download_url"
+    tar -xf "$tmp_dir/openssl-$openssl_version.tar.gz" -C $tmp_dir
+    rm "$tmp_dir/openssl-$openssl_version.tar.gz"
 
     # Ensure that the OpenSSL source directory is present before continuing
     if [ ! -d "$openssl_source" ]; then
@@ -733,17 +747,17 @@ function modify_openssl_src() {
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function openssl_build() {
-    # Function for handling the build of the OpenSSL library (version 3.4.1). The function will check if the library is already built
+    # Function for handling the build of the OpenSSL library (version 3.5.0). The function will check if the library is already built
     # and if not, it will build the library using the specified configuration options. The function will call the modify_openssl_src function
     # to modify the speed.c source code file if the OQS-Provider library is being built with the enable all disabled algorithms flag.
 
     # Output the current task to the terminal
     echo -e "\n######################"
-    echo "Building OpenSSL-3.4.1"
+    echo "Building OpenSSL-$openssl_version"
     echo -e "######################\n"
 
     # Output warning message this make take a while to the user
-    echo -e "Starting OpenSSL 3.4.1 build process. This may take a while, and no progress bar will be shown...\n"
+    echo -e "Starting OpenSSL $openssl_version build process. This may take a while, and no progress bar will be shown...\n"
     sleep 2
 
     # Setting CPU thread count for the build process
@@ -799,7 +813,7 @@ function openssl_build() {
         # Testing if the OpenSSL has been correctly installed
         test_output=$("$openssl_path/bin/openssl" version)
 
-        if [[ "$test_output" != "OpenSSL 3.4.1 11 Feb 2025 (Library: OpenSSL 3.4.1 11 Feb 2025)" ]]; then
+        if [[ "$test_output" != "OpenSSL 3.5.0 8 Apr 2025 (Library: OpenSSL 3.5.0 8 Apr 2025)" ]]; then
             echo -e "\n\n[ERROR] - Installing required OpenSSL version failed, please verify install process"
             exit 1
         fi
