@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 # Script executed from the client machine to benchmark the computational performance of PQC, Hybrid-PQC, and 
-# Classic digital signature and KEM algorithms integrated into OpenSSL 3.4.1 via the OQS-Provider. It receives 
+# Classic digital signature and KEM algorithms integrated into OpenSSL 3.5.0 via the OQS-Provider. It receives 
 # test parameters from the main OQS-Provider test control script and runs OpenSSL's speed utility to collect
 # per-algorithm timing metrics. Results are stored in machine-specific directories under the appropriate 
 # TLS test type, using the assigned machine ID exported by the full-pqc-tls-test.sh script.
@@ -49,7 +49,7 @@ function setup_test_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declare the global library directory path variables
-    openssl_path="$libs_dir/openssl_3.4"
+    openssl_path="$libs_dir/openssl_3.5.0"
     oqs_provider_path="$libs_dir/oqs-provider"
     provider_path="$oqs_provider_path/lib"
 
@@ -117,7 +117,7 @@ function setup_test_env() {
 #-------------------------------------------------------------------------------------------------------------------------------
 function tls_speed_test() {
     # Function for running the TLS speed tests for the various algorithm types. It uses the OpenSSL s_speed utility to benchmark
-    # the performance of the specified algorithms when integrated into OpenSSL 3.4.1 via the OQS-Provider.
+    # the performance of the specified algorithms when integrated into OpenSSL 3.5.0 via the OQS-Provider.
 
     # Joining the elements of algorithm arrays into a string variable to create test parameter
     kem_algs_string="${kem_algs[@]}"

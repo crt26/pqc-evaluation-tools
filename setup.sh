@@ -1105,7 +1105,7 @@ function main() {
                 openssl_build
                 liboqs_build
                 # rm -rf $tmp_dir/*
-                rm -rf $tmp_dir/liboqs-source $tmp_dir/openssl-3.4.1 # temp removal for hqc bug fix
+                rm -rf $tmp_dir/liboqs-source $tmp_dir/openssl-$openssl_version # temp removal for hqc bug fix
 
                 # Create the required alg-list files for the automated testing
                 cd "$util_scripts"
@@ -1133,7 +1133,7 @@ function main() {
                 liboqs_build
                 oqs_provider_build
                 #rm -rf $tmp_dir/* # original cleanup
-                rm -rf $tmp_dir/liboqs-source $tmp_dir/openssl-3.4.1 $tmp_dir/oqs-provider-source # temp removal for hqc bug fix
+                rm -rf $tmp_dir/liboqs-source $tmp_dir/openssl-$openssl_version $tmp_dir/oqs-provider-source # temp removal for hqc bug fix
                 #touch "$tmp_dir/test.flag"
 
                 # Create the required alg-list files for the automated testing
@@ -1157,7 +1157,7 @@ function main() {
                 configure_oqs_provider_build
                 dependency_install
 
-                # Build OpenSSL 3.4.1
+                # Build OpenSSL 3.5.0
                 openssl_build
 
                 # Check if a Liboqs install is already present and install if not
@@ -1171,7 +1171,7 @@ function main() {
                 # Build the OQS-Provider library
                 oqs_provider_build
                 #rm -rf $tmp_dir/* # original cleanup
-                rm -rf $tmp_dir/liboqs-source $tmp_dir/openssl-3.4.1 $tmp_dir/oqs-provider-source # temp removal for hqc bug fix
+                rm -rf $tmp_dir/liboqs-source $tmp_dir/openssl-$openssl_version $tmp_dir/oqs-provider-source # temp removal for hqc bug fix
 
                 # Check if the Liboqs alg-list files are present before deciding which alg-list files need generated
                 if [ -f "$alg_lists_dir/kem-algs.txt" ] && [ -f "$alg_lists_dir/sig-algs.txt" ]; then

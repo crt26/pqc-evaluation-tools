@@ -5,7 +5,7 @@
 
 # Script for generating all the server certificates and keys required for the TLS handshake benchmarking suite. 
 # It creates classic, post-quantum, and hybrid-pqc certificates by generating CA keys, certificate signing requests, 
-# and signed server certificates using OpenSSL 3.4.1. The resulting key material must be copied to the client machine #
+# and signed server certificates using OpenSSL 3.5.0. The resulting key material must be copied to the client machine #
 # unless both client and server run on the same system.
 
 #-------------------------------------------------------------------------------------------------------------------------------
@@ -47,7 +47,7 @@ function setup_base_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declare the global library directory path variables
-    openssl_path="$libs_dir/openssl_3.4"
+    openssl_path="$libs_dir/openssl_3.5.0"
     oqs_provider_path="$libs_dir/oqs-provider"
 
     # Ensure that the OQS-Provider and OpenSSL libraries are present before proceeding

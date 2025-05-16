@@ -5,7 +5,7 @@
 
 # Utility script for toggling the OpenSSL configuration settings in the openssl.cnf file to enable or 
 # disable post-quantum cryptographic key generation. It comments or uncomments default group directives #
-# required for compatibility with scheme groups supported by the OQS-Provider when integrated with OpenSSL 3.4.1.
+# required for compatibility with scheme groups supported by the OQS-Provider when integrated with OpenSSL 3.5.0.
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function output_help_message() {
@@ -121,7 +121,7 @@ function setup_base_env() {
     test_scripts_path="$root_dir/scripts/test-scripts"
 
     # Declare the global library directory path variables
-    openssl_path="$libs_dir/openssl_3.4"
+    openssl_path="$libs_dir/openssl_3.5.0"
     liboqs_path="$libs_dir/liboqs"
     oqs_provider_path="$libs_dir/oqs-provider"
 
