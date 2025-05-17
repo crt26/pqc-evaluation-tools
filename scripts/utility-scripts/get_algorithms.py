@@ -195,7 +195,7 @@ def get_liboqs_algs():
             return
 
 #-----------------------------------------------------------------------------------------------------------
-def oqs_provider_extract_algs(output_str):
+def oqs_provider_extract_algs(provider_type, output_str):
     """ Helper function to extract the algorithms from the output string of the OpenSSL binary. The binary is passed 
         the algorithm type and the OQS-Provider flags so that it prints out the algorithms supported for that type in OQS-Provider. """
 
@@ -204,7 +204,10 @@ def oqs_provider_extract_algs(output_str):
     hybrid_algs = []
 
     # Set the regex pattern to match hybrid algorithm prefixes
-    hybrid_prefix_pattern = re.compile(r'^(rsa[0-9]+|p[0-9]+|x[0-9]+)_|^(X25519|SecP256r1|SecP384r1|SecP521r1)[A-Za-z0-9]+$')
+    hybrid_prefix_pattern = re.compile(r'^(rsa[0-9]+|p[0-9]+|x[0-9]+|X25519|X448|SecP256r1|SecP384r1|SecP521r1)[a-zA-Z0-9_-]+$')
+
+    # Set the regex pattern to match OpenSSL native PQC algorithms
+    native_pqc_pattern = re.compile(r'^(MLKEM[0-9]+|MLDSA[0-9]+|SLH-DSA-[A-Z0-9-]+[a-z]*)$')
 
     # Set the regex pattern for UOV algorithm detection
     uov_pattern = re.compile(r'^(p(256|384|521)_)?OV_.*')
@@ -215,20 +218,46 @@ def oqs_provider_extract_algs(output_str):
 
     # Loop through the pre-formatted algorithms and add to the appropriate list
     for alg in pre_algs:
-        
-        # Format the algorithm string to have only the algorithm name
+
+        # Clean up the algorithm string before checks
         alg = alg.strip()
-        alg = alg.split(" @ ")[0]
 
-        # Determine if the algorithm is one that should be included in the generated list
-        if not uov_pattern.match(alg) and alg != "CROSSrsdp256small":
+        # If braces present, get last alias (usually best readable name)
+        if alg.startswith("{"):
 
-            # Determine if the is a hybrid algorithm or not and add to the appropriate list
-            if hybrid_prefix_pattern.match(alg):
+            brace_content = alg.split("}")[0]  # get the content before closing brace
+            items = brace_content.strip("{ ").split(",")
+            alg = items[-1].strip()
+
+        else:
+            # If no braces, get the last part of the string
+            alg = alg.strip()
+            alg = alg.split(" @ ")[0]
+
+        # Skip over algorithms that are to be excluded from the list
+        if uov_pattern.match(alg) or alg == "CROSSrsdp256small":
+            continue
+
+        # Determine what filters are needed based on the provider type
+        if provider_type == "default":
+
+            # Determine if the algorithm is a PQC or Hybrid-PQC algorithm
+            if native_pqc_pattern.match(alg):
+                algs.append(alg.strip())
+            elif hybrid_prefix_pattern.match(alg):
                 hybrid_algs.append(alg.strip())
 
+        elif provider_type == "oqsprovider":
+
+            # Determine if the algorithm is a PQC or Hybrid-PQC algorithm
+            if hybrid_prefix_pattern.match(alg):
+                hybrid_algs.append(alg.strip())
             else:
                 algs.append(alg.strip())
+
+        else:
+            print(f"[ERROR] - Unknown provider type '{provider_type}'")
+            sys.exit(1)
 
     return algs, hybrid_algs
 
@@ -237,25 +266,40 @@ def get_tls_pqc_algs():
     """ Function to get the PQC and Hybrid-PQC algorithms supported by 
         the OQS-Provider library for the TLS benchmarking. """
 
-    # Set required path variables and algorithm categories
+    # Set required path variables, algorithm categories, and provider flags
     openssl_bin = os.path.join(openssl_path, "bin","openssl")
     output_dir = os.path.join(root_dir, "test-data", "alg-lists")
     alg_cats = ["kem", "signature"]
+    provider_flags = {
+        "default": ["-provider", "default"], 
+        "oqsprovider": ["-provider", "oqsprovider", "-provider-path", oqs_provider_path]
+    }
 
     # Loop through the different algorithm types and get the algorithms supported
     for alg_type in alg_cats:
 
-        # Run the openssl binary with the required flags to get the algorithms supported and capture the output
-        process = subprocess.Popen(
-            [openssl_bin, "list", f"-{alg_type}-algorithms", "-provider", "oqsprovider"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True
-        )
-        stdout, stderr = process.communicate()
+        # Set the master algorithms lists for the current algorithm type
+        algs = []
+        hybrid_algs = []
 
-        # Extract the PQC and Hybrid-PQC algorithms from the output string
-        algs, hybrid_algs = oqs_provider_extract_algs(stdout)
+        # Loop through each of the provider types that algorithms need to be extracted from
+        for provider_type in provider_flags.keys():
+
+            # Run the openssl binary with the required flags to get the algorithms supported and capture the output
+            process = subprocess.Popen(
+                [openssl_bin, "list", f"-{alg_type}-algorithms"] + provider_flags[provider_type],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True
+            )
+            stdout, stderr = process.communicate()
+
+            # Extract the PQC and Hybrid-PQC algorithms from the output string
+            provider_algs, provider_hybrid_algs = oqs_provider_extract_algs(provider_type, stdout)
+
+            # Append the extracted algorithms to the master lists
+            algs.extend(provider_algs)
+            hybrid_algs.extend(provider_hybrid_algs)
 
         # Set the various output filenames depending on the current algorithm type
         if alg_type == "kem":

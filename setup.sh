@@ -765,23 +765,6 @@ function openssl_build() {
 
     # Define the path to the OQS-Provider library and the openssl.cnf file changes
     oqsprovider_path="$oqs_provider_path/lib/oqsprovider.so"
-    conf_changes=(
-        "[openssl_init]"
-        "providers = provider_sect"
-        "ssl_conf = ssl_sect"
-        "[provider_sect]"
-        "default = default_sect"
-        "oqsprovider = oqsprovider_sect"
-        "[default_sect]"
-        "activate = 1"
-        "[oqsprovider_sect]"
-        "activate = 1"
-        "module = $oqs_provider_path/lib/oqsprovider.so"
-        "[ssl_sect]"
-        "system_default = system_default_sect"
-        "[system_default_sect]"
-        "Groups = \$ENV::DEFAULT_GROUPS"
-    )
 
     # Check if a previous OpenSSL build is present and build if not
     if [ ! -d "$openssl_path" ]; then
@@ -818,13 +801,11 @@ function openssl_build() {
             exit 1
         fi
 
-        # Set the OpenSSL configuration file path
-        openssl_conf_path="$openssl_path/openssl.cnf"
-
-        # Modify the OpenSSL conf file to include OQS-Provider as a provider
-        for conf_change in "${conf_changes[@]}"; do
-            echo $conf_change >> "$openssl_conf_path"
-        done
+        # Patch the OpenSSL configuration file to include directives for the OQS-Provider library
+        if ! "$util_scripts/configure-openssl-cnf.sh" 0; then
+            echo "[ERROR] - Failed to modify OpenSSL configuration file."
+            exit 1
+        fi
 
     else
         echo "openssl build present, skipping build"

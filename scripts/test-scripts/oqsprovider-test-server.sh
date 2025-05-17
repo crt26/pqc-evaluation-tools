@@ -327,14 +327,15 @@ function pqc_tests() {
 
                 # Start the OpenSSL s_server process
                 "$openssl_path/bin/openssl" s_server \
-                    -cert $cert_file \
-                    -key $key_file \
+                    -cert  "$cert_file" \
+                    -key   "$key_file"  \
+                    -provider default \
+                    -provider oqsprovider \
+                    -provider-path "$provider_path" \
                     -www \
                     -tls1_3 \
-                    -groups $kem \
-                    -provider oqsprovider \
-                    -provider-path $provider_path \
-                    -accept $S_SERVER_PORT &
+                    -groups "$kem" \
+                    -accept "$S_SERVER_PORT" &
                 server_pid=$!
 
                 # Check if the server has started before sending ready signal to client
@@ -514,7 +515,7 @@ function tls_server_test_entrypoint() {
 
         # Set the test type, environment, and call the PQC tests function
         test_type=0
-        set_test_env $test_type 1
+        set_test_env $test_type 2
         pqc_tests
         echo -e "[OUTPUT] - Completed $run_num PQC TLS Handshake Tests"
 
@@ -526,7 +527,7 @@ function tls_server_test_entrypoint() {
 
         # Set the test type, environment, and call the Hybrid-PQC tests function
         test_type=1
-        set_test_env $test_type 1
+        set_test_env $test_type 2
         pqc_tests
         echo "[OUTPUT] - Completed $run_num Hybrid-PQC TLS Handshake Tests"
 
@@ -538,7 +539,7 @@ function tls_server_test_entrypoint() {
 
         # Set the test type, environment, and call the classic tests function
         test_type=2
-        set_test_env $test_type 1
+        set_test_env $test_type 2
         classic_tests
         echo "[OUTPUT] - Completed $run_num Classic TLS Handshake Tests"
 
