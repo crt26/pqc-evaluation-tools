@@ -3,7 +3,7 @@
 # Copyright (c) 2023-2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
-# Script for controlling the OQS-Provider TLS benchmarking suite using OpenSSL 3.4.1. It handles the configuration 
+# Script for controlling the OQS-Provider TLS benchmarking suite using OpenSSL 3.5.0. It handles the configuration 
 # of test parameters, machine role assignment, port and environment validation, and result directory setup. Based on 
 # the selected machine role, the script calls the relevant client or server benchmarking script to perform handshake 
 # and speed tests across post-quantum, classical, and hybrid-pqc algorithm modes, storing results in machine-specific 
@@ -346,7 +346,7 @@ function setup_base_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declare the global library directory path variables
-    openssl_path="$libs_dir/openssl_3.4"
+    openssl_path="$libs_dir/openssl_3.5.0"
     oqs_provider_path="$libs_dir/oqs-provider"
 
     # Ensure that the OQS-Provider and OpenSSL libraries are present before proceeding

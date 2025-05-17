@@ -5,7 +5,7 @@
 
 # Client-side script for executing TLS handshake performance tests in coordination with a remote server. 
 # It evaluates all supported combinations of classic, Post-Quantum Cryptography (PQC), and Hybrid-PQC signature 
-# and KEM algorithms using OpenSSL 3.4.1 integrated with the OQS-Provider. The script performs three main test suites:
+# and KEM algorithms using OpenSSL 3.5.0 integrated with the OQS-Provider. The script performs three main test suites:
 # PQC-only, Hybrid-PQC, and Classic handshake tests. It is called by the full-oqs-provider-test.sh benchmarking 
 # controller script and uses globally defined test parameters, certificate files, and control signalling 
 # for synchronisation with the server.
@@ -50,7 +50,7 @@ function setup_base_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declare the global library directory path variables
-    openssl_path="$libs_dir/openssl_3.4"
+    openssl_path="$libs_dir/openssl_3.5.0"
     provider_path="$libs_dir/oqs-provider/lib"
 
     # Declare global key storage directory paths
@@ -90,7 +90,7 @@ function setup_base_env() {
         echo "[ERROR] - Control sleep time env variable not set, this indicates a wider issue with the full-oqs-provider-test.sh script"
         exit 1
     fi
-
+    
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
@@ -338,12 +338,13 @@ function pqc_tests() {
 
                         # Run the OpenSSL s_time process with current test parameters and grab the exit code
                         "$openssl_path/bin/openssl" s_time \
-                            -connect $SERVER_IP:$S_SERVER_PORT \
-                            -CAfile $cert_file -time $TIME_NUM  \
-                            -verify 1 \
+                            -connect "${SERVER_IP}:${S_SERVER_PORT}" \
+                            -CAfile  "$cert_file" \
+                            -time    "$TIME_NUM" \
+                            -verify  1 \
                             -provider default \
                             -provider oqsprovider \
-                            -provider-path $provider_path > $handshake_dir/$output_name
+                            -provider-path "$provider_path" > "$handshake_dir/$output_name"
                         exit_code=$?
 
                         # Check if the test was successful and retry if not
@@ -515,7 +516,7 @@ function tls_client_test_entrypoint() {
 
         # Set the test type, environment, and call the PQC tests function
         test_type=0
-        set_test_env $test_type 1
+        set_test_env $test_type 2
         pqc_tests
         echo -e "[OUTPUT] - Completed $run_num PQC TLS Handshake Tests"
 
@@ -527,7 +528,7 @@ function tls_client_test_entrypoint() {
 
         # Set the test type, environment, and call the Hybrid-PQC tests function
         test_type=1
-        set_test_env $test_type 1
+        set_test_env $test_type 2
         pqc_tests
         echo "[OUTPUT] - Completed $run_num Hybrid-PQC TLS Handshake Tests"
 
@@ -539,7 +540,7 @@ function tls_client_test_entrypoint() {
 
         # Set the test type, environment, and call the classic tests function
         test_type=2
-        set_test_env $test_type 1
+        set_test_env $test_type 2
         classic_tests
         echo "[OUTPUT] - Completed $run_num Classic TLS Handshake Tests"
 

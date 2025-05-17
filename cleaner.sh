@@ -5,7 +5,7 @@
 
 # Utility script for cleaning up project files produced during PQC benchmarking.
 # Provides options to uninstall the OQS-Provider libraries, clear old benchmarking results and generated TLS keys, or perform both actions.
-# Uninstalling will remove the Liboqs, OQS-Provider, and OpenSSL 3.4.1 installations from the system.
+# Uninstalling will remove the Liboqs, OQS-Provider, and OpenSSL 3.5.0 installations from the system.
 # Clearing results will remove test outputs and key material under the test-data directory.
 
 #-------------------------------------------------------------------------------------------------------------------------------
@@ -46,14 +46,14 @@ function setup_base_env() {
     test_data_dir="$root_dir/test-data"
 
     # Declare the global library directory path variables
-    openssl_path="$libs_dir/openssl_3.4"
+    openssl_path="$libs_dir/openssl_3.5.0"
     liboqs_path="$libs_dir/liboqs"
     oqs_provider_path="$libs_dir/oqs-provider"
 
     # Declaring the global source-code directory path variables
     liboqs_source="$tmp_dir/liboqs-source"
     oqs_provider_source="$tmp_dir/oqs-provider-source"
-    openssl_source="$tmp_dir/openssl-3.4.1"
+    openssl_source="$tmp_dir/openssl-3.5.0"
 
     # Declaring the global test-data directory path variables
     test_data_results="$test_data_dir/results"
@@ -81,7 +81,7 @@ function select_uninstall_mode() {
         echo -e "\nPlease Select one of the following uninstall options"
         echo "1 - Uninstall Liboqs Library Only"
         echo "2 - Uninstall OQS-Provider Library only"
-        echo "3 - Uninstall OpenSSL 3.4.1 Only"
+        echo "3 - Uninstall OpenSSL 3.5.0 Only"
         echo "4 - Uninstall all Libraries"
         echo "5 - Exit Setup"
 
@@ -107,9 +107,9 @@ function select_uninstall_mode() {
                 break;;
 
             3)
-                # Uninstall OpenSSL 3.4.1 only
+                # Uninstall OpenSSL 3.5.0 only
                 rm -rf "$openssl_path"
-                echo -e "\nOpenSSL 3.4.1 Uninstalled"
+                echo -e "\nOpenSSL 3.5.0 Uninstalled"
                 break;;
 
             4)

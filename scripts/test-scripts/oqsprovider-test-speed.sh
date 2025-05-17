@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 # Script executed from the client machine to benchmark the computational performance of PQC, Hybrid-PQC, and 
-# Classic digital signature and KEM algorithms integrated into OpenSSL 3.4.1 via the OQS-Provider. It receives 
+# Classic digital signature and KEM algorithms integrated into OpenSSL 3.5.0 via the OQS-Provider. It receives 
 # test parameters from the main OQS-Provider test control script and runs OpenSSL's speed utility to collect
 # per-algorithm timing metrics. Results are stored in machine-specific directories under the appropriate 
 # TLS test type, using the assigned machine ID exported by the full-pqc-tls-test.sh script.
@@ -49,7 +49,7 @@ function setup_test_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declare the global library directory path variables
-    openssl_path="$libs_dir/openssl_3.4"
+    openssl_path="$libs_dir/openssl_3.5.0"
     oqs_provider_path="$libs_dir/oqs-provider"
     provider_path="$oqs_provider_path/lib"
 
@@ -117,13 +117,26 @@ function setup_test_env() {
 #-------------------------------------------------------------------------------------------------------------------------------
 function tls_speed_test() {
     # Function for running the TLS speed tests for the various algorithm types. It uses the OpenSSL s_speed utility to benchmark
-    # the performance of the specified algorithms when integrated into OpenSSL 3.4.1 via the OQS-Provider.
+    # the performance of the specified algorithms when integrated into OpenSSL 3.5.0 via the OQS-Provider.
 
     # Joining the elements of algorithm arrays into a string variable to create test parameter
     kem_algs_string="${kem_algs[@]}"
     sig_algs_string="${sig_algs[@]}"
     hybrid_kem_algs_string="${hybrid_kem_algs[@]}"
     hybrid_sig_algs_string="${hybrid_sig_algs[@]}"
+
+    # Update the naming convention for the MLKEM algorithms to work with the OpenSSL speed utility
+    kem_algs_string=$(echo "$kem_algs_string" | sed -e 's/\bMLKEM512\b/ML-KEM-512/g' \
+                                                -e 's/\bMLKEM768\b/ML-KEM-768/g' \
+                                                -e 's/\bMLKEM1024\b/ML-KEM-1024/g')
+
+    # Remove ML-DSA and SLH-DSA from sig algs as not supported within the OpenSSL speed utility
+    sig_algs_string=$(echo "$sig_algs_string" | tr ' ' '\n' | grep -v -E '^MLDSA|^SLH-DSA' | grep -v '^$' | tr '\n' ' ')
+
+
+    # echo "Kem algs string - $kem_algs_string"
+    # echo -e "\n"
+    # echo "Sig algs string - $sig_algs_string"
 
     # Perform the TLS speed tests for the specified number of runs
     for run_num in $(seq 1 $NUM_RUN); do
@@ -138,29 +151,33 @@ function tls_speed_test() {
         # Perform the PQC KEM algorithms speed tests
         "$openssl_path/bin/openssl" speed \
             -seconds $TIME_NUM \
-            -provider-path $provider_path \
-            -provider oqsprovider  \
+            -provider default \
+            -provider oqsprovider \
+            -provider-path "$provider_path" \
             $kem_algs_string > $kem_output_filename
 
         # Perform the PQC digital signature algorithms speed tests
         "$openssl_path/bin/openssl" speed \
             -seconds $TIME_NUM \
-            -provider-path $provider_path \
+            -provider default \
             -provider oqsprovider \
+            -provider-path "$provider_path" \
             $sig_algs_string > $sig_output_filename
 
         # Perform the Hybrid-PQC KEM algorithms speed tests
         "$openssl_path/bin/openssl" speed \
             -seconds $TIME_NUM \
-            -provider-path $provider_path \
+            -provider default \
             -provider oqsprovider \
+            -provider-path "$provider_path" \
             $hybrid_kem_algs_string > $hybrid_kem_output_filename
 
         # Perform the Hybrid-PQC digital signature algorithms speed tests
         "$openssl_path/bin/openssl" speed \
             -seconds $TIME_NUM \
-            -provider-path $provider_path \
+            -provider default \
             -provider oqsprovider \
+            -provider-path "$provider_path" \
             $hybrid_sig_algs_string > $hybrid_sig_output_filename
 
     done
@@ -168,14 +185,14 @@ function tls_speed_test() {
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------
-function main() {
+function tls_speed_test_entrypoint() {
     # Main function for controlling the TLS speed performance tests
 
     # Setup the base environment for the test suite
     setup_test_env
 
     # Modify the OpenSSL conf file to temporarily remove the default groups configuration
-    if ! "$util_scripts/configure-openssl-cnf.sh" 0; then
+    if ! "$util_scripts/configure-openssl-cnf.sh" 1; then
         echo "[ERROR] - Failed to modify OpenSSL configuration."
         exit 1
     fi
@@ -184,10 +201,10 @@ function main() {
     tls_speed_test
 
     # Restore the OpenSSL conf file to have the configuration needed for the testing scripts
-    if ! "$util_scripts/configure-openssl-cnf.sh" 1; then
+    if ! "$util_scripts/configure-openssl-cnf.sh" 2; then
         echo "[ERROR] - Failed to modify OpenSSL configuration."
         exit 1
     fi
 
 }
-main
+tls_speed_test_entrypoint
