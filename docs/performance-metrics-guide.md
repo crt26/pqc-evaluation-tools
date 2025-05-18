@@ -92,7 +92,7 @@ The table below outlines where this data is stored and how it's organised in the
 | Performance Averages | Parsed    | Average results for the performance metrics across test runs.                                                                                          | Located alongside parsed CSV files in `results/liboqs/machine-X/` |
 
 ## OQS-Provider PQC TLS Performance Metrics
-The OQS-Provider TLS performance testing captures benchmarking data for PQC and Hybrid-PQC algorithms integrated into the OpenSSL 3.4.1 library. It evaluates both their performance within the TLS 1.3 handshake protocol and their cryptographic operation speed when executed directly through OpenSSL. This testing provides valuable insight into how PQC schemes perform in real-world security protocol scenarios. Additionally, TLS handshake metrics are gathered using classical digital signature algorithms and cipher suites to establish a performance baseline for comparison with PQC and Hybrid-PQC results.
+The OQS-Provider TLS performance testing captures benchmarking data for PQC and Hybrid-PQC algorithms integrated into the OpenSSL 3.5.0 library. It evaluates both their performance within the TLS 1.3 handshake protocol and their cryptographic operation speed when executed directly through OpenSSL. This testing provides valuable insight into how PQC schemes perform in real-world security protocol scenarios. Additionally, TLS handshake metrics are gathered using classical digital signature algorithms and cipher suites to establish a performance baseline for comparison with PQC and Hybrid-PQC results.
 
 As part of the automated TLS testing, two categories of evaluations are conducted:
 
@@ -164,6 +164,6 @@ When running the OQS-Provider TLS benchmarking script (`full-oqs-provider-test.s
 - [OQS-Provider Webpage](https://openquantumsafe.org/applications/tls.html#oqs-openssl-provider)
 - [OQS-Provider GitHub Page](https://github.com/open-quantum-safe/oqs-provider)
 - [OQS Profiling Project](https://openquantumsafe.org/benchmarking/)
-- [OpenSSL(3.4.1) Documentation](https://docs.openssl.org/3.4/)
+- [OpenSSL(3.5.0) Documentation](https://docs.openssl.org/3.5/)
 - [OQS Benchmarking Webpage](https://openquantumsafe.org/benchmarking/)
 - [OQS Profiling Project](https://openquantumsafe.org/benchmarking/)

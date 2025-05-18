@@ -1,19 +1,13 @@
 # Automated PQC TLS Performance Benchmarking Tool Usage Guide <!-- omit from toc -->
 
 ## Overview <!-- omit from toc -->
-This tool provides automated benchmarking for PQC-enabled TLS 1.3 handshakes and cryptographic operation performance in OpenSSL 3.4.1 using the OQS-Provider library. It tests TLS handshakes with various combinations of Post-Quantum Cryptography (PQC) and Hybrid-PQC cipher suites and measures the performance of these algorithms when integrated into OpenSSL. In addition to PQC-focused benchmarks, the tool also evaluates classic cryptographic algorithms, which can serve as a baseline for comparing PQC-based results. Testing can be conducted on a single machine (localhost) or across two networked machines, using a physical or virtual connection.
+This tool provides automated benchmarking for PQC-enabled TLS 1.3 handshakes and cryptographic operation performance in OpenSSL 3.5.0 using the OQS-Provider library. It tests TLS handshakes with various combinations of Post-Quantum Cryptography (PQC) and Hybrid-PQC cipher suites and measures the performance of these algorithms when integrated into OpenSSL. In addition to PQC-focused benchmarks, the tool also evaluates classic cryptographic algorithms, which can serve as a baseline for comparing PQC-based results. Testing can be conducted on a single machine (localhost) or across two networked machines, using a physical or virtual connection.
 
 The relevant PQC TLS Performance testing scripts can be found in the `scripts/test-scripts` directory from the project's root.
 
-**Note:** The following signature algorithms are excluded from the automated TLS benchmarking due to known incompatibilities with [RFC 8446](https://datatracker.ietf.org/doc/html/rfc8446):
-
-- UOV-based schemes (e.g., OV_Is, OV_III, and their hybrid variants)
-- CROSSrsdp256small
-
-These algorithms remain available for computational benchmarking using the Liboqs tools.
-
 ### Contents <!-- omit from toc -->
 - [Supported Hardware](#supported-hardware)
+- [Supported PQC Algorithms](#supported-pqc-algorithms)
 - [Preparing the Testing Environment](#preparing-the-testing-environment)
   - [Control Ports and Firewall Setup for Testing](#control-ports-and-firewall-setup-for-testing)
   - [Generating Required Certificates and Private Keys](#generating-required-certificates-and-private-keys)
@@ -33,6 +27,13 @@ The automated testing tool is currently only supported on the following devices:
 
 - x86 Linux Machines using a Debian-based operating system
 - ARM Linux devices using a 64-bit Debian based Operating System
+
+## Supported PQC Algorithms
+Whilst this project provides support for all PQC algorithms included in its dependency libraries for TLS testing, due to various incompatibles and dependency limitations, there a several PQC algorithms which are excluded. Whilst the number of algorithms not included are a small amount, it is important to consider this limitation when using the tool.
+
+Additional information on the excluded algorithms can be found in the OpenSSL and OQS-Provider subsections in the following project documentation:
+
+[Supported Algorithms](../supported-algorithms.md)
 
 ## Preparing the Testing Environment
 Before running any tests, it is crucial to ensure the necessary setup steps for your planned testing environment (single-machine/two-machine configuration) have been performed. This includes allowing required ports through your firewall and generating test server certificates and private-keys.
@@ -180,4 +181,4 @@ If the default control signalling timing behaviour is unsuitable for your testin
 - [Latest OQS-Provider Release Notes](https://github.com/open-quantum-safe/oqs-provider/blob/main/RELEASE.md)
 - [OQS Benchmarking Webpage](https://openquantumsafe.org/benchmarking/)
 - [OQS Profiling Project](https://openquantumsafe.org/benchmarking/)
-- [OpenSSL(3.4.1) Documentation](https://docs.openssl.org/3.4/)
+- [OpenSSL(3.5.0) Documentation](https://docs.openssl.org/3.5/)

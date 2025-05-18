@@ -49,7 +49,7 @@ Key tasks performed include:
 
 - Installing all required system and Python dependencies (e.g., OpenSSL dev packages, CMake, Valgrind)
 
-- Downloading and compiling OpenSSL 3.4.1
+- Downloading and compiling OpenSSL 3.5.0
 
 - Cloning and building specific or last-tested versions of Liboqs and OQS-Provider
 
@@ -112,21 +112,30 @@ python3 get_algorithms.py 1
 ```
 
 ### configure-openssl-cnf.sh
-This utility script modifies the OpenSSL 3.4.1 configuration file by commenting or uncommenting lines that define the default cryptographic groups. This adjustment is required for successful key generation and TLS handshake testing using the OQS-Provider. It is highly recommended to avoid manually calling this script to avoid any potential issues with misconfiguration in the `openssl.cnf` file. However, if issues do occur, it is advised to re-run the automatic setup process or restore a backup of the previous conf file's state.
+This utility script manages the modification of the OpenSSL 3.5.0 openssl.cnf configuration file to support different stages of the PQC testing pipeline. It adjusts cryptographic provider settings and default group directives as required for:
 
-The automated scripts mainly use this script, however it can be called manually using the following commands:
+- Initial setup
 
-**configure-openssl-cnf.sh - (Comment out Default Group Configurations):**
+- Key generation benchmarking
 
-```
-./configure-openssl-cnf.sh 0
-```
+- TLS handshake benchmarking
 
-**configure-openssl-cnf.sh - (Uncomment out Default Group Configurations):**
+These adjustments ensure compatibility with both OpenSSL's native PQC support and the OQS-Provider, depending on the testing context.
 
-```
-./configure-openssl-cnf.sh 1
-```
+**Important:** It is strongly recommended that this script be used only as part of the automated testing framework. Manual use should be limited to recovery or debugging, as improper configuration may result in broken provider loading or handshake failures.
+
+When called, the utility script accepts the following arguments:
+
+| Argument | Functionality                                                                                                                                                                             |
+|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `0`      | Performs initial setup by appending OQS-Provider-related directives to the `openssl.cnf` file. **This should only ever be called during setup when modifying the default OpenSSL conf file.** |
+| `1`      | Configures the OpenSSL environment for **key generation benchmarking** by commenting out PQC-related configuration lines.                                                                 |
+| `2`      | Configures the OpenSSL environment for **TLS handshake benchmarking** by uncommenting PQC-related configuration lines.                                                                    |
+
+
+
+
+
 
 ## Liboqs Automated Testing Scripts 
 The Liboqs PQC performance testing utilises a single bash script to conduct the automated benchmarking. This script performs CPU speed testing and memory usage profiling for supported KEM and digital signature algorithms. It is designed to be run interactively, prompting the user for test parameters such as the machine ID and number of test iterations.

@@ -14,9 +14,9 @@ For full details on the project's development and the current development task l
 ## Repository Overview <!-- omit from toc -->
 
 ### Project Description
-This repository provides an automated and comprehensive evaluation framework for benchmarking Post-Quantum Cryptography (PQC) algorithms. It is designed for researchers and developers looking to evaluate the feasibility of integrating PQC into their environments. It simplifies the setup, testing, and parsing of PQC computational and networking performance data across x86 and ARM systems.
+This repository provides an automated and comprehensive evaluation framework for benchmarking Post-Quantum Cryptography (PQC) algorithms. It is designed for researchers and developers looking to evaluate the feasibility of integrating PQC into their environments. It simplifies the setup, testing, and parsing of PQC computational and networking performance data across x86 and ARM systems through a series of dedicated automation scripts.
 
-The framework includes scripts to automate dependency building, test execution, and result parsing. It currently utilises the [Open Quantum Safe (OQS)](https://openquantumsafe.org/) project's `Liboqs` and `OQS-Provider` libraries to gather this performance data, with future goals to integrate additional PQC libraries. It also provides automated mechanisms for testing PQC TLS handshake performance across physical or virtual networks, providing valuable insight into real-world environment testing. Results are outputted as raw CSV files that can be parsed using the provided Python parsing scripts to provide detailed metrics and averages ready for analysis.
+It currently utilises the [Open Quantum Safe (OQS)](https://openquantumsafe.org/) project's `Liboqs` and `OQS-Provider` libraries, alongside PQC implementation available in OpenSSL 3.5.0, with future goals to integrate additional PQC libraries. The framework also provides automated mechanisms for testing PQC TLS handshake performance across physical or virtual networks, providing valuable insight into real-world environment testing. Results are outputted as raw CSV files that can be parsed using the provided Python parsing scripts to provide detailed metrics and averages ready for analysis.
 
 ### Supported Automation Functionality
 The project provides automation for:
@@ -25,7 +25,7 @@ The project provides automation for:
 
 - Collecting PQC computational performance data, including CPU and memory usage metrics, using the Liboqs library.
 
-- Gathering networking performance data for PQC schemes integrated into the TLS 1.3 protocol via OpenSSL 3.4.1 and the OQS-Provider libraries.
+- Gathering networking performance data for PQC schemes integrated into the TLS 1.3 protocol using the OpenSSL 3.5.0 and the OQS-Provider libraries.
 
 - Coordinated PQC TLS handshake tests run over the loopback interface or across physical networks between a server and client device.
 
@@ -38,6 +38,7 @@ For details on the project's development and upcoming features, see the project'
 
 ## Contents <!-- omit from toc -->
 - [Supported Hardware and Software](#supported-hardware-and-software)
+- [Supported Crytpographic Algorithms](#supported-crytpographic-algorithms)
 - [Installation Instructions](#installation-instructions)
   - [Cloning the Repository](#cloning-the-repository)
   - [Choosing Installation Mode](#choosing-installation-mode)
@@ -72,15 +73,16 @@ This version of the repository has been fully tested with the following library 
 
 - OQS Provider Version 0.8.0
 
-- OpenSSL Version 3.4.1
+- OpenSSL Version 3.5.0
 
 The repository is configured to pull the latest versions of the OQS projects while maintaining the listed OpenSSL version. This ensures support for the most up-to-date algorithms available from the OQS project. The setup process includes handling changes in the OQS libraries and helping maintain compatibility as updates are released.
 
 However, as the OQS libraries are still developing projects, if any major changes have occurred to their code bases, this project's automation scripts may not be able to accommodate this. If this does happen, please report an issue to this repositories GitHub page where it will be addressed as soon as possible. In the meantime, it is possible to change the versions of the OQS libraries used by the benchmarking suite. This is detailed further in the [Installation Instructions](#installation-instructions) section.
 
-> **Notice 1:** The HQC KEM algorithms are disabled by default in recent Liboqs versions due to a disclosed IND-CCA2 vulnerability. For benchmarking purposes, the setup process includes an optional flag to enable HQC, accompanied by a user confirmation prompt and warning. For instructions on enabling HQC, see the [Advanced Setup Configuration Guide](docs/advanced-setup-configuration.md), and refer to the [Disclaimer Document](./DISCLAIMER.md) for more information on this issue.
+## Supported Crytpographic Algorithms
+For further information on the classical and PQC algorithms this project provides support for, including information on any exclusions, please refer to the following documentation:
 
-> **Notice 2:** Memory profiling for Falcon algorithm variants is currently non-functional on **ARM** systems due to issues with the scheme and the Valgrind Massif tool. Please see the [bug report](https://github.com/open-quantum-safe/liboqs/issues/1761) for details. Testing and parsing remain fully functional for all other algorithms.
+[Supported Algorithms](docs/supported-algorithms.md)
 
 ## Installation Instructions
 The standard setup process uses the latest versions of the OQS libraries and performs automatic system detection and installation of the benchmarking suite. It supports various installation modes that determine which OQS libraries are downloaded and built, depending on your environment.
@@ -118,7 +120,7 @@ When executing the setup script, you will be prompted to select one of the follo
 
 3. **Build only the OQS-Provider library** – For use after a prior Liboqs installation.
 
-The setup script will also build [OpenSSL 3.4.1](https://www.openssl.org/source/) inside the repository’s `lib` directory. This version is required to support the OQS-Provider and is built separately from the system’s default OpenSSL installation. It will not interfere with system-level binaries.
+The setup script will also build [OpenSSL 3.5.0](https://www.openssl.org/source/) inside the repository’s `lib` directory. This version is required to support the OQS-Provider and is built separately from the system’s default OpenSSL installation. It will not interfere with system-level binaries.
 
 If the installation of the `OQS-Provider` library is selected, the setup script will prompt you to enable two optional features:
 
@@ -160,9 +162,9 @@ Please refer to the [Advanced Setup Configuration Guide](docs/advanced-setup-con
 ## Automated Testing Tools
 The repository provides two categories of automated benchmarking:
 
-- **Liboqs Performance Testing** - Used for gathering PQC computational performance data
+- **Liboqs Performance Testing** - Used for gathering PQC computational performance data using the Liboqs library.
 
-- **OQS-Provider TLS Performance Testing** - Used for gathering PQC TLS 1.3 networking performance benchmarking when integrated into OpenSSL 3.4.1
+- **PQC TLS Performance Testing** - Used for gathering PQC TLS 1.3 networking performance benchmarking using PQC implementation available in the OpenSSL 3.5.0 and OQS-Provider libraries.
 
 The testing tools are located in the `scripts/test-scripts` directory and are fully automated. The tools support multi-machine testing, with the option to assign a machine ID when executing the testing scripts.
 
@@ -173,10 +175,12 @@ For detailed usage instructions, please refer to:
 
 [Automated Liboqs Performance Testing Instructions](docs/testing-tools-usage/liboqs-performance-testing.md)
 
-**Note:** HQC KEM algorithms are disabled by default in the latest Liboqs version due to a known vulnerability. The main setup script provides an option to enable HQC for benchmarking if required. Please refer to the [Advanced Setup Configuration Guide](docs/advanced-setup-configuration.md) for more information.
+> **Notice 1:** The HQC KEM algorithms are disabled by default in recent Liboqs versions due to a disclosed IND-CCA2 vulnerability. For benchmarking purposes, the setup process includes an optional flag to enable HQC, accompanied by a user confirmation prompt and warning. For instructions on enabling HQC, see the [Advanced Setup Configuration Guide](docs/advanced-setup-configuration.md), and refer to the [Disclaimer Document](./DISCLAIMER.md) for more information on this issue.
+
+> **Notice 2:** Memory profiling for Falcon algorithm variants is currently non-functional on **ARM** systems due to issues with the scheme and the Valgrind Massif tool. Please see the [bug report](https://github.com/open-quantum-safe/liboqs/issues/1761) for details. Testing and parsing remain fully functional for all other algorithms.
 
 ### OQS-Provider TLS Performance Testing
-This tool is focused on benchmarking the performance of PQC and Hybrid-PQC algorithms when integrated within OpenSSL (3.4.1) via the OQS-Provider library.
+This tool is focused on benchmarking the performance of PQC and Hybrid-PQC algorithms when integrated into TLS 1.3. This is done using the PQC implementations available in OpenSSL 3.5.0 alongside integrating additional PQC schemes into OpenSSL using the OQS-Provider library.
 
 It conducts two types of testing:
 
@@ -189,12 +193,6 @@ Testing can be performed on a single machine or across two machines connected vi
 For detailed usage instructions, please refer to:
 
 [Automated OQS-Provider TLS Performance Testing Instructions](docs/testing-tools-usage/oqsprovider-performance-testing.md)
-
-**Note:** The following signature algorithms are excluded from the automated TLS benchmarking due to known incompatibilities with [RFC 8446](https://datatracker.ietf.org/doc/html/rfc8446):
-- UOV-based schemes (e.g., OV_Is, OV_III, and their hybrid variants)
-- CROSSrsdp256small
-
-These algorithms remain available for computational benchmarking using the Liboqs tools.
 
 ### Testing Output Files
 After the testing has been completed, unparsed results will be stored in the `test-data/up-results` directory:
@@ -242,6 +240,7 @@ Please refer to the [Performance Metrics Guide](docs/performance-metrics-guide.m
 - [Liboqs Automated Performance Testing](docs/testing-tools-usage/liboqs-performance-testing.md)
 - [OQS-Provider Automated Performance Testing](docs/testing-tools-usage/oqsprovider-performance-testing.md)
 - [Advanced Setup Configuration](docs/advanced-setup-configuration.md)
+- [Supported Algorithms](docs/supported-algorithms.md)
 - [Project Scripts](docs/developer-information/project-scripts.md)
 - [Repository Structure](docs/developer-information/repository-directory-structure.md)
 - [Performance Metrics Guide](docs/performance-metrics-guide.md)
@@ -259,7 +258,7 @@ The information provided in the internal documentation is also available through
 - [OQS-Provider GitHub Page](https://github.com/open-quantum-safe/oqs-provider)
 - [Latest Liboqs Release Notes](https://github.com/open-quantum-safe/liboqs/blob/main/RELEASE.md)
 - [Latest OQS-Provider Release Notes](https://github.com/open-quantum-safe/oqs-provider/blob/main/RELEASE.md)
-- [OpenSSL(3.4.1) Documentation](https://docs.openssl.org/3.4/)
+- [OpenSSL(3.5.0) Documentation](https://docs.openssl.org/3.5/)
 - [TLS 1.3 RFC 8446](https://www.rfc-editor.org/rfc/rfc8446)
 
 ## Licence
