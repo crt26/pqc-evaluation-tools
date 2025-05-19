@@ -180,6 +180,11 @@ function tls_speed_test_entrypoint() {
     # Setup the base environment for the test suite
     setup_test_env
 
+    # Output the test start message
+    echo -e "\n##########################"
+    echo "Performing TLS Speed Tests"
+    echo -e "##########################"
+
     # Modify the OpenSSL conf file to temporarily remove the default groups configuration
     if ! "$util_scripts/configure-openssl-cnf.sh" 1; then
         echo "[ERROR] - Failed to modify OpenSSL configuration."

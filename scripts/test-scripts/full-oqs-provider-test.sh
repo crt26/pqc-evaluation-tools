@@ -874,11 +874,6 @@ function run_tests() {
     # Call the TLS handshake test script based on the machine type selected
     if [ $machine_type == "Server" ]; then
 
-        # Output the current task to the terminal
-        echo -e "\n####################################"
-        echo "Performing TLS Handshake Tests"
-        echo -e "####################################\n"
-
         # Export the client IP to the environment
         export CLIENT_IP="$machine_ip"
 
@@ -896,12 +891,7 @@ function run_tests() {
     
         # Export the server IP to the environment
         export SERVER_IP="$machine_ip"
-
-        # Output the current task to the terminal
-        echo -e "\n####################################"
-        echo "Performing TLS Handshake Tests"
-        echo "####################################"
-
+        
         # Call the server machine test script
         $test_scripts_path/oqsprovider-test-client.sh
         exit_code=$?
@@ -912,11 +902,6 @@ function run_tests() {
             exit 1
         fi
 
-        # Output the current task to the terminal
-        echo -e "\n##########################"
-        echo "Performing TLS Speed Tests"
-        echo -e "##########################"
-        
         # Call the TLS speed test script
         $test_scripts_path/oqsprovider-test-speed.sh
         exit_code=$?

@@ -495,9 +495,15 @@ function tls_server_test_entrypoint() {
         echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
     fi
 
-    # Output the start message and beginning the initial handshake
+    # Output the waiting message and begin the initial handshake
     echo -e "Server Script Activated, waiting for connection from client..."
     control_signal "iteration_handshake"
+    clear
+
+    # Output the test start message
+    echo -e "\n####################################"
+    echo "Performing TLS Handshake Tests"
+    echo "####################################"
 
     # Perform the TLS handshake tests for the specified number of runs
     for run_num in $(seq 1 $NUM_RUN); do

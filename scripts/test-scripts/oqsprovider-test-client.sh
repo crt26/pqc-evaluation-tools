@@ -487,7 +487,7 @@ function tls_client_test_entrypoint() {
 
     # Setup the base environment for the test suite
     setup_base_env
-
+    
     # Check if custom ports have been used and if so, outputting a warning message
     if [ "$SERVER_CONTROL_PORT" != "25000" ] || [ "$CLIENT_CONTROL_PORT" != "25001" ] || [ "$S_SERVER_PORT" != "4433" ]; then
         echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
@@ -496,9 +496,15 @@ function tls_client_test_entrypoint() {
         echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
     fi
 
-    # Output the start message and beginning the initial handshake
+    # Output the waiting message and begin the initial handshake
     echo -e "Client Script Activated, connecting to server...\n"
     control_signal "iteration_handshake"
+    clear
+
+    # Output the test start message
+    echo -e "\n####################################"
+    echo "Performing TLS Handshake Tests"
+    echo "####################################"
 
     # Perform the TLS handshake tests for the specified number of runs
     for run_num in $(seq 1 $NUM_RUN); do
