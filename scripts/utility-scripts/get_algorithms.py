@@ -207,7 +207,10 @@ def oqs_provider_extract_algs(provider_type, output_str):
     hybrid_prefix_pattern = re.compile(r'^(rsa[0-9]+|p[0-9]+|x[0-9]+|X25519|X448|SecP256r1|SecP384r1|SecP521r1)[a-zA-Z0-9_-]+$')
 
     # Set the regex pattern to match OpenSSL native PQC algorithms
-    native_pqc_pattern = re.compile(r'^(MLKEM[0-9]+|MLDSA[0-9]+|SLH-DSA-[A-Z0-9-]+[a-z]*)$')
+    native_pqc_pattern = re.compile(r'^(MLKEM[0-9]+|MLDSA[0-9]+)$')
+
+    # leave commented until SLH-DSA is supported for TLS handshakes in OpenSSL
+    #native_pqc_pattern = re.compile(r'^(MLKEM[0-9]+|MLDSA[0-9]+|SLH-DSA-[A-Z0-9-]+[a-z]*)$')
 
     # Set the regex pattern for UOV algorithm detection
     uov_pattern = re.compile(r'^(p(256|384|521)_)?OV_.*')
@@ -312,7 +315,7 @@ def get_tls_pqc_algs():
             speed_list_file = os.path.join(output_dir, "tls-speed-sig-algs.txt")
             hybrid_alg_list_file = os.path.join(output_dir, "tls-hybr-sig-algs.txt")
 
-        # Write out the algorithms to the list file
+        # Write out the algorithms to the list files
         write_to_file(algs, alg_list_file)
         write_to_file(hybrid_algs, hybrid_alg_list_file)
         write_to_file(algs, speed_list_file)
