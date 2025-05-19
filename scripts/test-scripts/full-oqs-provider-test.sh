@@ -883,8 +883,14 @@ function run_tests() {
         export CLIENT_IP="$machine_ip"
 
         # Call the server machine test script
-        $test_scripts_path/oqsprovider-test-server.sh 
-        #>> "$root_dir/server-test-output.txt" - uncomment to save output for debugging
+        $test_scripts_path/oqsprovider-test-server.sh
+        exit_code=$?
+
+        # Ensure that the server test script completed successfully
+        if [ $exit_code -ne 0 ]; then
+            echo "[ERROR] - TLS handshake test failed."
+            exit 1
+        fi
 
     else
     
@@ -894,19 +900,32 @@ function run_tests() {
         # Output the current task to the terminal
         echo -e "\n####################################"
         echo "Performing TLS Handshake Tests"
-        echo -e "####################################\n"
+        echo "####################################"
 
         # Call the server machine test script
         $test_scripts_path/oqsprovider-test-client.sh
-        #>> "$root_dir/client-test-output.txt" - uncomment to save output for debugging
+        exit_code=$?
+
+        # Ensure that the client test script completed successfully
+        if [ $exit_code -ne 0 ]; then
+            echo "[ERROR] - TLS handshake test failed."
+            exit 1
+        fi
 
         # Output the current task to the terminal
         echo -e "\n##########################"
         echo "Performing TLS Speed Tests"
-        echo -e "##########################\n"
+        echo -e "##########################"
         
         # Call the TLS speed test script
         $test_scripts_path/oqsprovider-test-speed.sh
+        exit_code=$?
+
+        # Ensure that the speed test script completed successfully
+        if [ $exit_code -ne 0 ]; then
+            echo "[ERROR] - TLS speed test failed."
+            exit 1
+        fi
     
     fi
 
