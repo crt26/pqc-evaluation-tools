@@ -74,10 +74,10 @@ function setup_test_env() {
     export LD_LIBRARY_PATH="$openssl_lib_path:$LD_LIBRARY_PATH"
 
     # Set the alg-list txt filepaths
-    kem_alg_file="$test_data_dir/alg-lists/tls-kem-algs.txt"
-    sig_alg_file="$test_data_dir/alg-lists/tls-sig-algs.txt"
-    hybrid_kem_alg_file="$test_data_dir/alg-lists/tls-hybr-kem-algs.txt"
-    hybrid_sig_alg_file="$test_data_dir/alg-lists/tls-hybr-sig-algs.txt"
+    kem_alg_file="$test_data_dir/alg-lists/tls-speed-kem-algs.txt"
+    sig_alg_file="$test_data_dir/alg-lists/tls-speed-sig-algs.txt"
+    hybrid_kem_alg_file="$test_data_dir/alg-lists/tls-speed-hybr-kem-algs.txt"
+    hybrid_sig_alg_file="$test_data_dir/alg-lists/tls-speed-hybr-sig-algs.txt"
 
     # Create the PQC KEM and digital signature algorithm list arrays
     kem_algs=()
@@ -124,19 +124,6 @@ function tls_speed_test() {
     sig_algs_string="${sig_algs[@]}"
     hybrid_kem_algs_string="${hybrid_kem_algs[@]}"
     hybrid_sig_algs_string="${hybrid_sig_algs[@]}"
-
-    # Update the naming convention for the MLKEM algorithms to work with the OpenSSL speed utility
-    kem_algs_string=$(echo "$kem_algs_string" | sed -e 's/\bMLKEM512\b/ML-KEM-512/g' \
-                                                -e 's/\bMLKEM768\b/ML-KEM-768/g' \
-                                                -e 's/\bMLKEM1024\b/ML-KEM-1024/g')
-
-    # Remove ML-DSA and SLH-DSA from sig algs as not supported within the OpenSSL speed utility
-    sig_algs_string=$(echo "$sig_algs_string" | tr ' ' '\n' | grep -v -E '^MLDSA|^SLH-DSA' | grep -v '^$' | tr '\n' ' ')
-
-
-    # echo "Kem algs string - $kem_algs_string"
-    # echo -e "\n"
-    # echo "Sig algs string - $sig_algs_string"
 
     # Perform the TLS speed tests for the specified number of runs
     for run_num in $(seq 1 $NUM_RUN); do

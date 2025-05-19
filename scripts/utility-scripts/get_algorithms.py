@@ -195,7 +195,7 @@ def get_liboqs_algs():
             return
 
 #-----------------------------------------------------------------------------------------------------------
-def oqs_provider_extract_algs(provider_type, output_str):
+def oqs_provider_extract_algs(test_type, provider_type, output_str):
     """ Helper function to extract the algorithms from the output string of the OpenSSL binary. The binary is passed 
         the algorithm type and the OQS-Provider flags so that it prints out the algorithms supported for that type in OQS-Provider. """
 
@@ -206,8 +206,11 @@ def oqs_provider_extract_algs(provider_type, output_str):
     # Set the regex pattern to match hybrid algorithm prefixes
     hybrid_prefix_pattern = re.compile(r'^(rsa[0-9]+|p[0-9]+|x[0-9]+|X25519|X448|SecP256r1|SecP384r1|SecP521r1)[a-zA-Z0-9_-]+$')
 
-    # Set the regex pattern to match OpenSSL native PQC algorithms
-    native_pqc_pattern = re.compile(r'^(MLKEM[0-9]+|MLDSA[0-9]+)$')
+    # Set the regex pattern to match OpenSSL native PQC algorithms depending on the test type
+    if test_type == 0:
+        native_pqc_pattern = re.compile(r'^(MLKEM[0-9]+|MLDSA[0-9]+)$')
+    else:
+        native_pqc_pattern = re.compile(r'^(MLKEM[0-9]+)$')
 
     # leave commented until SLH-DSA is supported for TLS handshakes in OpenSSL
     #native_pqc_pattern = re.compile(r'^(MLKEM[0-9]+|MLDSA[0-9]+|SLH-DSA-[A-Z0-9-]+[a-z]*)$')
@@ -238,7 +241,7 @@ def oqs_provider_extract_algs(provider_type, output_str):
             alg = alg.split(" @ ")[0]
 
         # Skip over algorithms that are to be excluded from the list
-        if uov_pattern.match(alg) or alg == "CROSSrsdp256small":
+        if test_type == 0 and uov_pattern.match(alg) or alg == "CROSSrsdp256small":
             continue
 
         # Determine what filters are needed based on the provider type
@@ -246,8 +249,18 @@ def oqs_provider_extract_algs(provider_type, output_str):
 
             # Determine if the algorithm is a PQC or Hybrid-PQC algorithm
             if native_pqc_pattern.match(alg):
+
+                # If the algorithm is ML-KEM and test type is speed, reformat the algorithm name
+                if test_type == 1:
+                    if "MLKEM" in alg:
+                        alg = re.sub(r'^MLKEM(\d+)$', r'ML-KEM-\1', alg)
+
+                # Add the algorithm to the algorithms list
                 algs.append(alg.strip())
+
             elif hybrid_prefix_pattern.match(alg):
+
+                # Add the algorithm to the hybrid algorithms list
                 hybrid_algs.append(alg.strip())
 
         elif provider_type == "oqsprovider":
@@ -284,6 +297,8 @@ def get_tls_pqc_algs():
         # Set the master algorithms lists for the current algorithm type
         algs = []
         hybrid_algs = []
+        speed_algs = []
+        speed_hybrid_algs = []
 
         # Loop through each of the provider types that algorithms need to be extracted from
         for provider_type in provider_flags.keys():
@@ -297,28 +312,33 @@ def get_tls_pqc_algs():
             )
             stdout, stderr = process.communicate()
 
-            # Extract the PQC and Hybrid-PQC algorithms from the output string
-            provider_algs, provider_hybrid_algs = oqs_provider_extract_algs(provider_type, stdout)
+            # Extract the PQC and Hybrid-PQC algorithms for TLS handshakes from the output string
+            test_type = 0
+            provider_algs, provider_hybrid_algs = oqs_provider_extract_algs(test_type, provider_type, stdout)
 
             # Append the extracted algorithms to the master lists
             algs.extend(provider_algs)
             hybrid_algs.extend(provider_hybrid_algs)
 
+            # Extract the speed algorithms for the current algorithm type
+            test_type = 1
+            provider_algs, provider_hybrid_algs = oqs_provider_extract_algs(test_type, provider_type, stdout)
+
+            # Append the extracted algorithms to the master lists
+            speed_algs.extend(provider_algs)
+            speed_hybrid_algs.extend(provider_hybrid_algs)
+
         # Set the various output filenames depending on the current algorithm type
-        if alg_type == "kem":
-            alg_list_file = os.path.join(output_dir, "tls-kem-algs.txt")
-            speed_list_file = os.path.join(output_dir, "tls-speed-kem-algs.txt")
-            hybrid_alg_list_file = os.path.join(output_dir, "tls-hybr-kem-algs.txt")
-        
-        else:
-            alg_list_file = os.path.join(output_dir, "tls-sig-algs.txt")
-            speed_list_file = os.path.join(output_dir, "tls-speed-sig-algs.txt")
-            hybrid_alg_list_file = os.path.join(output_dir, "tls-hybr-sig-algs.txt")
+        alg_list_file = os.path.join(output_dir, f"tls-{alg_type[:3]}-algs.txt")
+        hybrid_alg_list_file = os.path.join(output_dir, f"tls-hybr-{alg_type[:3]}-algs.txt")
+        speed_list_file = os.path.join(output_dir, f"tls-speed-{alg_type[:3]}-algs.txt")
+        speed_hybrid_alg_list_file = os.path.join(output_dir, f"tls-speed-hybr-{alg_type[:3]}-algs.txt")
 
         # Write out the algorithms to the list files
         write_to_file(algs, alg_list_file)
         write_to_file(hybrid_algs, hybrid_alg_list_file)
-        write_to_file(algs, speed_list_file)
+        write_to_file(speed_algs, speed_list_file)
+        write_to_file(speed_hybrid_algs, speed_hybrid_alg_list_file)
 
 #-----------------------------------------------------------------------------------------------------------
 def set_tls_classic_algs():
