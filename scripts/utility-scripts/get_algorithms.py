@@ -203,20 +203,18 @@ def oqs_provider_extract_algs(test_type, provider_type, output_str):
     algs = []
     hybrid_algs = []
 
-    # Set the regex pattern to match hybrid algorithm prefixes
+    # Set the filter and match variables used in the test types checks
     hybrid_prefix_pattern = re.compile(r'^(rsa[0-9]+|p[0-9]+|x[0-9]+|X25519|X448|SecP256r1|SecP384r1|SecP521r1)[a-zA-Z0-9_-]+$')
+    uov_pattern = re.compile(r'^(p(256|384|521)_)?OV_.*')
+    excluded_algs = ["CROSSrsdp256small", "X448MLKEM1024"]
+    # leave commented until SLH-DSA is supported for TLS handshakes in OpenSSL
+    #native_pqc_pattern = re.compile(r'^(MLKEM[0-9]+|MLDSA[0-9]+|SLH-DSA-[A-Z0-9-]+[a-z]*)$')
 
     # Set the regex pattern to match OpenSSL native PQC algorithms depending on the test type
     if test_type == 0:
         native_pqc_pattern = re.compile(r'^(MLKEM[0-9]+|MLDSA[0-9]+)$')
     else:
         native_pqc_pattern = re.compile(r'^(MLKEM[0-9]+)$')
-
-    # leave commented until SLH-DSA is supported for TLS handshakes in OpenSSL
-    #native_pqc_pattern = re.compile(r'^(MLKEM[0-9]+|MLDSA[0-9]+|SLH-DSA-[A-Z0-9-]+[a-z]*)$')
-
-    # Set the regex pattern for UOV algorithm detection
-    uov_pattern = re.compile(r'^(p(256|384|521)_)?OV_.*')
 
     # Pre-format the output string to remove newlines and split into a list
     pre_algs = output_str.split("\n")
@@ -241,7 +239,7 @@ def oqs_provider_extract_algs(test_type, provider_type, output_str):
             alg = alg.split(" @ ")[0]
 
         # Skip over algorithms that are to be excluded from the list
-        if test_type == 0 and uov_pattern.match(alg) or alg == "CROSSrsdp256small":
+        if test_type == 0 and (uov_pattern.match(alg) or alg in excluded_algs):
             continue
 
         # Determine what filters are needed based on the provider type

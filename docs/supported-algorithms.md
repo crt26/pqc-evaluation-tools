@@ -30,6 +30,8 @@ When benchmarking tests are carried out using this tool, **ML-DSA** and **SLH-DS
 
 Furthermore, although **SLH-DSA** is supported at the provider level in OpenSSL 3.5.0 and can be used to generate and verify X.509 certificates, it is not yet supported for use in TLS handshakes (e.g., via `s_server`, `s_client`, or automated TLS benchmarking). This limitation is due to the current lack of integration into the OpenSSL TLS (libssl) layer. The integration of SLH-DSA into TLS 1.3 is in progress and being tracked by the [IETF draft](https://datatracker.ietf.org/doc/html/draft-reddy-tls-slhdsa-01). To allow continued evaluation of stateless hash-based signature schemes in TLS contexts, the implementation of SPHINCS+ available in the OQS-Provider library will be used ain place of SLH-DSA. This will remain the case in this project until full support of the SLH-DSA is available in OpenSSL.
 
+Finally, although the algorithm **X448MLKEM1024** is listed as a supported key encapsulation mechanism at the provider level and functions correctly with OpenSSL tools such as `speed`, **it is not registered as a supported TLS group for use with s_client, s_server, or the SSL_CONF_cmd interface.** Until it is fully supported as a TLS group, this hybrid scheme will be excluded from automated TLS handshake testing, though it remains available for cryptographic benchmarking and other non-TLS use cases.
+
 Hopefully, support will be added for the schemes to be tested using this tool in futures updates in both this project and the OpenSSL project.
 
 In addition to the natively supported PQC algorithms, the project provides TLS benchmarking for classical schemes to provide meaningful performance baselines against PQC schemes. These include:
