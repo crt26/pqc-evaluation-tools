@@ -98,7 +98,7 @@ def setup_parse_env(root_dir):
     alg_list_files = None
 
 #-----------------------------------------------------------------------------------------------------------
-def handle_results_dir_creation(machine_num):
+def handle_results_dir_creation(machine_id):
     """ Function for handling the presence of older parsed results, ensuring that the user
         is aware of the old results and can choose how to handle them before the parsing continues. """
 
@@ -106,7 +106,7 @@ def handle_results_dir_creation(machine_num):
     if os.path.exists(dir_paths["mach_results_dir"]):
 
         # Output the warning message to the terminal
-        print(f"There are already parsed OQS-Provider testing results present for Machine-ID ({machine_num})\n")
+        print(f"There are already parsed OQS-Provider testing results present for Machine-ID ({machine_id})\n")
 
         # Get the decision from user on how to handle old results before parsing continues
         while True:
@@ -121,8 +121,8 @@ def handle_results_dir_creation(machine_num):
             if user_choice == "1":
 
                 # Replace all old results and create a new empty directory to store the parsed results
-                print(f"Removing old results directory for Machine-ID ({machine_num}) before continuing...")
-                shutil.rmtree(dir_paths["results_dir"], f"machine-{machine_num}")
+                print(f"Removing old results directory for Machine-ID ({machine_id}) before continuing...")
+                shutil.rmtree(dir_paths["results_dir"], f"machine-{machine_id}")
                 print("Old results removed")
 
                 os.makedirs(dir_paths["mach_handshake_dir"])
@@ -140,11 +140,11 @@ def handle_results_dir_creation(machine_num):
                 # Halting script until old results have been moved for current Machine-ID
                 while True:
 
-                    input(f"Halting parsing script so old parsed results for Machine-ID ({machine_num}) can be moved, press enter to continue")
+                    input(f"Halting parsing script so old parsed results for Machine-ID ({machine_id}) can be moved, press enter to continue")
 
                     # Checking if old results have been moved before continuing
                     if os.path.exists(dir_paths["mach_results_dir"]):
-                        print(f"Old parsed results for Machine-ID ({machine_num}) still present!!!\n")
+                        print(f"Old parsed results for Machine-ID ({machine_id}) still present!!!\n")
 
                     else:
                         print("Old results have been moved, now continuing with parsing script")
@@ -462,7 +462,7 @@ def output_processing():
         speed_processing(current_run)
 
 #-----------------------------------------------------------------------------------------------------------
-def process_tests(num_machines, algs_dict):
+def process_tests(machine_id, algs_dict):
     """ Function for controlling the parsing scripts for the OQS-Provider TLS testing up-result files
         and calling average  calculation scripts """
     
@@ -472,36 +472,33 @@ def process_tests(num_machines, algs_dict):
     oqs_provider_avg = None
     oqs_provider_avg = OqsProviderResultAverager(dir_paths, num_runs, algs_dict, pqc_type_vars, col_headers)
 
-    # Loop through the specified number of machines
-    for machine in range(1, num_machines+1):
+    # Set the machine's results directories paths in the central paths dictionary
+    dir_paths['mach_results_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine_id)}")
+    dir_paths['mach_up_results_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine_id)}")
+    dir_paths['mach_handshake_dir']  = os.path.join(dir_paths['results_dir'], f"machine-{str(machine_id)}", "handshake-results")
+    dir_paths['mach_up_speed_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine_id)}", "speed-results")
+    dir_paths['mach_speed_results_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine_id)}", "speed-results")
+    dir_paths['speed_types_dirs'] = {
+        "pqc": [os.path.join(dir_paths['mach_up_speed_dir'], "pqc"), os.path.join(dir_paths['mach_speed_results_dir'])], 
+        "hybrid": [os.path.join(dir_paths['mach_up_speed_dir'], "hybrid"), os.path.join(dir_paths['mach_speed_results_dir'])],
+    }
 
-        # Set the machine's results directories paths in the central paths dictionary
-        dir_paths['mach_results_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine)}")
-        dir_paths['mach_up_results_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine)}")
-        dir_paths['mach_handshake_dir']  = os.path.join(dir_paths['results_dir'], f"machine-{str(machine)}", "handshake-results")
-        dir_paths['mach_up_speed_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine)}", "speed-results")
-        dir_paths['mach_speed_results_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine)}", "speed-results")
-        dir_paths['speed_types_dirs'] = {
-            "pqc": [os.path.join(dir_paths['mach_up_speed_dir'], "pqc"), os.path.join(dir_paths['mach_speed_results_dir'])], 
-            "hybrid": [os.path.join(dir_paths['mach_up_speed_dir'], "hybrid"), os.path.join(dir_paths['mach_speed_results_dir'])],
-        }
+    # Set the pqc-var types dictionary so that both PQC and PQC-hybrid results can be processed
+    pqc_type_vars.update({
+        "up_results_path": [
+            os.path.join(dir_paths['mach_up_results_dir'], "handshake-results", "pqc"), 
+            os.path.join(dir_paths['mach_up_results_dir'], "handshake-results", "hybrid")
+        ], 
+    })
 
-        # Set the pqc-var types dictionary so that both PQC and PQC-hybrid results can be processed
-        pqc_type_vars.update({
-           "up_results_path": [
-                os.path.join(dir_paths['mach_up_results_dir'], "handshake-results", "pqc"), 
-                os.path.join(dir_paths['mach_up_results_dir'], "handshake-results", "hybrid")
-            ], 
-        })
+    # Create the results directory for current machine and handle Machine-ID clashes
+    handle_results_dir_creation(machine_id)
 
-        # Create the results directory for current machine and handle Machine-ID clashes
-        handle_results_dir_creation(machine)
-
-        # Call the processing function and the average calculation methods for the current machine
-        output_processing()
-        oqs_provider_avg.gen_pqc_avgs()
-        oqs_provider_avg.gen_classic_avgs()
-        oqs_provider_avg.gen_speed_avgs(speed_headers)
+    # Call the processing function and the average calculation methods for the current machine
+    output_processing()
+    oqs_provider_avg.gen_pqc_avgs()
+    oqs_provider_avg.gen_classic_avgs()
+    oqs_provider_avg.gen_speed_avgs(speed_headers)
 
 #-----------------------------------------------------------------------------------------------------------
 def parse_oqs_provider(test_opts):
@@ -510,7 +507,7 @@ def parse_oqs_provider(test_opts):
 
     # Get test options and set test parameter vars
     global num_runs
-    num_machines = test_opts[0]
+    machine_id = test_opts[0]
     num_runs = test_opts[1]
 
     # Setup script environment
@@ -519,4 +516,4 @@ def parse_oqs_provider(test_opts):
 
     # Process the OQS-Provider results
     print("Parsing results... ")
-    process_tests(num_machines, algs_dict)
+    process_tests(machine_id, algs_dict)

@@ -57,7 +57,7 @@ def setup_parse_env(root_dir):
             sig_algs.append(line.strip())
 
 #-----------------------------------------------------------------------------------------------------------
-def handle_results_dir_creation(machine_num):
+def handle_results_dir_creation(machine_id):
     """ Function for handling the presence of older parsed results, 
         ensuring that the user is aware of the old results and can choose 
         how to handle them before the parsing continues. """
@@ -66,7 +66,7 @@ def handle_results_dir_creation(machine_num):
     if os.path.exists(dir_paths["type_mem_dir"]) or os.path.exists(dir_paths["type_speed_dir"]):
 
         # Output the warning message to the terminal
-        print(f"There are already parsed Liboqs testing results present for Machine-ID ({machine_num})\n")
+        print(f"There are already parsed Liboqs testing results present for Machine-ID ({machine_id})\n")
 
         # Get the decision from user on how to handle old results before parsing continues
         while True:
@@ -81,8 +81,8 @@ def handle_results_dir_creation(machine_num):
             if user_choice == "1":
 
                 # Replace all old results and create a new empty directory to store the parsed results
-                print(f"Removing old results directory for Machine-ID ({machine_num}) before continuing...")
-                shutil.rmtree(dir_paths["results_dir"], f"machine-{machine_num}")
+                print(f"Removing old results directory for Machine-ID ({machine_id}) before continuing...")
+                shutil.rmtree(dir_paths["results_dir"], f"machine-{machine_id}")
                 print("Old results removed")
 
                 os.makedirs(dir_paths["type_speed_dir"])
@@ -100,11 +100,11 @@ def handle_results_dir_creation(machine_num):
                 # Halt the script until the old results have been moved for current Machine-ID
                 while True:
 
-                    input(f"Halting parsing script so old parsed results for Machine-ID ({machine_num}) can be moved, press enter to continue")
+                    input(f"Halting parsing script so old parsed results for Machine-ID ({machine_id}) can be moved, press enter to continue")
 
                     # Check if the old results have been moved before continuing
                     if os.path.exists(dir_paths["type_mem_dir"]) or os.path.exists(dir_paths["type_speed_dir"]):
-                        print(f"Old parsed results for Machine-ID ({machine_num}) still present!!!\n")
+                        print(f"Old parsed results for Machine-ID ({machine_id}) still present!!!\n")
 
                     else:
                         print("Old results have been moved, now continuing with parsing script")
@@ -358,7 +358,7 @@ def memory_processing():
         mem_results_df.to_csv(sig_filepath, index=False)
 
 #-----------------------------------------------------------------------------------------------------------
-def process_tests(num_machines):
+def process_tests(machine_id):
     """ Function for parsing the results for a single or multiple machines 
         and stores them as csv files. Once up-results are processed
         averages are calculated for the results """
@@ -368,27 +368,24 @@ def process_tests(num_machines):
     # Create an instance of the Liboqs average generator class before processing results
     liboqs_avg = LiboqsResultAverager(dir_paths, kem_algs, sig_algs, num_runs, alg_operations)
 
-    # Process the results for the machine/s
-    for machine_num in range(1, num_machines+1):
-        
-        # Set the unparsed-directory paths in the central paths dictionary
-        dir_paths['up_speed_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine_num)}", "speed-results")
-        dir_paths['up_mem_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine_num)}", "mem-results")
-        dir_paths['type_speed_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine_num)}", "speed-results")
-        dir_paths['type_mem_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine_num)}", "mem-results")
-        dir_paths['raw_speed_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine_num)}", "raw-speed-results")
+    # Set the unparsed-directory paths in the central paths dictionary
+    dir_paths['up_speed_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine_id)}", "speed-results")
+    dir_paths['up_mem_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine_id)}", "mem-results")
+    dir_paths['type_speed_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine_id)}", "speed-results")
+    dir_paths['type_mem_dir'] = os.path.join(dir_paths['results_dir'], f"machine-{str(machine_id)}", "mem-results")
+    dir_paths['raw_speed_dir'] = os.path.join(dir_paths['up_results'], f"machine-{str(machine_id)}", "raw-speed-results")
 
-        # Create the required directories and handling any clashes with previously parsed results
-        handle_results_dir_creation(machine_num)
+    # Create the required directories and handling any clashes with previously parsed results
+    handle_results_dir_creation(machine_id)
 
-        # Parse the up-results for Liboqs testing
-        pre_speed_processing()
-        speed_processing()
-        memory_processing()
+    # Parse the up-results for the specified Machine-ID
+    pre_speed_processing()
+    speed_processing()
+    memory_processing()
 
-        # Call the average generation methods for memory and CPU performance results
-        liboqs_avg.avg_mem()
-        liboqs_avg.avg_speed()
+    # Call the average generation methods for memory and CPU performance results
+    liboqs_avg.avg_mem()
+    liboqs_avg.avg_speed()
 
 #-----------------------------------------------------------------------------------------------------------
 def parse_liboqs(test_opts):
@@ -397,7 +394,7 @@ def parse_liboqs(test_opts):
 
     # Get the test options
     global num_runs
-    num_machines = test_opts[0]
+    machine_id = test_opts[0]
     num_runs = test_opts[1]
 
     # Setup the script environment
@@ -406,4 +403,4 @@ def parse_liboqs(test_opts):
 
     # Process the results
     print("Parsing results... ")
-    process_tests(num_machines)
+    process_tests(machine_id)

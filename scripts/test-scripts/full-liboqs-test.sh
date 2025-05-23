@@ -10,6 +10,106 @@
 # directories based on the assigned machine number.
 
 #-------------------------------------------------------------------------------------------------------------------------------
+function get_user_yes_no() {
+    # Helper function for getting a yes or no response from the user for a given question regarding the setup process. The function
+    # will return 0 for yes and 1 for no which can be checked by the calling function.
+
+    # Set the local user prompt variable to what was passed to the function
+    local user_prompt="$1"
+
+    # Get the user input for the yes or no question
+    while true; do
+
+        # Output the question to the user and get their response
+        read -p "$user_prompt (y/n): " user_input
+
+        # Check the user input is valid and set the user response variable
+        case $user_input in
+
+            [Yy]* )
+                user_y_n_response=1
+                return 0
+                ;;
+
+            [Nn]* )
+                user_y_n_response=0
+                return 1
+                ;;
+
+            * )
+                echo -e "Please answer y or n\n"
+                ;;
+
+        esac
+
+    done
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
+function output_help_message() {
+    # Helper function for outputting the help message to the user when the --help flag is present or when incorrect arguments are passed.
+
+    # Output the supported options and their usage to the user
+    echo "Usage: setup.sh [options]"
+    echo "Options:"
+    echo "  --disable-result-parsing       Disable the result parsing for the test suite."
+    echo "  --help                         Display this help message."
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
+function parse_args() {
+    # Function for parsing the command line arguments passed to the script. Based on the detected arguments, the function will 
+    # set the relevant global flags that are used throughout the setup process.
+
+    # Check if the help flag is passed at any position in the command line arguments
+    if [[ "$*" =~ --help ]]; then
+        output_help_message
+        exit 0
+    fi
+
+    # Loop through the passed command line arguments and check for the supported options
+    while [[ $# -gt 0 ]]; do
+
+        # Check if the argument is a valid option, then shift to the next argument
+        case "$1" in
+
+            --disable-result-parsing)
+
+                # Output the warning message to the user
+                echo -e "\n[WARNING] - Result parsing disabled, results will require to be parsed manually\n"
+
+                # Confirm with the user if they wish to proceed with the parsing disabled
+                get_user_yes_no "Are you sure you want to continue with result parsing disabled?"
+
+                # Determine the next action based on the user's response
+                if [ $user_y_n_response -eq 0 ]; then
+                    echo "[NOTICE] - Continuing with result parsing disabled"
+                    parse_results=0
+                else
+                    echo "[NOTICE] - Continuing with result parsing enabled"
+                    parse_results=1
+                fi
+
+                shift
+                ;;
+
+            *)
+
+                # Output an error message if an unknown option is passed
+                echo "[ERROR] - Unknown option: $1"
+                output_help_message
+                exit 1
+                ;;
+
+        esac
+
+    done
+
+}
+
+#-------------------------------------------------------------------------------------------------------------------------------
 function enable_arm_pmu() {
     # Function for enabling the ARM PMU and allowing it to be used in user space. The function will also check if the system is a Raspberry-Pi
     # and install the Pi kernel headers if they are not already installed. The function will then enable the PMU and set the enabled_pmu flag.
@@ -132,6 +232,7 @@ function setup_base_env() {
     tmp_dir="$root_dir/tmp"
     test_data_dir="$root_dir/test-data"
     test_scripts_path="$root_dir/scripts/test-scripts"
+    parsing_scripts="$root_dir/scripts/parsing-scripts"
 
     # Check if the system is ARM based and if PMU checks are required
     if [[ "$(uname -m)" = arm* || "$(uname -m)" == aarch* ]]; then
@@ -519,6 +620,9 @@ function main() {
     echo "PQC-Evaluation-Tools - Automated Liboqs Performance Testing"
     echo -e "###########################################################\n"
 
+    # Set the default result parsing flag to enabled
+    parse_results=1
+
     # Setup the base environment and testing suite setup
     setup_base_env
     setup_test_suite
@@ -527,9 +631,40 @@ function main() {
     speed_tests
     mem_tests
 
-    # Output the complete message with the test results path to the user
-    echo -e "All performance testing complete, the unparsed results for Machine-ID ($machine_num) can be found in:"
-    echo "Results Dir Path - $machine_results_path"
+    # Output the testing complete message to the user
+    echo -e "All performance testing complete"
+
+    # Parse the results if the flag is set to enabled
+    if [ $parse_results -eq 1 ]; then
+
+        # Output the parsing message to the user
+        echo -e "\nParsing results...\n"
+
+        # Call the result parsing script to parse the results
+        python3 "$parsing_scripts/parse_results" --parse-mode="liboqs"  --machine-id="$machine_num" --total-runs=$number_of_runs
+        exit_status=$?
+
+        # Ensure that the parsing script completed successfully
+        if [ $exit_status -ne 0 ]; then
+            echo -e "\n[ERROR] - Result parsing failed, manual calling of parsing script is now required\n"
+            exit 1
+        fi
+
+        # Output the location of the parsed results to the user
+        echo -e "\nParsed results can be found in the following directory:"
+        echo "$test_data_dir/results/oqs-provider/machine-$machine_num"
+
+    elif [ $parse_results -eq 0 ]; then
+
+        # Output the complete message with the test results path to the user
+        echo -e "All performance testing complete, the unparsed results for Machine-ID ($machine_num) can be found in:"
+        echo "Results Dir Path - $machine_results_path"
+        
+    else
+        echo -e "\n[ERROR] - parse_results flag not set correctly, manual calling of parsing script is now required\n"
+        exit 1
+            
+    fi
 
 }
 main
