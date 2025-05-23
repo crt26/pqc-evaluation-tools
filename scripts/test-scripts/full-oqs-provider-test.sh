@@ -940,12 +940,12 @@ function run_tests() {
             echo -e "\nParsing results...\n"
 
             # Call the result parsing script to parse the results
-            python3 "$parsing_scripts/parse_results" --machine-id="$machine_num"
+            python3 "$parsing_scripts/parse_results" --parse-mode="oqs-provider" --machine-id="$machine_num" --total-runs="$NUM_RUN"
             exit_status=$?
 
             # Ensure that the parsing script completed successfully
             if [ $exit_status -ne 0 ]; then
-                echo -e "\n[ERROR] - Result parsing failed, please check the script and try again\n"
+                echo -e "\n[ERROR] - Result parsing failed, manual calling of parsing script is now required\n"
                 exit 1
             fi
 
@@ -960,7 +960,7 @@ function run_tests() {
             echo "Results Dir Path - $MACHINE_RESULTS_PATH"
             
         else
-            echo -e "\n[ERROR] - parse_results flag not set correctly, please check the script and try again\n"
+            echo -e "\n[ERROR] - parse_results flag not set correctly, manual calling of parsing script is now required\n"
             exit 1
             
         fi

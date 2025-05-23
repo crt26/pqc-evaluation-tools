@@ -14,6 +14,57 @@ from liboqs_parse import parse_liboqs
 from oqs_provider_parse import parse_oqs_provider
 import os
 import sys
+import argparse
+
+#-----------------------------------------------------------------------------------------------------------
+def handle_args():
+    """ Function for handling the command line arguments passed to the script. The function uses the argparse
+        library to define the expected arguments and their types. The function returns the parsed arguments if valid. """
+    
+    # Define the argument parser and the valid options for the script
+    parser = argparse.ArgumentParser(description="PQC-Evaluation-Tools Results Parsing Tool")
+    parser.add_argument('--parse-mode', type=str, help='The parsing mode to be used (liboqs or oqs-provider)')
+    parser.add_argument('--machine-id', type=int, help='The Machine-ID of the results to be parsed')
+    parser.add_argument('--total-runs', type=int, help='The number of test runs to be parsed')
+    
+    # Parse the command line arguments
+    try:
+    
+        # Take in the command line arguments
+        args = parser.parse_args()
+        parse_mode = args.parse_mode
+        machine_id = args.machine_id
+        total_runs = args.total_runs 
+
+        # Check if the parse mode is valid (done manually to have custom error messages)
+        if parse_mode == 'both':
+            raise Exception("The --parse-mode argument cannot be set to 'both' for automatic parsing, please use the interactive mode from the terminal")
+        
+        elif parse_mode != "liboqs" and parse_mode != "oqs-provider":
+            raise Exception(f"Invalid parse mode provided to the script - {parse_mode}, please use 'liboqs' or 'oqs-provider'")
+
+        # Determine if a machine ID has been provided to the script
+        if machine_id is not None:
+
+            # Check if the machine ID is a valid integer
+            if machine_id < 0 or not isinstance(machine_id, int):
+                raise Exception(f"Invalid Machine-ID provided to the script - {machine_id}, please use a positive integer value")
+            
+        # Ensure that the number of runs is present and is a valid integer
+        if total_runs is not None and (total_runs < 1 or not isinstance(total_runs, int)):
+            raise Exception(f"Invalid number of runs provided to the script - {total_runs}, please use a positive integer value")
+
+        # Ensure that both arguments are provided if they are both valid
+        if machine_id is None or parse_mode is None or total_runs is None:
+            raise Exception("The --machine-id, --parse-mode, and --total-runs arguments must all be provided.")
+
+    except Exception as error:
+        print(f"[ERROR] - {error}")
+        parser.print_help()
+        sys.exit(1)
+
+    # Return the parsed arguments
+    return args
 
 #-----------------------------------------------------------------------------------------------------------
 def setup_base_env():
@@ -43,14 +94,48 @@ def setup_base_env():
             sys.exit(1)
 
 #-----------------------------------------------------------------------------------------------------------
+def get_mode_selection():
+    """ Helper function for getting the mode selection from the user if the interactive method of calling the script 
+        is used. The function outputs the available options to the user and returns the selected option. """
+
+    # Get the mode selection from the user
+    while True:
+
+        # Output the parsing options to user and store the response
+        print("Please select one of the following Parsing options:")
+        print("1 - Parse Liboqs results")
+        print("2 - Parse OQS-Provider results")
+        print("3 - Parse both Liboqs and OQS-Provider results")
+        print("4 - Exit")
+        user_parse_mode = input("Enter your choice (1-4): ")
+        print(f"\n")
+
+        # Check if the user input is valid and return the selected option
+        if user_parse_mode in ['1', '2', '3', '4']:
+
+            # If exit is selected, print the exit message and return the option
+            if user_parse_mode == '4':
+                print("Exiting...")
+                sys.exit(0)
+
+            # Return the selected option
+            return user_parse_mode
+            
+        else:
+            print(["Invalid option, please select a valid option value (1-4)"])
+
+#-----------------------------------------------------------------------------------------------------------
 def get_test_opts(root_dir):
     """ Helper function for getting the test parameters used in during the automated testing, which includes 
         the number of runs and number of machines tested. """
+    
+    # Output the greeting message to the terminal
+    print(f"PQC-Evaluation-Tools Results Parsing Tool\n\n")
 
-    # Get the total number of machines tested from the user
+    # Get the Machine-ID to be parsed from the user
     while True:
         try:
-            machine_num = int(input("Enter the number of machines tested - "))
+            machine_num = int(input("Enter the Machine-ID to be parsed - "))
             break
         except ValueError:
             print("Invalid Input - Please enter a number!")
@@ -70,23 +155,17 @@ def get_test_opts(root_dir):
 def main():
     """Main function which controls the parsing scripts for Liboqs and OQS-Provider testing results"""
 
+    # Parse any command line arguments passed to the script
+    args = handle_args()
+
     # Setup the base environment for the script
     root_dir = setup_base_env()
 
-    # Output the greeting message to the terminal
-    print(f"PQC-Evaluation-Tools Results Parsing Tool\n\n")
+    # Determine which method is being used to the run the script
+    if len (sys.argv) == 1:
 
-    # Get the parsing mode from the user
-    while True:
-
-        # Output the parsing options to user and store the response
-        print("Please select one of the following Parsing options:")
-        print("1 - Parse Liboqs results")
-        print("2 - Parse OQS-Provider results")
-        print("3 - Parse both Liboqs and OQS-Provider results")
-        print("4 - Exit")
-        user_parse_mode = input("Enter your choice (1-4): ")
-        print(f"\n")
+        # Get the parsing mode from the user
+        user_parse_mode = get_mode_selection()
 
         # Determine the parsing mode based on the user response
         if user_parse_mode == '1':
@@ -100,7 +179,6 @@ def main():
 
             # Call the parsing script for Liboqs results
             parse_liboqs(liboqs_test_opts)
-            break
         
         elif user_parse_mode == '2':
 
@@ -113,7 +191,6 @@ def main():
 
             # Call the parsing script for OQS-Provider TLS results
             parse_oqs_provider(oqs_provider_test_opts)
-            break
 
         elif user_parse_mode == '3':
 
@@ -134,14 +211,23 @@ def main():
             # Parse the OQS-Provider Results
             parse_oqs_provider(oqs_provider_test_opts)
             print("\nOQS-Provider Parsing complete\n")
-            break
-
-        elif user_parse_mode == '4':
-            print("Exiting...")
-            break
 
         else:
-            print("Invalid option, please select a valid option value (1-4)")
+            print(f"[ERROR] - Invalid value in the parsing mode variable - {user_parse_mode}")
+            sys.exit(1)
+
+    else:
+
+        # Determine which parsing mode to use and get the test options
+        if args.parse_mode == "liboqs":
+            print("Parsing Liboqs results")
+            liboqs_test_opts = [args.machine_id, args.total_runs, root_dir]
+            parse_liboqs(liboqs_test_opts)
+        
+        elif args.parse_mode == "oqs-provider":
+            print("Parsing OQS-Provider results")
+            oqs_provider_test_opts = [args.machine_id, args.total_runs, root_dir]
+            parse_oqs_provider(oqs_provider_test_opts)
 
     # Output the parsing completed message to the terminal
     print(f"\nResults processing complete, parsed results can be found in the results folder at the repo root")
