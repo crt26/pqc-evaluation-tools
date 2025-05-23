@@ -19,18 +19,16 @@ alg_lists_dir="$test_data_dir/alg-lists"
 util_scripts="$root_dir/scripts/utility-scripts"
 
 # Declare the global dependency library version variables
-#liboqs_version="0.13.0"
-#oqs_provider_version="0.8.0"
 openssl_version="3.5.0"
 
 # Declare the global library download URL variables
-#liboqs_download_url=""
-#oqs_provider_download_url=""
+liboqs_download_url="https://github.com/open-quantum-safe/liboqs.git"
+oqs_provider_download_url="https://github.com/open-quantum-safe/oqs-provider.git"
 openssl_download_url="https://github.com/openssl/openssl/releases/download/openssl-3.5.0/openssl-3.5.0.tar.gz"
 
-# Declare the global safe library download URL variables
-#liboqs_safe_download_url=""
-#oqs_provider_safe_download_url=""
+# Declare the global last tested version SHA variables
+liboqs_tested_sha="b75bfb8c56d23a92227b04c096f0264b992de874"
+oqs_provider_tested_sha="9a22bfb5e5c14a831419c1b10fbab08af5361a70"
 
 # Declare the global library directory path variables
 openssl_path="$libs_dir/openssl_$openssl_version"
@@ -44,7 +42,7 @@ openssl_source="$tmp_dir/openssl-$openssl_version"
 
 # Set the global flag variables
 install_type=0 # 0=Liboqs-only, 1=Liboqs+OQS-Provider, 2=OQS-Provider-only
-use_tested_version=0
+use_latest_version=0
 user_defined_speed_flag=0
 enable_hqc=0 # temp flag for hqc bug fix
 
@@ -128,10 +126,10 @@ function output_help_message() {
     # Output the supported options and their usage to the user
     echo "Usage: setup.sh [options]"
     echo "Options:"
-    echo "  --safe-setup                  Use the last tested versions of the OQS libraries"
-    echo "  --set-speed-new-value=[int]   Set a new value to be set for the hardcoded MAX_KEM_NUM/MAX_SIG_NUM values in the OpenSSL speed.c file"
-    echo "  --enable-hqc-algs             Enable HQC KEM algorithms in Liboqs (default: disabled due to security concerns)" # temp option for hqc bug fix
-    echo "  --help                        Display the help message"
+    echo "  --latest-dependency-versions   Use the latest available versions of the OQS libraries (may cause compatibility issues)."
+    echo "  --set-speed-new-value=[int]    Set a new value for MAX_KEM_NUM and MAX_SIG_NUM in OpenSSL's speed.c file."
+    echo "  --enable-hqc-algs              Enable HQC KEM algorithms in liboqs (default: disabled due to security concerns)."
+    echo "  --help                         Display this help message."
 
 }
 
@@ -152,11 +150,25 @@ function parse_args() {
         # Check if the argument is a valid option, then shift to the next argument
         case "$1" in
 
-            --safe-setup)
+            --latest-dependency-versions)
 
-                # Output the safe setup message to the user and set the use_tested_version flag
-                echo -e "[NOTICE] - Safe-Setup selected, using the last tested versions of the OQS libraries\n"
-                use_tested_version=1
+                # Output the warning message to the user and set the use_tested_version flag
+                echo -e "\n[NOTICE] Using the latest version of the OQS libraries. This may lead to compatibility issues with this project."
+                echo "If the latest upstream changes cause problems, please report them to this projects issue page."
+                echo -e "You can re-run the setup script without this flag to use the last tested version of the libraries if issues occur.\n"
+
+                # Determine if the user wishes to proceed with using the latest version
+                get_user_yes_no "Would you like to continue with using the latest version of the OQS libraries?"
+
+                # Check the user response and to determine the next steps
+                if [ "$user_y_n_response" -eq 1 ]; then
+                    echo -e "\n[NOTICE] - Using the latest version of the OQS libraries...\n"
+                    use_latest_version=1
+                else
+                    echo -e "\n[NOTICE] - Using the last tested versions of the OQS libraries...\n"
+                    use_latest_version=0
+                fi
+
                 shift
                 ;;
 
@@ -336,22 +348,22 @@ function download_libraries() {
     if [ "$user_opt" == "1" ] || [ "$user_opt" == "2" ]; then
 
         # Clone the Liboqs library repository based on the version needed
-        if [ "$use_tested_version" -eq 0 ]; then
+        if [ "$use_latest_version" -eq 0 ]; then
+
+            # Clone Liboqs and checkout to the last tested version
+            git clone "$liboqs_download_url" $liboqs_source
+            cd "$liboqs_source" && git checkout "$liboqs_tested_sha"
+            cd "$root_dir"
+
+        elif [ "$use_latest_version" -eq 1 ]; then
 
             # Clone the latest version of the Liboqs library
             git clone https://github.com/open-quantum-safe/liboqs.git $liboqs_source
 
-        elif [ "$use_tested_version" -eq 1 ]; then
-
-            # Clone Liboqs and checkout to the last tested version
-            git clone https://github.com/open-quantum-safe/liboqs.git $liboqs_source
-            cd $liboqs_source && git checkout "b75bfb8c56d23a92227b04c096f0264b992de874"
-            cd $root_dir
-
         else
 
-            # Output an error message as the use_tested_version flag variable is not set correctly
-            echo "[ERROR] - The use_tested_version flag variable is not set correctly, please verify the code in the setup.sh script"
+            # Output an error message as the use_latest_version flag variable is not set correctly
+            echo "[ERROR] - The use_latest_version flag variable is not set correctly, please verify the code in the setup.sh script"
             exit 1
         
         fi
@@ -368,17 +380,17 @@ function download_libraries() {
     if [ "$user_opt" == "2" ] || [ "$user_opt" == "3" ]; then
         
         # Clone the OQS-Provider library repository based on the version needed
-        if [ "$use_tested_version" -eq 0 ]; then
+        if [ "$use_latest_version" -eq 0 ]; then
+
+            # Clone OQS-Provider and checkout to the last tested version
+            git clone "$oqs_provider_download_url" $oqs_provider_source >> /dev/null
+            cd $oqs_provider_source && git checkout "$oqs_provider_tested_sha"
+            cd $root_dir
+
+        elif [ "$use_latest_version" -eq 1 ]; then
 
             # Clone the latest OQS-Provider version
             git clone https://github.com/open-quantum-safe/oqs-provider.git $oqs_provider_source >> /dev/null
-
-        elif [ "$use_tested_version" -eq 1 ]; then
-
-            # Clone OQS-Provider and checkout to the last tested version
-            git clone https://github.com/open-quantum-safe/oqs-provider.git $oqs_provider_source >> /dev/null
-            cd $oqs_provider_source && git checkout "c5d19140a23d40d472881370c04cb2ddd7279f01"
-            cd $root_dir
 
         else
 
