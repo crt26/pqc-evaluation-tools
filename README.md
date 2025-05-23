@@ -38,7 +38,7 @@ For details on the project's development and upcoming features, see the project'
 
 ## Contents <!-- omit from toc -->
 - [Supported Hardware and Software](#supported-hardware-and-software)
-- [Supported Crytpographic Algorithms](#supported-crytpographic-algorithms)
+- [Supported Cryptographic Algorithms](#supported-cryptographic-algorithms)
 - [Installation Instructions](#installation-instructions)
   - [Cloning the Repository](#cloning-the-repository)
   - [Choosing Installation Mode](#choosing-installation-mode)
@@ -50,6 +50,7 @@ For details on the project's development and upcoming features, see the project'
   - [Testing Output Files](#testing-output-files)
 - [Parsing Test Results](#parsing-test-results)
   - [Parsing Overview](#parsing-overview)
+  - [Current Limitations](#current-limitations)
   - [Parsing Script Usage](#parsing-script-usage)
   - [Parsed Results Output](#parsed-results-output)
 - [Additional Documentation](#additional-documentation)
@@ -64,7 +65,6 @@ The automated testing tool is currently only supported in the following environm
 
 - x86 Linux Machines using a Debian-based operating system
 - ARM Linux devices using a 64-bit Debian based Operating System
-- Windows systems, if used **only** for parsing raw performance results
 
 ### Tested Dependency Libraries <!-- omit from toc -->
 This version of the repository has been fully tested with the following library versions:
@@ -75,19 +75,21 @@ This version of the repository has been fully tested with the following library 
 
 - OpenSSL Version 3.5.0
 
-The repository is configured to pull the latest versions of the OQS projects while maintaining the listed OpenSSL version. This ensures support for the most up-to-date algorithms available from the OQS project. The setup process includes handling changes in the OQS libraries and helping maintain compatibility as updates are released.
+By default, this repository is configured to use the **last tested versions** of the OQS libraries. This helps ensure that all automation scripts operate reliably with known working versions. The listed OpenSSL version remains fixed at 3.5.0 to maintain compatibility with the OQS-Provider and the project's performance testing tools. For information on the specific commits used for the last tested versions of the dependency libraries, see the [Dependency Libraries](./docs/developer-information/dependency-libraries.md) documentation.
 
-However, as the OQS libraries are still developing projects, if any major changes have occurred to their code bases, this project's automation scripts may not be able to accommodate this. If this does happen, please report an issue to this repositories GitHub page where it will be addressed as soon as possible. In the meantime, it is possible to change the versions of the OQS libraries used by the benchmarking suite. This is detailed further in the [Installation Instructions](#installation-instructions) section.
+While this setup maximises reliability, users who need access to more recent updates may configure the setup process accordingly. However, please note that the OQS libraries are still in active development, and upstream changes may occasionally break compatibility with this project’s automation scripts. This is detailed further in the [Installation Instructions](#installation-instructions) section.
 
-## Supported Crytpographic Algorithms
+If any such issues arise, please report them to this repository’s GitHub Issues page so they can be addressed promptly. Instructions for modifying the library versions used by the benchmarking suite are provided in the Installation Instructions section.
+
+## Supported Cryptographic Algorithms
 For further information on the classical and PQC algorithms this project provides support for, including information on any exclusions, please refer to the following documentation:
 
 [Supported Algorithms](docs/supported-algorithms.md)
 
 ## Installation Instructions
-The standard setup process uses the latest versions of the OQS libraries and performs automatic system detection and installation of the benchmarking suite. It supports various installation modes that determine which OQS libraries are downloaded and built, depending on your environment.
+The standard setup process uses the last tested versions of the OQS libraries to ensure compatibility with this project's automation tools. It also performs automatic system detection and installs all required components for benchmarking. The setup script supports multiple installation modes that determine which OQS-related libraries are downloaded and built, depending on your selected testing configuration.
 
-The main setup script also provides a `safe-mode` option, which can be used if there are any issues with the latest versions of the OQS libraries. When `safe-mode` is enabled, the script downloads and builds the last tested versions of the OQS libraries that are known to work reliably with this project. For more details on using `safe-mode`, see the [Optional Setup Flags](#optional-setup-flags) section.
+While this default configuration prioritises stability, it is possible to configure the setup process to use newer versions of the OQS libraries. This may be useful for testing recent algorithm updates or upstream changes. For more information on this and other advanced setup options, see the [Optional Setup Flags](#optional-setup-flags) section.
 
 The following instructions describe the standard setup process, which is the default and recommended option.
 
@@ -153,8 +155,8 @@ touch .pqc_eval_dir_marker.tmp
 
 ### Optional Setup Flags
 For advanced setup options, including:
-- `safe-mode` for using the last tested versions of the dependency libraries,
-- Custom OpenSSL `speed.c` limits, 
+- Pulling the latest version of the OQS libraries rather than the default tested versions
+- Custom OpenSSL `speed.c` limits
 - Enabling HQC algorithms in Liboqs
  
 Please refer to the [Advanced Setup Configuration Guide](docs/advanced-setup-configuration.md).
@@ -214,13 +216,13 @@ The results generated from the automated tests can be parsed into structured CSV
 
 If parsing results for multiple machine-IDs, please ensure that all relevant test results are located in the `test-data/up-results` directory before running the script. When executing the script, you will be prompted to enter the testing parameters, such as the number of machines tested and the number of testing runs conducted in each testing category **†**.
 
-If you run the parsing script on a different system or environment from where the `setup.sh` script was executed, ensure the `pandas` Python package is installed. This is the only external dependency required for parsing. You can install it using:
+### Current Limitations
+The parsing functionality is currently limited to being ran under the following circumstances:
 
-```
-pip install pandas
-```
+- An setup testing environment which contains the algorithm list files that were used to gather the un-parsed results
+- If parsing results from multiple machines, the tests being ran using the same parameters/algorithms lists
 
-> **†** Note: The script currently requires that all machines used for testing ran the same number of test runs in a given testing category (Liboqs/OQS-Provider). If there’s a mismatch, parse each machine’s results separately, then rename and organise the output manually if needed.
+Future work will improve the parsing functionality to remove this limitation and make it easier to generate the parsed results.
 
 ### Parsing Script Usage
 The parsing script can be executed on both Linux and Windows systems. To run it, use the following command (depending on your system's Python alias):

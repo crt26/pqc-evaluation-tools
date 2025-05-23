@@ -51,7 +51,7 @@ Key tasks performed include:
 
 - Downloading and compiling OpenSSL 3.5.0
 
-- Cloning and building specific or last-tested versions of Liboqs and OQS-Provider
+- Cloning and building the last-tested or latest versions of Liboqs and OQS-Provider
 
 - Modifying OpenSSL’s speed.c to support extended algorithm counts when needed
 
@@ -67,11 +67,11 @@ The script also handles the automatic detection of the system architecture and a
 
 The script is run interactively but supports the following optional arguments for advanced use:
 
-```
---safe-setup                   Use last-tested commits of all libraries  
---set-speed-new-value=<int>    Manually set MAX_KEM_NUM/MAX_SIG_NUM in speed.c
---enable-hqc-algs              Enable HQC KEM algorithms in Liboqs (default: disabled due to security concerns)  
-```
+| **Flag**                       | **Description**                                                                         |
+|--------------------------------|-----------------------------------------------------------------------------------------|
+| `--latest-dependency-versions` | Use the latest available versions of the OQS libraries (may cause compatibility issues) |
+| `--set-speed-new-value=<int>`  | Manually set `MAX_KEM_NUM` and `MAX_SIG_NUM` in OpenSSL’s `speed.c`                     |
+| `--enable-hqc-algs`            | Enable HQC KEM algorithms in Liboqs (default: disabled due to known vulnerability)      |
 
 For further information on the main setup script's usage, please refer to the main [README](../../README.md) file.
 
@@ -95,12 +95,12 @@ The script supports the following functionality:
 
 The utility script accepts the following arguments:
 
-| Argument | Functionality                                                                                                                 |
-|----------|-------------------------------------------------------------------------------------------------------------------------------|
-| `1`      | Extracts algorithms for **Liboqs only**.                                                                                      |
-| `2`      | Extracts algorithms for **both Liboqs and OQS-Provider**.                                                                     |
-| `3`      | Extracts algorithms for **OQS-Provider only**.                                                                                |
-| `4`      | Parses `ALGORITHMS.md` from **OQS-Provider** to determine the total number of supported algorithms (used only by `setup.sh`). |
+| **Argument** | **Functionality**                                                                                                             |
+|--------------|-------------------------------------------------------------------------------------------------------------------------------|
+| `1`          | Extracts algorithms for **Liboqs only**.                                                                                      |
+| `2`          | Extracts algorithms for **both Liboqs and OQS-Provider**.                                                                     |
+| `3`          | Extracts algorithms for **OQS-Provider only**.                                                                                |
+| `4`          | Parses `ALGORITHMS.md` from **OQS-Provider** to determine the total number of supported algorithms (used only by `setup.sh`). |
 
 While running option `4` manually will work, it is unnecessary. This function is used exclusively by the `setup.sh` script to modify OpenSSL’s `speed.c` file when all OQS-Provider algorithms are enabled. Unlike the other arguments, it does not alter or create files in the repository; it only returns the algorithm count for use during setup.
 
@@ -126,16 +126,11 @@ These adjustments ensure compatibility with both OpenSSL's native PQC support an
 
 When called, the utility script accepts the following arguments:
 
-| Argument | Functionality                                                                                                                                                                             |
-|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `0`      | Performs initial setup by appending OQS-Provider-related directives to the `openssl.cnf` file. **This should only ever be called during setup when modifying the default OpenSSL conf file.** |
-| `1`      | Configures the OpenSSL environment for **key generation benchmarking** by commenting out PQC-related configuration lines.                                                                 |
-| `2`      | Configures the OpenSSL environment for **TLS handshake benchmarking** by uncommenting PQC-related configuration lines.                                                                    |
-
-
-
-
-
+| **Argument** | **Functionality**                                                                                                                                                                             |
+|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `0`          | Performs initial setup by appending OQS-Provider-related directives to the `openssl.cnf` file. **This should only ever be called during setup when modifying the default OpenSSL conf file.** |
+| `1`          | Configures the OpenSSL environment for **key generation benchmarking** by commenting out PQC-related configuration lines.                                                                     |
+| `2`          | Configures the OpenSSL environment for **TLS handshake benchmarking** by uncommenting PQC-related configuration lines.                                                                        |
 
 ## Liboqs Automated Testing Scripts 
 The Liboqs PQC performance testing utilises a single bash script to conduct the automated benchmarking. This script performs CPU speed testing and memory usage profiling for supported KEM and digital signature algorithms. It is designed to be run interactively, prompting the user for test parameters such as the machine ID and number of test iterations.
@@ -179,13 +174,13 @@ The script accepts the passing of various arguments when called, which allows th
 
 **Accepted Script Arguments:**
 
-```
---server-control-port=<PORT>    Set the server control port   (1024-65535)
---client-control-port=<PORT>    Set the client control port   (1024-65535)
---s-server-port=<PORT>          Set the OpenSSL S_Server port (1024-65535)
---control-sleep-time=<TIME>     Set the control sleep time in seconds (integer or float)
---disable-control-sleep         Disable the control signal sleep time
-```
+| **Flag**                       | **Description**                                          |
+|--------------------------------|----------------------------------------------------------|
+| `--server-control-port=<PORT>` | Set the server control port   (1024-65535)               |
+| `--client-control-port=<PORT>` | Set the client control port   (1024-65535)               |
+| `--s-server-port=<PORT>`       | Set the OpenSSL S_Server port (1024-65535)               |
+| `--control-sleep-time=<TIME>`  | Set the control sleep time in seconds (integer or float) |
+| `--disable-control-sleep`      | Disable the control signal sleep time                    |
 
 ### oqsprovider-test-server.sh
 This script handles the server-side operations for the automated TLS handshake performance testing. It performs tests across various combinations of PQC and Hybrid-PQC digital signature and KEM algorithms, as well as classical-only handshakes. The script includes error handling and will coordinate with the client to retry failed tests using control signalling. This script is intended to be called only by the `full-oqs-provider.sh` script and **cannot be run manually**.

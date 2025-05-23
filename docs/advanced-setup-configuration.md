@@ -1,20 +1,20 @@
 # Advanced Setup Configurations
 This document outlines additional configuration options when running the `setup.sh` script. The main setup supports the following advanced configurations when called:
 
-- Safe Setup
+- Use the latest versions of the OQS dependency libraries
 - Manually Adjusting OpenSSL's speed Tool Hardcoded Limits
 - Enabling HQC KEM Algorithms in Liboqs
 
-## Safe Setup
-If you encounter compatibility issues with the latest versions of the OQS libraries, you can use **Safe Setup mode**, which installs the last known working versions tested with this project.
-
-To enable the safe setup option, follow the installation process steps as normal, but when calling the `setup.sh` script, supply the `--safe-setup` flag:
+## Using the Latest Versions of the OQS Libraries
+By default, the setup process uses the **last tested versions** of the OQS libraries to ensure compatibility with this project's automation tools. However, users may opt in to use the latest upstream versions of the dependencies by passing the following flag to the setup script:
 
 ```
-./setup.sh --safe-setup
+./setup.sh --latest-dependency-versions
 ```
 
-This will clone the last tested versions of the OQS libraries rather than the version present in the main branches. Please refer to the **Supported Hardware and Software** section in the main [README](../README.md) file for a list of the latest tested versions of the dependency libraries.
+This option may provide access to the most recent algorithm updates and bug fixes, but it may also introduce breaking changes due to upstream modifications. The setup script will display a warning and require explicit confirmation before proceeding with the latest versions.
+
+For more information on the specific versions used by default, see the [Dependency Libraries](./developer-information/dependency-libraries.md) documentation.
 
 ## Adjusting OpenSSL speed Tool Hardcoded Limits
 When enabling all disabled digital signature algorithms during the OQS-Provider setup, the number of registered algorithms can exceed OpenSSL's internal limits. This causes the OpenSSL `s_speed` benchmarking tool to fail due to hardcoded values (`MAX_KEM_NUM` and `MAX_SIG_NUM`) in its source code.
