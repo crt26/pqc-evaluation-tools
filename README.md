@@ -50,6 +50,7 @@ For details on the project's development and upcoming features, see the project'
   - [Testing Output Files](#testing-output-files)
 - [Parsing Test Results](#parsing-test-results)
   - [Parsing Overview](#parsing-overview)
+  - [Current Limitations](#current-limitations)
   - [Parsing Script Usage](#parsing-script-usage)
   - [Parsed Results Output](#parsed-results-output)
 - [Additional Documentation](#additional-documentation)
@@ -64,7 +65,6 @@ The automated testing tool is currently only supported in the following environm
 
 - x86 Linux Machines using a Debian-based operating system
 - ARM Linux devices using a 64-bit Debian based Operating System
-- Windows systems, if used **only** for parsing raw performance results
 
 ### Tested Dependency Libraries <!-- omit from toc -->
 This version of the repository has been fully tested with the following library versions:
@@ -216,13 +216,13 @@ The results generated from the automated tests can be parsed into structured CSV
 
 If parsing results for multiple machine-IDs, please ensure that all relevant test results are located in the `test-data/up-results` directory before running the script. When executing the script, you will be prompted to enter the testing parameters, such as the number of machines tested and the number of testing runs conducted in each testing category **†**.
 
-If you run the parsing script on a different system or environment from where the `setup.sh` script was executed, ensure the `pandas` Python package is installed. This is the only external dependency required for parsing. You can install it using:
+### Current Limitations
+The parsing functionality is currently limited to being ran under the following circumstances:
 
-```
-pip install pandas
-```
+- An setup testing environment which contains the algorithm list files that were used to gather the un-parsed results
+- If parsing results from multiple machines, the tests being ran using the same parameters/algorithms lists
 
-> **†** Note: The script currently requires that all machines used for testing ran the same number of test runs in a given testing category (Liboqs/OQS-Provider). If there’s a mismatch, parse each machine’s results separately, then rename and organise the output manually if needed.
+Future work will improve the parsing functionality to remove this limitation and make it easier to generate the parsed results.
 
 ### Parsing Script Usage
 The parsing script can be executed on both Linux and Windows systems. To run it, use the following command (depending on your system's Python alias):
