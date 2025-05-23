@@ -3,7 +3,7 @@
 # Copyright (c) 2023-2025 Callum Turino
 # SPDX-License-Identifier: MIT
 
-# Script for controlling the OQS-Provider TLS benchmarking suite using OpenSSL 3.4.1. It handles the configuration 
+# Script for controlling the OQS-Provider TLS benchmarking suite using OpenSSL 3.5.0. It handles the configuration 
 # of test parameters, machine role assignment, port and environment validation, and result directory setup. Based on 
 # the selected machine role, the script calls the relevant client or server benchmarking script to perform handshake 
 # and speed tests across post-quantum, classical, and hybrid-pqc algorithm modes, storing results in machine-specific 
@@ -346,7 +346,7 @@ function setup_base_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declare the global library directory path variables
-    openssl_path="$libs_dir/openssl_3.4"
+    openssl_path="$libs_dir/openssl_3.5.0"
     oqs_provider_path="$libs_dir/oqs-provider"
 
     # Ensure that the OQS-Provider and OpenSSL libraries are present before proceeding
@@ -874,39 +874,43 @@ function run_tests() {
     # Call the TLS handshake test script based on the machine type selected
     if [ $machine_type == "Server" ]; then
 
-        # Output the current task to the terminal
-        echo -e "\n####################################"
-        echo "Performing TLS Handshake Tests"
-        echo -e "####################################\n"
-
         # Export the client IP to the environment
         export CLIENT_IP="$machine_ip"
 
         # Call the server machine test script
-        $test_scripts_path/oqsprovider-test-server.sh 
-        #>> "$root_dir/server-test-output.txt" - uncomment to save output for debugging
+        $test_scripts_path/oqsprovider-test-server.sh
+        exit_code=$?
+
+        # Ensure that the server test script completed successfully
+        if [ $exit_code -ne 0 ]; then
+            echo "[ERROR] - TLS handshake test failed."
+            exit 1
+        fi
 
     else
     
         # Export the server IP to the environment
         export SERVER_IP="$machine_ip"
-
-        # Output the current task to the terminal
-        echo -e "\n####################################"
-        echo "Performing TLS Handshake Tests"
-        echo -e "####################################\n"
-
+        
         # Call the server machine test script
         $test_scripts_path/oqsprovider-test-client.sh
-        #>> "$root_dir/client-test-output.txt" - uncomment to save output for debugging
+        exit_code=$?
 
-        # Output the current task to the terminal
-        echo -e "\n##########################"
-        echo "Performing TLS Speed Tests"
-        echo -e "##########################\n"
-        
+        # Ensure that the client test script completed successfully
+        if [ $exit_code -ne 0 ]; then
+            echo "[ERROR] - TLS handshake test failed."
+            exit 1
+        fi
+
         # Call the TLS speed test script
         $test_scripts_path/oqsprovider-test-speed.sh
+        exit_code=$?
+
+        # Ensure that the speed test script completed successfully
+        if [ $exit_code -ne 0 ]; then
+            echo "[ERROR] - TLS speed test failed."
+            exit 1
+        fi
     
     fi
 

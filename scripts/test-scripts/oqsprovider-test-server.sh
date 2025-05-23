@@ -5,7 +5,7 @@
 
 # Server-side script for executing TLS handshake performance tests in coordination with a remote client. 
 # It evaluates all supported combinations of classic, Post-Quantum Cryptography (PQC), and Hybrid-PQC signature
-# and KEM algorithms using OpenSSL 3.4.1 integrated with the OQS-Provider. The script performs three main test suites:
+# and KEM algorithms using OpenSSL 3.5.0 integrated with the OQS-Provider. The script performs three main test suites:
 # PQC-only, Hybrid-PQC, and Classic handshake tests. It is called by the full-oqs-provider-test.sh benchmarking 
 # controller script and uses globally defined test parameters, certificate and key files, and control signalling 
 # for synchronisation with the client.
@@ -50,7 +50,7 @@ function setup_base_env() {
     util_scripts="$root_dir/scripts/utility-scripts"
 
     # Declare the global library directory path variables
-    openssl_path="$libs_dir/openssl_3.4"
+    openssl_path="$libs_dir/openssl_3.5.0"
     provider_path="$libs_dir/oqs-provider/lib"
 
     # Declare global key storage directory paths
@@ -327,14 +327,15 @@ function pqc_tests() {
 
                 # Start the OpenSSL s_server process
                 "$openssl_path/bin/openssl" s_server \
-                    -cert $cert_file \
-                    -key $key_file \
+                    -cert  "$cert_file" \
+                    -key   "$key_file"  \
+                    -provider default \
+                    -provider oqsprovider \
+                    -provider-path "$provider_path" \
                     -www \
                     -tls1_3 \
-                    -groups $kem \
-                    -provider oqsprovider \
-                    -provider-path $provider_path \
-                    -accept $S_SERVER_PORT &
+                    -groups "$kem" \
+                    -accept "$S_SERVER_PORT" &
                 server_pid=$!
 
                 # Check if the server has started before sending ready signal to client
@@ -494,9 +495,15 @@ function tls_server_test_entrypoint() {
         echo -e "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
     fi
 
-    # Output the start message and beginning the initial handshake
+    # Output the waiting message and begin the initial handshake
     echo -e "Server Script Activated, waiting for connection from client..."
     control_signal "iteration_handshake"
+    clear
+
+    # Output the test start message
+    echo -e "\n####################################"
+    echo "Performing TLS Handshake Tests"
+    echo "####################################"
 
     # Perform the TLS handshake tests for the specified number of runs
     for run_num in $(seq 1 $NUM_RUN); do
@@ -514,7 +521,7 @@ function tls_server_test_entrypoint() {
 
         # Set the test type, environment, and call the PQC tests function
         test_type=0
-        set_test_env $test_type 1
+        set_test_env $test_type 2
         pqc_tests
         echo -e "[OUTPUT] - Completed $run_num PQC TLS Handshake Tests"
 
@@ -526,7 +533,7 @@ function tls_server_test_entrypoint() {
 
         # Set the test type, environment, and call the Hybrid-PQC tests function
         test_type=1
-        set_test_env $test_type 1
+        set_test_env $test_type 2
         pqc_tests
         echo "[OUTPUT] - Completed $run_num Hybrid-PQC TLS Handshake Tests"
 
@@ -538,7 +545,7 @@ function tls_server_test_entrypoint() {
 
         # Set the test type, environment, and call the classic tests function
         test_type=2
-        set_test_env $test_type 1
+        set_test_env $test_type 2
         classic_tests
         echo "[OUTPUT] - Completed $run_num Classic TLS Handshake Tests"
 

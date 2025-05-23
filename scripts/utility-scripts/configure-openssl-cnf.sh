@@ -4,8 +4,8 @@
 # SPDX-License-Identifier: MIT
 
 # Utility script for toggling the OpenSSL configuration settings in the openssl.cnf file to enable or 
-# disable post-quantum cryptographic key generation. It comments or uncomments default group directives #
-# required for compatibility with scheme groups supported by the OQS-Provider when integrated with OpenSSL 3.4.1.
+# disable post-quantum cryptographic key generation. It comments or uncomments default group directives
+# required for compatibility with scheme groups supported by the OQS-Provider when integrated with OpenSSL 3.5.0.
 
 #-------------------------------------------------------------------------------------------------------------------------------
 function output_help_message() {
@@ -14,8 +14,9 @@ function output_help_message() {
     # Output the supported options and their usage to the user
     echo "Usage: configure-openssl-cnf.sh [options]"
     echo "Options:"
-    echo "  0                     Configure OpenSSL for standard mode"
-    echo "  1                     Configure OpenSSL for PQC testing mode"
+    echo "  0                     Modify default OpenSSL Configuration file to include OQS-Provider directives (for setup only)"
+    echo "  1                     Configure OpenSSL Configuration for Key Generation mode"
+    echo "  2                     Configure OpenSSL for TLS testing mode"
     echo "  --help                Display this help message and exit"
 
 }
@@ -56,9 +57,24 @@ function parse_args() {
                 ;;
 
             1)
+
                 # Set the configure mode if no mode has been yet
                 if [ "$mode_selected" == "False" ]; then
                     configure_mode=1
+                    mode_selected="True"
+
+                else
+                    echo "[ERROR] - Only one mode can be selected at a time"
+                    exit 1
+                fi
+
+                shift
+                ;;
+
+            2)
+                # Set the configure mode if no mode has been yet
+                if [ "$mode_selected" == "False" ]; then
+                    configure_mode=2
                     mode_selected="True"
 
                 else
@@ -121,7 +137,7 @@ function setup_base_env() {
     test_scripts_path="$root_dir/scripts/test-scripts"
 
     # Declare the global library directory path variables
-    openssl_path="$libs_dir/openssl_3.4"
+    openssl_path="$libs_dir/openssl_3.5.0"
     liboqs_path="$libs_dir/liboqs"
     oqs_provider_path="$libs_dir/oqs-provider"
 
@@ -150,22 +166,50 @@ function configure_conf_statements() {
     # key generation with the OQS-Provider.
 
     # Declare the required local variables
-    local conf_path="$openssl_path/openssl.cnf"
+    local openssl_conf_path="$openssl_path/openssl.cnf"
 
     # Set the configurations based on the configuration mode passed
     if [ "$configure_mode" -eq 0 ]; then
 
-        # Comment out the unnecessary lines for standard configuration
-        sed -i 's/ssl_conf = ssl_sect/#ssl_conf = ssl_sect/' $conf_path
-        sed -i 's/system_default = system_default_sect/#system_default = system_default_sect/' $conf_path
-        sed -i 's/Groups = \$ENV::DEFAULT_GROUPS/#Groups = \$ENV::DEFAULT_GROUPS/' $conf_path
+        # Set the OpenSSL configuration array to append onto the end of the file
+        conf_changes=(
+            "[ssl_sect]"
+            "system_default = system_default_sect"
+            "[system_default_sect]"
+            "Groups = \$ENV::DEFAULT_GROUPS"
+        )
 
-    elif [ "$configure_mode" -eq 1 ]; then 
+        # Patch the OpenSSL configuration file to have the correct provider settings
+        sed -i '/^\[openssl_init\]/,/^\[/{ 
+            s/^providers *=.*/providers  = provider_sect/
+            /ssl_conf[[:space:]]*=/d
+            /providers  = provider_sect/a\
+ssl_conf   = ssl_sect
+        }' "$openssl_conf_path"
 
-        # Uncomment the required configurations for PQC testing
-        sed -i 's/^#ssl_conf = ssl_sect/ssl_conf = ssl_sect/' $conf_path
-        sed -i 's/^#system_default = system_default_sect/system_default = system_default_sect/' $conf_path
-        sed -i 's/^#Groups = \$ENV::DEFAULT_GROUPS/Groups = \$ENV::DEFAULT_GROUPS/' $conf_path
+
+        for conf_change in "${conf_changes[@]}"; do
+            echo $conf_change >> "$openssl_conf_path"
+        done
+
+
+    elif [ "$configure_mode" -eq 1 ]; then
+
+        # Comment out PQC-related configuration lines for standard mode
+        sed -i 's/^ssl_conf   = ssl_sect$/#ssl_conf   = ssl_sect/' "$openssl_conf_path"
+        sed -i 's/^\[ssl_sect\]$/#[ssl_sect]/' "$openssl_conf_path"
+        sed -i 's/^system_default = system_default_sect$/#system_default = system_default_sect/' "$openssl_conf_path"
+        sed -i 's/^\[system_default_sect\]$/#[system_default_sect]/' "$openssl_conf_path"
+        sed -i 's/Groups = \$ENV::DEFAULT_GROUPS/#Groups = \$ENV::DEFAULT_GROUPS/' $openssl_conf_path
+
+    elif [ "$configure_mode" -eq 2 ]; then
+
+        # Uncomment PQC-related configuration lines for PQC testing mode
+        sed -i 's/^#ssl_conf   = ssl_sect$/ssl_conf   = ssl_sect/' "$openssl_conf_path"
+        sed -i 's/^#\[ssl_sect\]$/[ssl_sect]/' "$openssl_conf_path"
+        sed -i 's/^#system_default = system_default_sect$/system_default = system_default_sect/' "$openssl_conf_path"
+        sed -i 's/^#\[system_default_sect\]$/[system_default_sect]/' "$openssl_conf_path"
+        sed -i 's/^#Groups = \$ENV::DEFAULT_GROUPS/Groups = \$ENV::DEFAULT_GROUPS/' $openssl_conf_path
 
     fi
 
