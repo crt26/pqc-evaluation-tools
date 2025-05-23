@@ -9,6 +9,8 @@ The PQC-Evaluation-Tools project provides support for all the PQC algorithms pro
 - [OpenSSL Supported PQC Algorithms](https://github.com/openssl/openssl/releases/tag/openssl-3.5.0)
 - [OQS-Provider Supported Algorithms](https://github.com/open-quantum-safe/oqs-provider/blob/main/ALGORITHMS.md)
 
+> **Notice:** If you use the --latest-dependency-versions flag with the main setup script to pull the most recent versions of the OQS libraries, the supported algorithms may differ from what is documented here. This documentation reflects support based on the last tested versions of the dependencies and may not be accurate for upstream updates.
+
 ## Contents <!-- omit from toc -->
 - [Liboqs Algorithms](#liboqs-algorithms)
   - [Algorithm Support Summary](#algorithm-support-summary)

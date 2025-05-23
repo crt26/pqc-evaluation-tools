@@ -155,11 +155,11 @@ The currently supported testing customisation options are as follows:
 ### Customising Testing Suite TCP Ports
 If the benchmark scripts' default TCP ports are unsuitable for your environment, custom ports can be specified when launching the test script. This can be done independently for the server and client by passing the following flags:
 
-```
---server-control-port=<PORT>    Set the server control port   (1024-65535)
---client-control-port=<PORT>    Set the client control port   (1024-65535)
---s-server-port=<PORT>          Set the OpenSSL S_Server port (1024-65535)
-```
+| **Flag**                       | **Description**                            |
+|--------------------------------|--------------------------------------------|
+| `--server-control-port=<PORT>` | Set the server control port   (1024-65535) |
+| `--client-control-port=<PORT>` | Set the client control port   (1024-65535) |
+| `--s-server-port=<PORT>`       | Set the OpenSSL S_Server port (1024-65535) |
 
 **When using custom TCP ports**, please ensure the same values are provided to both the server and client instances. Otherwise, the testing will fail.
 
@@ -168,10 +168,10 @@ By default, the tool uses a 0.25 second delay when sending control signals betwe
 
 If the default control signalling timing behaviour is unsuitable for your testing environment, you can customise the control signal sleep time or disable it entirely when executing the `full-oqs-provider-test.sh` script. You can do this by including the following flags:
 
-```
---control-sleep-time=<TIME>     Set the control sleep time in seconds (integer or float)
---disable-control-sleep         Disable the control signal sleep time
-```
+| **Flag**                      | **Description**                                          |
+|-------------------------------|----------------------------------------------------------|
+| `--control-sleep-time=<TIME>` | Set the control sleep time in seconds (integer or float) |
+| `--disable-control-sleep`     | Disable the control signal sleep time                    |
 
 **Please note** that the `--control-sleep-time` flag cannot be used with the `--disable-control-sleep` flag.
 
