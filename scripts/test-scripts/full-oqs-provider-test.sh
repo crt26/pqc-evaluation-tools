@@ -58,6 +58,7 @@ function output_help_message() {
     echo "  --s-server-port=<PORT>             Set the OpenSSL S_Server port           (1024-65535)"
     echo "  --control-sleep-time=<TIME>        Set the control sleep time in seconds   (integer or float)"
     echo "  --disable-control-sleep            Disable the control signal sleep time"
+    echo "  --disable-result-parsing           Disable the result parsing for the test suite."
     echo "  --help                             Display the help message"
 
 }
@@ -171,6 +172,25 @@ function parse_args {
                 shift
                 ;;
 
+            --disable-result-parsing)
+
+                # Output the warning message to the user
+                echo -e "\n[WARNING] - Result parsing disabled, results will require to be parsed manually\n"
+
+                # Confirm with the user if they wish to proceed with the parsing disabled
+                get_user_yes_no "Are you sure you want to continue with result parsing disabled?"
+
+                # Determine the next action based on the user's response
+                if [ $user_y_n_response -eq 0 ]; then
+                    echo "[NOTICE] - Continuing with result parsing disabled"
+                    parse_results=0
+                else
+                    echo "[NOTICE] - Continuing with result parsing enabled"
+                    parse_results=1
+                fi
+
+                shift
+                ;;
 
             *)
 
@@ -344,6 +364,7 @@ function setup_base_env() {
     test_data_dir="$root_dir/test-data"
     test_scripts_path="$root_dir/scripts/test-scripts"
     util_scripts="$root_dir/scripts/utility-scripts"
+    parsing_scripts="$root_dir/scripts/parsing-scripts"
 
     # Declare the global library directory path variables
     openssl_path="$libs_dir/openssl_3.5.0"
@@ -911,6 +932,38 @@ function run_tests() {
             echo "[ERROR] - TLS speed test failed."
             exit 1
         fi
+
+        # Parse the results if the flag is set to enabled
+        if [ $parse_results -eq 1 ]; then
+
+            # Output the parsing message to the user
+            echo -e "\nParsing results...\n"
+
+            # Call the result parsing script to parse the results
+            python3 "$parsing_scripts/parse_results" --machine-id="$machine_num"
+            exit_status=$?
+
+            # Ensure that the parsing script completed successfully
+            if [ $exit_status -ne 0 ]; then
+                echo -e "\n[ERROR] - Result parsing failed, please check the script and try again\n"
+                exit 1
+            fi
+
+            # Output the location of the parsed results to the user
+            echo -e "\nParsed results can be found in the following directory:"
+            echo "$test_data_dir/results/oqs-provider/machine-$machine_num"
+
+        elif [ $parse_results -eq 0 ]; then
+
+            # Output the complete message with the test results path to the user
+            echo -e "All performance testing complete, the unparsed results for Machine-ID ($machine_num) can be found in:"
+            echo "Results Dir Path - $MACHINE_RESULTS_PATH"
+            
+        else
+            echo -e "\n[ERROR] - parse_results flag not set correctly, please check the script and try again\n"
+            exit 1
+            
+        fi
     
     fi
 
@@ -928,6 +981,7 @@ function main() {
     # Set the default global flag variables
     custom_control_time_flag="False"
     disable_control_sleep="False"
+    parse_results=1
 
     # Set the default TCP port values
     server_control_port="25000"
