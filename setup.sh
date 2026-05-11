@@ -1143,7 +1143,7 @@ function setup_controller() {
                 rm -rf $tmp_dir/liboqs_source $tmp_dir/openssl_$openssl_version $tmp_dir/oqs_provider_source # temp removal for hqc bug fix
 
                 # Check if the Liboqs alg-list files are present before deciding which alg-list files need generating
-                if [ -f "$alg_lists_dir/kem_algs.txt" ] && [ -f "$alg_lists_dir/sig_algs.txt" ]; then
+                if [ -f "$alg_lists_dir/kem_algs_liboqs.txt" ] && [ -f "$alg_lists_dir/sig_algs_liboqs.txt" ]; then
                     alg_list_flag="3"
                 else
                     alg_list_flag="2"

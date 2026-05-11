@@ -12,12 +12,19 @@ supported libraries; the SUPPORTED_LIBRARIES list is provided for convenience.
 """
 
 # Mapping of library identifier (as accepted by the --library CLI flag) to the
-# filename prefixes used by that library's raw speed-result CSVs. Future libraries
+# per-library filename conventions used across the test pipeline. Future libraries
 # (e.g., wolfSSL, CIRCL) add their entries here.
+#
+# Per-library keys:
+#   kem_speed / sig_speed   - filename prefix of raw speed-result CSVs, run number appended
+#   kem_algs_file / sig_algs_file - basename of the algorithm-list file under
+#                                   test_data/alg_lists/ (full filename including .txt)
 LIBRARY_PREFIXES = {
     "liboqs": {
         "kem_speed": "test_kem_speed_",
         "sig_speed": "test_sig_speed_",
+        "kem_algs_file": "kem_algs_liboqs.txt",
+        "sig_algs_file": "sig_algs_liboqs.txt",
     },
 }
 

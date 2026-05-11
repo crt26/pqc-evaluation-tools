@@ -19,10 +19,11 @@ from internal_scripts.results_averager import ComputationalAverager
 from internal_scripts.library_config import LIBRARY_PREFIXES
 
 #------------------------------------------------------------------------------------------------------------------------------
-def setup_parse_env(root_dir):
+def setup_parse_env(root_dir, library):
     """ Function for setting up the environment for parsing computational performance results.
         The function will set the various directory paths, read in the algorithm 
-        lists and set the root directories. """
+        lists and set the root directories. The alg-list filenames are resolved per-library
+        from LIBRARY_PREFIXES so each backend can ship its own alg list alongside others. """
 
     # Declare the algorithm list and directory paths dict variables
     kem_algs = []
@@ -39,9 +40,9 @@ def setup_parse_env(root_dir):
     dir_paths['results_dir'] = os.path.join(root_dir, "test_data", "results", "computational_performance")
     dir_paths['up_results'] = os.path.join(root_dir, "test_data", "up_results", "computational_performance")
 
-    # Set the alg lists text filenames
-    kem_algs_file = os.path.join(root_dir, "test_data", "alg_lists", "kem_algs.txt")
-    sig_algs_file = os.path.join(root_dir, "test_data", "alg_lists", "sig_algs.txt")
+    # Set the alg lists text filenames (per-library names)
+    kem_algs_file = os.path.join(root_dir, "test_data", "alg_lists", LIBRARY_PREFIXES[library]["kem_algs_file"])
+    sig_algs_file = os.path.join(root_dir, "test_data", "alg_lists", LIBRARY_PREFIXES[library]["sig_algs_file"])
 
     # Read in the algorithms from the KEM alg-list file
     with open(kem_algs_file, "r") as kem_file:
@@ -478,7 +479,7 @@ def parse_comp_performance(test_opts, replace_old_results):
 
     # Setup the script environment
     print(f"\nPreparing to parse Computational Performance Results ({library}):\n")
-    kem_algs, sig_algs, dir_paths = setup_parse_env(root_dir)
+    kem_algs, sig_algs, dir_paths = setup_parse_env(root_dir, library)
 
     # Process the results
     print(f"Parsing results...\n")

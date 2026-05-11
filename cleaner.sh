@@ -140,8 +140,8 @@ function select_uninstall_mode() {
             1)
                 # Uninstall Liboqs only
                 rm -rf "$liboqs_path"
-                rm "$test_data_alg_lists_dir/kem_algs.txt"
-                rm "$test_data_alg_lists_dir/sig_algs.txt"
+                rm "$test_data_alg_lists_dir/kem_algs_liboqs.txt"
+                rm "$test_data_alg_lists_dir/sig_algs_liboqs.txt"
                 echo -e "\nLiboqs Uninstalled"
                 break;;
             

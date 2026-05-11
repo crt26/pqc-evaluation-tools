@@ -174,11 +174,12 @@ def get_liboqs_algs():
                 # Extract the algorithms from the stderr
                 algs = liboqs_extract_algs(stderr)
 
-                # Set the output filename for the current algorithm type
+                # Set the output filename for the current algorithm type (per-library naming
+                # so that multiple backends can coexist under test_data/alg_lists/)
                 if "kem" in bin:
-                    alg_list_file = os.path.join(output_dir, "kem_algs.txt")
+                    alg_list_file = os.path.join(output_dir, "kem_algs_liboqs.txt")
                 else:
-                    alg_list_file = os.path.join(output_dir, "sig_algs.txt")
+                    alg_list_file = os.path.join(output_dir, "sig_algs_liboqs.txt")
 
                 # Filter out HQC KEM algorithms from the list if the HQC enabled flag is not set (temp fix for HQC bug)
                 if not os.path.exists(os.path.join(root_dir, "tmp", ".hqc_enabled.flag")):
