@@ -13,6 +13,7 @@ of the original algorithm list files used for testing.
 #------------------------------------------------------------------------------------------------------------------------------
 from internal_scripts.performance_data_parse import parse_comp_performance
 from internal_scripts.tls_performance_data_parse import parse_tls_performance
+from internal_scripts.library_config import SUPPORTED_LIBRARIES
 import os
 import sys
 import argparse
@@ -27,6 +28,8 @@ def handle_args():
     parser.add_argument('--parse-mode', type=str, help='The parsing mode to be used (computational or tls)')
     parser.add_argument('--machine-id', type=int, help='The Machine-ID of the results to be parsed')
     parser.add_argument('--total-runs', type=int, help='The number of test runs to be parsed')
+    parser.add_argument('--library', type=str, default='liboqs',
+                        help=f"PQC library that produced the results (default: liboqs). Supported: {', '.join(SUPPORTED_LIBRARIES)}. Only consulted for --parse-mode=computational.")
     parser.add_argument("--replace-old-results", action="store_true", help="Replace old results for the passed Machine-ID if this flag is set")
     
     # Parse the command line arguments
@@ -36,7 +39,8 @@ def handle_args():
         args = parser.parse_args()
         parse_mode = args.parse_mode
         machine_id = args.machine_id
-        total_runs = args.total_runs 
+        total_runs = args.total_runs
+        library = args.library
 
         # Check if the parse mode is valid (done manually to have custom error messages)
         if parse_mode == 'both':
@@ -44,6 +48,10 @@ def handle_args():
         
         elif parse_mode != "computational" and parse_mode != "tls":
             raise Exception(f"Invalid parse mode provided to the script - {parse_mode}, please use 'computational' or 'tls'")
+
+        # Validate that the library identifier is one we know how to parse
+        if library not in SUPPORTED_LIBRARIES:
+            raise Exception(f"Invalid library provided to the script - {library}, supported values are: {', '.join(SUPPORTED_LIBRARIES)}")
 
         # Determine if a machine-ID has been provided to the script
         if machine_id is not None:
@@ -154,7 +162,8 @@ def get_test_opts(root_dir):
         except ValueError:
             print("Invalid Input - Please enter a valid number!")
     
-    test_opts = [machine_num, total_runs, root_dir]
+    # Default to liboqs for interactive mode. Future versions may add a prompt for library.
+    test_opts = [machine_num, total_runs, root_dir, "liboqs"]
     return test_opts
 
 #------------------------------------------------------------------------------------------------------------------------------
@@ -182,8 +191,8 @@ def main():
 
         # Determine which parsing mode to use and get the test options
         if args.parse_mode == "computational":
-            print("Parsing Computational Performance Results")
-            comp_test_opts = [args.machine_id, args.total_runs, root_dir]
+            print(f"Parsing Computational Performance Results ({args.library})")
+            comp_test_opts = [args.machine_id, args.total_runs, root_dir, args.library]
             parse_comp_performance(comp_test_opts, replace_old_results)
         
         elif args.parse_mode == "tls":

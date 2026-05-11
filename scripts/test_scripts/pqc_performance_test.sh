@@ -514,9 +514,9 @@ function setup_test_suite() {
 
     done
 
-    # Set the alg-list txt filepaths
-    kem_alg_file="$test_data_dir/alg_lists/kem_algs.txt"
-    sig_alg_file="$test_data_dir/alg_lists/sig_algs.txt"
+    # Set the alg-list txt filepaths (per-library naming so multiple backends can coexist)
+    kem_alg_file="$test_data_dir/alg_lists/kem_algs_liboqs.txt"
+    sig_alg_file="$test_data_dir/alg_lists/sig_algs_liboqs.txt"
 
     # Create the PQC KEM and digital signature algorithm list arrays
     kem_algs=()
@@ -666,6 +666,7 @@ function handle_result_parsing() {
             # Call the result parsing script to parse the results with the replace flag not set
             python3 "$result_parser_script" \
                 --parse-mode="computational"  \
+                --library="liboqs" \
                 --machine-id="$machine_num" \
                 --total-runs=$number_of_runs
             exit_status=$?
@@ -675,6 +676,7 @@ function handle_result_parsing() {
             # Call the result parsing script to parse the results with the replace flag set
             python3 "$result_parser_script" \
                 --parse-mode="computational"  \
+                --library="liboqs" \
                 --machine-id="$machine_num" \
                 --total-runs=$number_of_runs \
                 --replace-old-results
