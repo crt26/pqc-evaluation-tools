@@ -666,6 +666,7 @@ function handle_result_parsing() {
             # Call the result parsing script to parse the results with the replace flag not set
             python3 "$result_parser_script" \
                 --parse-mode="computational"  \
+                --library="liboqs" \
                 --machine-id="$machine_num" \
                 --total-runs=$number_of_runs
             exit_status=$?
@@ -675,6 +676,7 @@ function handle_result_parsing() {
             # Call the result parsing script to parse the results with the replace flag set
             python3 "$result_parser_script" \
                 --parse-mode="computational"  \
+                --library="liboqs" \
                 --machine-id="$machine_num" \
                 --total-runs=$number_of_runs \
                 --replace-old-results

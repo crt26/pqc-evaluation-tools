@@ -12,16 +12,20 @@ for memory, CPU speed, and TLS handshake, and TLS speed results, and exports the
 import pandas as pd
 import os
 import numpy as np
+from internal_scripts.library_config import LIBRARY_PREFIXES
 
 #------------------------------------------------------------------------------------------------------------------------------
 class ComputationalAverager:
 
     #------------------------------------------------------------------------------
-    def __init__(self, dir_paths, kem_algs, sig_algs, num_runs, alg_operations):
+    def __init__(self, dir_paths, kem_algs, sig_algs, num_runs, alg_operations, library="liboqs"):
         """ Class for generating average metrics from computational performance results.
             Computes per-algorithm averages across multiple benchmarking runs for both 
             memory usage and CPU speed results. Called by the computational performance parsing 
-            script after results have been processed into structured CSVs. """
+            script after results have been processed into structured CSVs.
+
+            The library parameter identifies which PQC backend produced the inputs; it drives
+            per-library filename prefix selection for the speed-result CSVs. """
 
         # Set the global class variables used in the class methods
         self.dir_paths = dir_paths
@@ -29,6 +33,7 @@ class ComputationalAverager:
         self.kem_algs = kem_algs
         self.sig_algs = sig_algs
         self.alg_operations = alg_operations
+        self.library = library
 
     #------------------------------------------------------------------------------
     def avg_mem(self):
@@ -131,13 +136,17 @@ class ComputationalAverager:
             results and generating an average for all the runs for
             the machine-ID included in the results paths """
 
+        # Look up the per-library filename prefixes for the speed-result CSVs
+        kem_speed_prefix = LIBRARY_PREFIXES[self.library]["kem_speed"]
+        sig_speed_prefix = LIBRARY_PREFIXES[self.library]["sig_speed"]
+
         # Declare the filepath prefix variables and fieldnames list
-        kem_filename_prefix = os.path.join(self.dir_paths['type_speed_dir'], "test_kem_speed_")
-        sig_filename_prefix = os.path.join(self.dir_paths['type_speed_dir'], "test_sig_speed_")
+        kem_filename_prefix = os.path.join(self.dir_paths['type_speed_dir'], kem_speed_prefix)
+        sig_filename_prefix = os.path.join(self.dir_paths['type_speed_dir'], sig_speed_prefix)
         speed_fieldnames = []
 
         # Get the fieldnames from the first file
-        test_filename = "test_kem_speed_1.csv"
+        test_filename = f"{kem_speed_prefix}1.csv"
         test_filename = os.path.join(self.dir_paths['type_speed_dir'], test_filename)
 
         # Load the test file into a dataframe and put the headers into a list
