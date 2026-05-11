@@ -64,21 +64,24 @@ Parsing parameters can also be supplied directly as command-line arguments. This
 Command-line mode can also be executed manually, as seen in the example below:
 
 ```
-python3 parse_results.py --parse-mode=computational --machine-id=2 --total-runs=10
+python3 parse_results.py --parse-mode=computational --library=liboqs --machine-id=2 --total-runs=10
 ```
 
 The table below outlines each of the accepted commands that are required for operation:
 
-| **Argument**            | **Description**                                                                        | **Required Flag (*)** |
-|-------------------------|----------------------------------------------------------------------------------------|-----------------------|
-| `--parse-mode=<str>`    | Must be either computational or tls, both is not allowed here.                         | *                     |
-| `--machine-id=<int>`    | Machine-ID used during testing (positive integer).                                     | *                     |
-| `--total-runs=<int>`    | Number of test runs (must be > 0).                                                     | *                     |
-| `--replace-old-results` | Optional flag to force overwrite of any existing results for the specified Machine-ID. |                       |
+| **Argument**            | **Description**                                                                                                                          | **Required Flag (*)** |
+|-------------------------|------------------------------------------------------------------------------------------------------------------------------------------|-----------------------|
+| `--parse-mode=<str>`    | Must be either computational or tls, both is not allowed here.                                                                           | *                     |
+| `--library=<str>`       | PQC library that produced the results being parsed (default: `liboqs`). Only consulted for `--parse-mode=computational`.                  |                       |
+| `--machine-id=<int>`    | Machine-ID used during testing (positive integer).                                                                                       | *                     |
+| `--total-runs=<int>`    | Number of test runs (must be > 0).                                                                                                       | *                     |
+| `--replace-old-results` | Optional flag to force overwrite of any existing results for the specified Machine-ID.                                                   |                       |
 
 This mode is suited for automated workflows or environments where manual input is impractical.
 
 **Note:** The `--parse-mode` argument cannot be set to both. If you wish to parse both computational and TLS performance results in one session, you must use the script in interactive mode.
+
+**Note:** The `--library` argument is the extension point for adding new PQC backend libraries to the parser. The currently supported value is `liboqs`; future libraries will plug in additional values. If unset, the parser defaults to `liboqs` so that existing scripts and workflows continue to work without modification.
 
 ## Parsed Results Output
 Once parsing is complete, the parsed results will be stored in the newly created `test_data/results` directory. This includes CSV files containing the detailed test results and automatically calculated averages for each test category. These files are ready for further analysis or can be imported into graphing tools for visualisation.

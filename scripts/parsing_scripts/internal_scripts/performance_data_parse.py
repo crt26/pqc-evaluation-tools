@@ -16,6 +16,7 @@ import sys
 import shutil
 import time
 from internal_scripts.results_averager import ComputationalAverager
+from internal_scripts.library_config import LIBRARY_PREFIXES
 
 #------------------------------------------------------------------------------------------------------------------------------
 def setup_parse_env(root_dir):
@@ -181,7 +182,7 @@ def get_peak(mem_file, peak_metrics):
                     return peak_metrics
 
 #------------------------------------------------------------------------------------------------------------------------------
-def pre_speed_processing(dir_paths, num_runs):
+def pre_speed_processing(dir_paths, num_runs, library):
     """ Function for preparing speed up-result data by removing system information, 
         making it ready for further processing. """
 
@@ -192,9 +193,9 @@ def pre_speed_processing(dir_paths, num_runs):
         shutil.rmtree(dir_paths["up_speed_dir"])
         os.makedirs(dir_paths['up_speed_dir'])
 
-    # Setting the initial prefix variables for KEM and sig files
-    kem_prefix = "test_kem_speed_"
-    sig_prefix = "test_sig_speed_"
+    # Look up the per-library filename prefixes for KEM and sig speed CSVs
+    kem_prefix = LIBRARY_PREFIXES[library]["kem_speed"]
+    sig_prefix = LIBRARY_PREFIXES[library]["sig_speed"]
 
     # Pre-format the KEM and sig csv speed files to remove system information from the file
     for run_count in range(1, num_runs+1):
@@ -236,13 +237,13 @@ def pre_speed_processing(dir_paths, num_runs):
         sig_pre_speed_df.to_csv(speed_dest_dir, index=False, sep="|")
 
 #------------------------------------------------------------------------------------------------------------------------------
-def speed_processing(dir_paths, num_runs, kem_algs, sig_algs):
+def speed_processing(dir_paths, num_runs, kem_algs, sig_algs, library):
     """ Function for processing CPU speed up-results and exporting the data 
         into a clean CSV format. """
 
-    # Set the filename prefix variables
-    kem_prefix = "test_kem_speed_"
-    sig_prefix = "test_sig_speed_"
+    # Look up the per-library filename prefixes for KEM and sig speed CSVs
+    kem_prefix = LIBRARY_PREFIXES[library]["kem_speed"]
+    sig_prefix = LIBRARY_PREFIXES[library]["sig_speed"]
 
     # Create the algorithm lists to insert into new header column
     new_col_kem = [alg for alg in kem_algs for _ in range(3)]
@@ -423,7 +424,7 @@ def memory_processing(dir_paths, num_runs, kem_algs, sig_algs, alg_operations):
         mem_results_df.to_csv(sig_filepath, index=False)
 
 #------------------------------------------------------------------------------------------------------------------------------
-def process_tests(machine_id, num_runs, dir_paths, kem_algs, sig_algs, replace_old_results):
+def process_tests(machine_id, num_runs, dir_paths, kem_algs, sig_algs, replace_old_results, library):
     """ Function for parsing results for one or more machines, storing them as CSV files, 
         and calculating averages once the up-results are processed. """
 
@@ -431,7 +432,7 @@ def process_tests(machine_id, num_runs, dir_paths, kem_algs, sig_algs, replace_o
     alg_operations = {'kem_operations': ["keygen", "encaps", "decaps"], 'sig_operations': ["keypair", "sign", "verify"]}
 
     # Create an instance of the computational performance average generator class before processing results
-    comp_avg = ComputationalAverager(dir_paths, kem_algs, sig_algs, num_runs, alg_operations)
+    comp_avg = ComputationalAverager(dir_paths, kem_algs, sig_algs, num_runs, alg_operations, library)
 
     # Set the unparsed-directory paths in the central paths dictionary
     dir_paths['up_speed_dir'] = os.path.join(dir_paths['up_results'], f"machine_{str(machine_id)}", "speed_results")
@@ -449,8 +450,8 @@ def process_tests(machine_id, num_runs, dir_paths, kem_algs, sig_algs, replace_o
     handle_results_dir_creation(machine_id, dir_paths, replace_old_results)
 
     # Parse the up-results for the specified Machine-ID
-    pre_speed_processing(dir_paths, num_runs)
-    speed_processing(dir_paths, num_runs, kem_algs, sig_algs)
+    pre_speed_processing(dir_paths, num_runs, library)
+    speed_processing(dir_paths, num_runs, kem_algs, sig_algs, library)
     memory_processing(dir_paths, num_runs, kem_algs, sig_algs, alg_operations)
 
     # Call the average generation methods for memory and CPU performance results
@@ -466,11 +467,19 @@ def parse_comp_performance(test_opts, replace_old_results):
     machine_id = test_opts[0]
     num_runs = test_opts[1]
     root_dir = test_opts[2]
+    # Library identifier: present in test_opts when supplied; default to liboqs for
+    # callers that still pass a 3-element opts list.
+    library = test_opts[3] if len(test_opts) > 3 else "liboqs"
+
+    # Validate the library identifier against the supported set
+    if library not in LIBRARY_PREFIXES:
+        print(f"[ERROR] - Unsupported library identifier '{library}' passed to parse_comp_performance")
+        sys.exit(1)
 
     # Setup the script environment
-    print(f"\nPreparing to parse Computational Performance Results:\n")
+    print(f"\nPreparing to parse Computational Performance Results ({library}):\n")
     kem_algs, sig_algs, dir_paths = setup_parse_env(root_dir)
 
     # Process the results
     print(f"Parsing results...\n")
-    process_tests(machine_id, num_runs, dir_paths, kem_algs, sig_algs, replace_old_results)
+    process_tests(machine_id, num_runs, dir_paths, kem_algs, sig_algs, replace_old_results, library)
